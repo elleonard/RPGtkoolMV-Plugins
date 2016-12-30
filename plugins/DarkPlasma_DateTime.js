@@ -1,4 +1,7 @@
 // DarkPlasma_DateTime
+// Copyright (c) 2016 DarkPlasma
+// This software is released under the MIT license.
+// http://opensource.org/licenses/mit-license.php
 
 var Imported = Imported || {};
 Imported.DarkPlasma_DateTime = true;
