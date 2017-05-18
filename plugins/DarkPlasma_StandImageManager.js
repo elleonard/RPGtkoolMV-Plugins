@@ -3,6 +3,9 @@
 // This software is released under the MIT license.
 // http://opensource.org/licenses/mit-license.php
 
+// version 1.0.1
+// フェードインがうまく動いていなかった不具合を修正
+
 var Imported = Imported || {};
 Imported.DarkPlasma_StandImageManager = true;
 
@@ -125,6 +128,7 @@ Game_Interpreter.prototype.pluginCommand = function (command, args) {
       // フェードインする場合、フェードイン前の座標に移動しておく
       if (wait === DarkPlasma.SIM.fadeWait) {
         $gameScreen.movePicture(pictureId, 1, isLeft ? x - 50 : x + 50, y, scaleX, DarkPlasma.SIM.standScale, 0, 0, 1);
+        $gameScreen.updatePictures();
       }
       
       $gameScreen.movePicture(pictureId, 1, x, y, scaleX, DarkPlasma.SIM.standScale, 255, 0, wait);
