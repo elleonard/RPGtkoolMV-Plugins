@@ -3,6 +3,8 @@
 // This software is released under the MIT license.
 // http://opensource.org/licenses/mit-license.php
 
+// version 1.0.2
+// ピクチャの消去時に初期化が漏れていた不具合を修正
 // version 1.0.1
 // フェードインがうまく動いていなかった不具合を修正
 
@@ -86,6 +88,14 @@ Game_Interpreter.prototype.command235 = function() {
   var pictureName = DarkPlasma.SIM.idNameMap[this._params[0]];
   DarkPlasma.SIM.nameIdMap[pictureName] = -1;
   DarkPlasma.SIM.idNameMap[this._params[0]] = '';
+  
+  // 表示していたもの初期化
+  if (DarkPlasma.SIM.left === this._params[0]) {
+    DarkPlasma.SIM.left = -1;
+  }
+  if (DarkPlasma.SIM.right === this._params[0]) {
+    DarkPlasma.SIM.right = -1;
+  }
   return DarkPlasma.SIM.command235.call(this);
 };
 
