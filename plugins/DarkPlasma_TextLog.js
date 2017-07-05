@@ -3,6 +3,9 @@
 // This software is released under the MIT license.
 // http://opensource.org/licenses/mit-license.php
 
+// version 1.0.1
+// デフォルトには存在しないメソッドを使用していた不具合を修正
+
 /*:
  * @plugindesc イベントのテキストログを表示する
  * @author DarkPlasma
@@ -321,6 +324,11 @@
         DarkPlasma.TextLog.addTextLog(this.convertEscapeCharacters($gameMessage.allText()), 4);
         DarkPlasma.TextLog.Window_Message_terminateMessage.call(this);
     }
+
+    // YEP_MessageCore.js のネーム表示ウィンドウを使用しているかどうか
+    Window_Message.prototype.hasNameWindow = function() {
+        return this._nameWindow && typeof Window_NameBox !== 'undefined';
+    };
 
     // イベント終了時にそのイベントのログを直前のイベントのログとして保持する
     DarkPlasma.TextLog.Game_Interpreter_terminate = Game_Interpreter.prototype.terminate;
