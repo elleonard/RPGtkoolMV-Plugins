@@ -3,14 +3,21 @@
 // This software is released under the MIT license.
 // http://opensource.org/licenses/mit-license.php
 
+// version 1.1.0
+// - スイッチによるログ記録のON/OFF機能を実装
+// - テキストログを開くボタンの変更機能を実装
+// - マウススクロールでもログのスクロールできる機能を実装
+// - マウス右クリックでもログを閉じることができる機能を実装
+// - マップ移動時にエラーで落ちる不具合を修正
+// - YEP_MainMenuManager.js に対応
 // version 1.0.3
-// 並列イベント終了時にログをリセットしないよう修正
-// ブザーフラグが正しく動作していなかった不具合を修正
+// - 並列イベント終了時にログをリセットしないよう修正
+// - ブザーフラグが正しく動作していなかった不具合を修正
 // version 1.0.2
-// バトルイベント終了時、コモンイベント終了時にログをリセットしないよう修正
-// 長いイベントのログが正常にスクロールできていない不具合を修正
+// - バトルイベント終了時、コモンイベント終了時にログをリセットしないよう修正
+// - 長いイベントのログが正常にスクロールできていない不具合を修正
 // version 1.0.1
-// デフォルトには存在しないメソッドを使用していた不具合を修正
+// - デフォルトには存在しないメソッドを使用していた不具合を修正
 
 /*:
  * @plugindesc イベントのテキストログを表示する
@@ -23,6 +30,14 @@
  * @param Overflow Buzzer
  * @desc テキストログの端より先にスクロールしようとした時、ブザーを鳴らすかどうか
  * @default false
+ * 
+ * @param Disable Logging Switch
+ * @desc 該当スイッチがONの間はログを残さない。0なら常にログを残す
+ * @default 0
+ * 
+ * @param Open Log Key
+ * @desc テキストログを表示するためのボタン
+ * @default pageup
  * 
  * @help
  *  イベントのテキストログを表示します
@@ -39,10 +54,13 @@
  *  YEP_MessageCore.jsに対応しています
  *    ツクール公式から配布されているv1.02は古いので必ず本家から最新を落として利用するようにしてください
  * 
- *  操作方法
+ *  YEP_MainMenuManager.jsに対応しています
+ *    適切に設定すればステータスメニューからログを開くことができます
+ * 
+ *  操作方法（デフォルト）
  *   pageupキー（L2ボタン） : ログを表示する
- *   上下キー : ログをスクロールする
- *   キャンセルキー : ログから抜ける
+ *   上下キー/マウススクロール : ログをスクロールする
+ *   キャンセルキー/右クリック : ログから抜ける
  */
 
 (function () {
@@ -56,6 +74,8 @@
     DarkPlasma.Parameters = PluginManager.parameters(pluginName);
     DarkPlasma.TextLog.maxViewCount = Number(DarkPlasma.Parameters['Max View Count']);
     DarkPlasma.TextLog.overflowBuzzer = String(DarkPlasma.Parameters['Overflow Buzzer']) === 'true';
+    DarkPlasma.TextLog.disableLoggingSwitch = Number(DarkPlasma.Parameters['Disable Logging Switch']);
+    DarkPlasma.TextLog.openLogKey = String(DarkPlasma.Parameters['Open Log Key']);
 
     // 必要変数初期化
     DarkPlasma.TextLog.texts = [];
@@ -147,7 +167,7 @@
     };
 
     // これ以上下にスクロールできない状態かどうかを計算する
-    Window_TextLog.prototype.isCursorMax = function() {
+    Window_TextLog.prototype.isCursorMax = function () {
         var size = DarkPlasma.TextLog.viewTexts.length;
         var height = 0;
         for (var i = this.cursor(); i < size; i++) {
@@ -170,11 +190,11 @@
         if (this.isCursorMovable()) {
             var lastCursor = this.cursor();
             var moved = false;
-            if (Input.isRepeated('down')) {
+            if (Input.isRepeated('down') || TouchInput.wheelY > 0) {
                 this.cursorDown();
                 moved = true;
             }
-            if (Input.isRepeated('up')) {
+            if (Input.isRepeated('up') || TouchInput.wheelY < 0) {
                 this.cursorUp();
                 moved = true;
             }
@@ -200,7 +220,7 @@
     };
 
     Window_TextLog.prototype.isCancelTriggered = function () {
-        return Input.isRepeated('cancel');
+        return Input.isRepeated('cancel') || TouchInput.isCancelled();
     };
 
     Window_TextLog.prototype.update = function () {
@@ -230,7 +250,7 @@
     };
 
     // デフォルトのスクロール位置を計算する
-    Window_TextLog.prototype.calcDefaultCursor = function() {
+    Window_TextLog.prototype.calcDefaultCursor = function () {
         var height = 0;
         var size = DarkPlasma.TextLog.viewTexts.length;
         for (var i = 0; i < size; i++) {
@@ -243,7 +263,7 @@
         return 0;
     };
 
-    Window_TextLog.prototype.lineHeight = function() {
+    Window_TextLog.prototype.lineHeight = function () {
         return this.contents.fontSize + 8;
     };
 
@@ -330,7 +350,7 @@
     };
 
     Scene_Map.prototype.isTextLogCalled = function () {
-        return Input.isTriggered('pageup');
+        return Input.isTriggered(DarkPlasma.TextLog.openLogKey);
     };
 
     Scene_Map.prototype.callTextLog = function () {
@@ -343,16 +363,18 @@
     // メッセージ表示時にログに追加する
     DarkPlasma.TextLog.Window_Message_terminateMessage = Window_Message.prototype.terminateMessage;
     Window_Message.prototype.terminateMessage = function () {
-        // YEP_MessageCore.js のネーム表示ウィンドウに対応
-        if (this.hasNameWindow() && this._nameWindow.active) {
-            DarkPlasma.TextLog.addTextLog(this._nameWindow._text, 1);
+        if (DarkPlasma.TextLog.disableLoggingSwitch === 0 || !$gameSwitches.value(DarkPlasma.TextLog.disableLoggingSwitch)) {
+            // YEP_MessageCore.js のネーム表示ウィンドウに対応
+            if (this.hasNameWindow() && this._nameWindow.active) {
+                DarkPlasma.TextLog.addTextLog(this._nameWindow._text, 1);
+            }
+            DarkPlasma.TextLog.addTextLog(this.convertEscapeCharacters($gameMessage.allText()), 4);
         }
-        DarkPlasma.TextLog.addTextLog(this.convertEscapeCharacters($gameMessage.allText()), 4);
         DarkPlasma.TextLog.Window_Message_terminateMessage.call(this);
     }
 
     // YEP_MessageCore.js のネーム表示ウィンドウを使用しているかどうか
-    Window_Message.prototype.hasNameWindow = function() {
+    Window_Message.prototype.hasNameWindow = function () {
         return this._nameWindow && typeof Window_NameBox !== 'undefined';
     };
 
@@ -374,14 +396,20 @@
     //  B IDなし（eventId === 0）
     // A || B
     // ただし、バトルイベントもeventIdが0のため、厳密にその二者を区別はできない
-    Game_Interpreter.prototype.isCommonOrBattleEvent = function() {
+    Game_Interpreter.prototype.isCommonOrBattleEvent = function () {
         return this._depth > 0 || this._eventId === 0;
     };
 
     // 並列実行イベントかどうか
     // コモンイベントは判定不能のため、isCommonOrBattleEventに任せる
-    Game_Interpreter.prototype.isParallelEvent = function() {
-        return this._eventId !== 0 && $gameMap.event(this._eventId).isTriggerIn([4]);
+    Game_Interpreter.prototype.isParallelEvent = function () {
+        return this._eventId !== 0 && this.isOnCurrentMap() && $gameMap.event(this._eventId).isTriggerIn([4]);
+    };
+
+    // Scene_Menu拡張
+    // YEP_MainMenuManager.jsでコマンド指定する際に実行する
+    Scene_Menu.prototype.commandTextLog = function() {
+        SceneManager.push(Scene_TextLog);
     };
 
 })();
