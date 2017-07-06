@@ -3,6 +3,9 @@
 // This software is released under the MIT license.
 // http://opensource.org/licenses/mit-license.php
 
+// version 1.0.2
+// バトルイベント終了時、コモンイベント終了時にログをリセットしないよう修正
+// 長いイベントのログが正常にスクロールできていない不具合を修正
 // version 1.0.1
 // デフォルトには存在しないメソッドを使用していた不具合を修正
 
@@ -12,7 +15,7 @@
  * 
  * @param Max View Count
  * @desc １画面に表示する最大のメッセージ数
- * @default 14
+ * @default 16
  * 
  * @param Overflow Buzzer
  * @desc テキストログの端より先にスクロールしようとした時、ブザーを鳴らすかどうか
@@ -107,8 +110,7 @@
 
     Window_TextLog.prototype.initialize = function () {
         Window_Base.prototype.initialize.call(this, 0, 0, Graphics.boxWidth, Graphics.boxHeight);
-        this._cursor = this.calcMaxCursor();
-        this._maxCursor = this._cursor;
+        this._cursor = this.calcDefaultCursor();
         this._handlers = {};
         this._maxViewCount = DarkPlasma.TextLog.maxViewCount;
     };
@@ -136,13 +138,27 @@
     };
 
     Window_TextLog.prototype.cursorDown = function () {
-        if (this.cursor() < this._maxCursor) {
+        if (!this.isCursorMax()) {
             this._cursor++;
         }
     };
 
+    // これ以上下にスクロールできない状態かどうかを計算する
+    Window_TextLog.prototype.isCursorMax = function() {
+        var size = DarkPlasma.TextLog.viewTexts.length;
+        var height = 0;
+        for (var i = this.cursor(); i < size; i++) {
+            var text = DarkPlasma.TextLog.viewTexts[i].text;
+            height += this.calcMessageHeight(text);
+            if (height > Graphics.boxHeight - this.lineHeight()) {
+                return false;
+            }
+        }
+        return true;
+    };
+
     Window_TextLog.prototype.cursorUp = function () {
-        if (this.cursor() + 1  > this._maxViewCount) {
+        if (this.cursor() > 0) {
             this._cursor--;
         }
     };
@@ -198,27 +214,34 @@
 
     Window_TextLog.prototype.drawTextLog = function () {
         var height = 0;
-        for (var i = this.cursor() + 1 - this._maxViewCount; i < this.cursor() + 1; i++) {
-            if (i >= 0 && i < DarkPlasma.TextLog.viewTexts.length) {
+        for (var i = this.cursor(); i < this.cursor() + this._maxViewCount; i++) {
+            if (i < DarkPlasma.TextLog.viewTexts.length) {
                 var text = DarkPlasma.TextLog.viewTexts[i].text;
                 this.drawTextEx(text, 0, height);
                 height += this.calcMessageHeight(text);
+                if (height > Graphics.boxHeight) {
+                    break;
+                }
             }
         }
     };
 
-    // テキストの高さから、スクロール最大数を計算する
-    Window_TextLog.prototype.calcMaxCursor = function () {
+    // デフォルトのスクロール位置を計算する
+    Window_TextLog.prototype.calcDefaultCursor = function() {
         var height = 0;
         var size = DarkPlasma.TextLog.viewTexts.length;
         for (var i = 0; i < size; i++) {
             var text = DarkPlasma.TextLog.viewTexts[size - 1 - i].text;
             height += this.calcMessageHeight(text);
-            if (height > Graphics.boxHeight) {
-                return i + 1;
+            if (height > Graphics.boxHeight - this.lineHeight()) {
+                return (i > 0) ? size - i : size - 1;
             }
         }
-        return size - 1;
+        return 0;
+    };
+
+    Window_TextLog.prototype.lineHeight = function() {
+        return this.contents.fontSize + 8;
     };
 
     Window_TextLog.prototype.calcMessageHeight = function (text) {
@@ -333,7 +356,12 @@
     // イベント終了時にそのイベントのログを直前のイベントのログとして保持する
     DarkPlasma.TextLog.Game_Interpreter_terminate = Game_Interpreter.prototype.terminate;
     Game_Interpreter.prototype.terminate = function () {
-        DarkPlasma.TextLog.moveToPrevLog();
+        // 以下の場合はリセットしない
+        //  - バトルイベント終了時
+        //  - コモンイベント終了時
+        if (this._depth === 0 && this._eventId !== 0) {
+            DarkPlasma.TextLog.moveToPrevLog();
+        }
         DarkPlasma.TextLog.Game_Interpreter_terminate.call(this);
     };
 
