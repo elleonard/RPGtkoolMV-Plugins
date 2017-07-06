@@ -3,6 +3,9 @@
 // This software is released under the MIT license.
 // http://opensource.org/licenses/mit-license.php
 
+// version 1.0.3
+// 並列イベント終了時にログをリセットしないよう修正
+// ブザーフラグが正しく動作していなかった不具合を修正
 // version 1.0.2
 // バトルイベント終了時、コモンイベント終了時にログをリセットしないよう修正
 // 長いイベントのログが正常にスクロールできていない不具合を修正
@@ -52,7 +55,7 @@
     // パラメータ取得
     DarkPlasma.Parameters = PluginManager.parameters(pluginName);
     DarkPlasma.TextLog.maxViewCount = Number(DarkPlasma.Parameters['Max View Count']);
-    DarkPlasma.TextLog.overflowBuzzer = Boolean(DarkPlasma.Parameters['Overflow Buzzer']);
+    DarkPlasma.TextLog.overflowBuzzer = String(DarkPlasma.Parameters['Overflow Buzzer']) === 'true';
 
     // 必要変数初期化
     DarkPlasma.TextLog.texts = [];
@@ -359,10 +362,26 @@
         // 以下の場合はリセットしない
         //  - バトルイベント終了時
         //  - コモンイベント終了時
-        if (this._depth === 0 && this._eventId !== 0) {
+        //  - 並列イベント終了時
+        if (!this.isCommonOrBattleEvent() && !this.isParallelEvent()) {
             DarkPlasma.TextLog.moveToPrevLog();
         }
         DarkPlasma.TextLog.Game_Interpreter_terminate.call(this);
+    };
+
+    // コモンイベントは以下の条件を満たす
+    //  A イベント中にcommand117で実行されるコモンイベント（depth > 0）
+    //  B IDなし（eventId === 0）
+    // A || B
+    // ただし、バトルイベントもeventIdが0のため、厳密にその二者を区別はできない
+    Game_Interpreter.prototype.isCommonOrBattleEvent = function() {
+        return this._depth > 0 || this._eventId === 0;
+    };
+
+    // 並列実行イベントかどうか
+    // コモンイベントは判定不能のため、isCommonOrBattleEventに任せる
+    Game_Interpreter.prototype.isParallelEvent = function() {
+        return this._eventId !== 0 && $gameMap.event(this._eventId).isTriggerIn([4]);
     };
 
 })();
