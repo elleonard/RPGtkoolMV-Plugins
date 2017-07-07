@@ -3,6 +3,9 @@
 // This software is released under the MIT license.
 // http://opensource.org/licenses/mit-license.php
 
+// version 1.2.0
+// - プラグインコマンドからテキストログを開く機能を実装
+// - スイッチによるログ表示可能フラグON/OFF機能を実装
 // version 1.1.0
 // - スイッチによるログ記録のON/OFF機能を実装
 // - テキストログを開くボタンの変更機能を実装
@@ -39,6 +42,10 @@
  * @desc テキストログを表示するためのボタン
  * @default pageup
  * 
+ * @param Disable Show Log Switch
+ * @desc 該当スイッチがONの間はログを開かない。0なら常にログを開ける
+ * @defalt 0
+ * 
  * @help
  *  イベントのテキストログを表示します
  * 
@@ -56,6 +63,8 @@
  * 
  *  YEP_MainMenuManager.jsに対応しています
  *    適切に設定すればステータスメニューからログを開くことができます
+ * 
+ *  プラグインコマンド showTextLog から開くことも可能です
  * 
  *  操作方法（デフォルト）
  *   pageupキー（L2ボタン） : ログを表示する
@@ -76,6 +85,7 @@
     DarkPlasma.TextLog.overflowBuzzer = String(DarkPlasma.Parameters['Overflow Buzzer']) === 'true';
     DarkPlasma.TextLog.disableLoggingSwitch = Number(DarkPlasma.Parameters['Disable Logging Switch']);
     DarkPlasma.TextLog.openLogKey = String(DarkPlasma.Parameters['Open Log Key']);
+    DarkPlasma.TextLog.disableShowLogSwitch = Number(DarkPlasma.Parameters['Disable Show Log Switch']);
 
     // 必要変数初期化
     DarkPlasma.TextLog.texts = [];
@@ -340,13 +350,16 @@
     //  A マップを移動中（メニューを開ける間）
     //  B イベント中かつ、メッセージウィンドウが開いている
     //  C 表示すべきログが１行以上ある
-    //  (A || B) && C
+    //  D ログ表示禁止スイッチがOFF
+    //  (A || B) && C && D
     Scene_Map.prototype.isTextLogEnabled = function () {
         return ($gameSystem.isMenuEnabled() ||
             $gameMap.isEventRunning() &&
             !this._messageWindow.isClosed()) &&
             (DarkPlasma.TextLog.texts.length > 0 ||
-                DarkPlasma.TextLog.prevTexts.length > 0);
+                DarkPlasma.TextLog.prevTexts.length > 0) &&
+            (DarkPlasma.TextLog.disableShowLogSwitch === 0 ||
+                !$gameSwitches.value(DarkPlasma.TextLog.disableShowLogSwitch));
     };
 
     Scene_Map.prototype.isTextLogCalled = function () {
@@ -406,9 +419,20 @@
         return this._eventId !== 0 && this.isOnCurrentMap() && $gameMap.event(this._eventId).isTriggerIn([4]);
     };
 
+    // プラグインコマンド showTextLog
+    DarkPlasma.TextLog.Game_Interpreter_pluginCommand = Game_Interpreter.prototype.pluginCommand;
+    Game_Interpreter.prototype.pluginCommand = function (command, args) {
+        DarkPlasma.TextLog.Game_Interpreter_pluginCommand.call(this, command, args);
+        switch ((command || '')) {
+            case 'showTextLog':
+                SceneManager.push(Scene_TextLog);
+                break;
+        }
+    }
+
     // Scene_Menu拡張
     // YEP_MainMenuManager.jsでコマンド指定する際に実行する
-    Scene_Menu.prototype.commandTextLog = function() {
+    Scene_Menu.prototype.commandTextLog = function () {
         SceneManager.push(Scene_TextLog);
     };
 
