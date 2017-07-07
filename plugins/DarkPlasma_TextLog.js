@@ -3,6 +3,9 @@
 // This software is released under the MIT license.
 // http://opensource.org/licenses/mit-license.php
 
+// version 1.2.1
+// - 選択肢でログに空文字列が記録される不具合を修正
+// - ログが空でもメニューやプラグインコマンドから開けた不具合を修正
 // version 1.2.0
 // - プラグインコマンドからテキストログを開く機能を実装
 // - スイッチによるログ表示可能フラグON/OFF機能を実装
@@ -315,6 +318,15 @@
         DarkPlasma.TextLog.texts = [];
     };
 
+    // テキストログを表示できるかどうか
+    // ログが１行以上あり、スイッチで禁止されていない
+    DarkPlasma.TextLog.isTextLogEnabled = function () {
+        return (DarkPlasma.TextLog.texts.length > 0 ||
+                DarkPlasma.TextLog.prevTexts.length > 0) &&
+                (DarkPlasma.TextLog.disableShowLogSwitch === 0 ||
+                !$gameSwitches.value(DarkPlasma.TextLog.disableShowLogSwitch));
+    };
+
     // Scene_Mapの拡張
     DarkPlasma.TextLog.Scene_Map_start = Scene_Map.prototype.start;
     Scene_Map.prototype.start = function () {
@@ -356,10 +368,7 @@
         return ($gameSystem.isMenuEnabled() ||
             $gameMap.isEventRunning() &&
             !this._messageWindow.isClosed()) &&
-            (DarkPlasma.TextLog.texts.length > 0 ||
-                DarkPlasma.TextLog.prevTexts.length > 0) &&
-            (DarkPlasma.TextLog.disableShowLogSwitch === 0 ||
-                !$gameSwitches.value(DarkPlasma.TextLog.disableShowLogSwitch));
+            DarkPlasma.TextLog.isTextLogEnabled();
     };
 
     Scene_Map.prototype.isTextLogCalled = function () {
@@ -376,7 +385,9 @@
     // メッセージ表示時にログに追加する
     DarkPlasma.TextLog.Window_Message_terminateMessage = Window_Message.prototype.terminateMessage;
     Window_Message.prototype.terminateMessage = function () {
-        if (DarkPlasma.TextLog.disableLoggingSwitch === 0 || !$gameSwitches.value(DarkPlasma.TextLog.disableLoggingSwitch)) {
+        if ((DarkPlasma.TextLog.disableLoggingSwitch === 0 || 
+            !$gameSwitches.value(DarkPlasma.TextLog.disableLoggingSwitch)) && 
+            $gameMessage.hasText()) {
             // YEP_MessageCore.js のネーム表示ウィンドウに対応
             if (this.hasNameWindow() && this._nameWindow.active) {
                 DarkPlasma.TextLog.addTextLog(this._nameWindow._text, 1);
@@ -425,7 +436,9 @@
         DarkPlasma.TextLog.Game_Interpreter_pluginCommand.call(this, command, args);
         switch ((command || '')) {
             case 'showTextLog':
-                SceneManager.push(Scene_TextLog);
+                if (DarkPlasma.TextLog.isTextLogEnabled()) {
+                    SceneManager.push(Scene_TextLog);
+                }
                 break;
         }
     }
@@ -433,7 +446,9 @@
     // Scene_Menu拡張
     // YEP_MainMenuManager.jsでコマンド指定する際に実行する
     Scene_Menu.prototype.commandTextLog = function () {
-        SceneManager.push(Scene_TextLog);
+        if (DarkPlasma.TextLog.isTextLogEnabled()) {
+            SceneManager.push(Scene_TextLog);
+        }
     };
 
 })();
