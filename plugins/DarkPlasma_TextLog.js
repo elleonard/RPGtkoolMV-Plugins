@@ -3,6 +3,8 @@
 // This software is released under the MIT license.
 // http://opensource.org/licenses/mit-license.php
 
+// version 1.5.0
+// - マウスドラッグやスワイプでログウィンドウをスクロールする機能のおためし版を実装
 // version 1.4.0
 // - ログウィンドウがスクロール可能な場合にスクロール可能アイコンを表示する機能を実装
 // version 1.3.0
@@ -86,6 +88,9 @@
  *   pageupキー（L2ボタン） : ログを表示する
  *   上下キー/マウススクロール : ログをスクロールする
  *   キャンセルキー/右クリック : ログから抜ける
+ * 
+ *  マウスドラッグやスワイプでもログをスクロールできますが、環境差異に関して未検証なのでおためし版です
+ *  しばらく使われて問題が報告されなければ正式版とします
  */
 
 (function () {
@@ -217,11 +222,11 @@
         if (this.isCursorMovable()) {
             var lastCursor = this.cursor();
             var moved = false;
-            if (Input.isRepeated('down') || TouchInput.wheelY > 0) {
+            if (Input.isRepeated('down') || TouchInput.wheelY > 0 || TouchInput.isDownMoved()) {
                 this.cursorDown();
                 moved = true;
             }
-            if (Input.isRepeated('up') || TouchInput.wheelY < 0) {
+            if (Input.isRepeated('up') || TouchInput.wheelY < 0 || TouchInput.isUpMoved()) {
                 this.cursorUp();
                 moved = true;
             }
@@ -476,6 +481,45 @@
     // Window_MenuCommand拡張
     Window_MenuCommand.prototype.isTextLogEnabled = function () {
         return DarkPlasma.TextLog.isTextLogEnabled();
+    };
+
+    // TouchInput拡張 マウスドラッグ/スワイプ対応
+    DarkPlasma.TextLog.TouchInput_clear = TouchInput.clear;
+    TouchInput.clear = function () {
+        DarkPlasma.TextLog.TouchInput_clear.call(this);
+        this._deltaX = 0;
+        this._deltaY = 0;
+    };
+
+    DarkPlasma.TextLog.TouchInput_update = TouchInput.update;
+    TouchInput.update = function () {
+        DarkPlasma.TextLog.TouchInput_update.call(this);
+        if (!this.isPressed()) {
+            this._deltaX = 0;
+            this._deltaY = 0;
+        }
+    };
+
+    DarkPlasma.TextLog.TouchInput_onMove = TouchInput._onMove;
+    TouchInput._onMove = function (x, y) {
+        if (this._x !== 0) {
+            this._deltaX = x - this._x;
+        }
+        if (this._y !== 0) {
+            this._deltaY = y - this._y;
+        }
+        DarkPlasma.TextLog.TouchInput_onMove.call(this, x, y);
+    };
+
+    // 上下にドラッグ、スワイプしているかどうか
+    // 推し続けた時間の剰余を取ってタイミングを調整しているが
+    // 環境による差異については未検証
+    TouchInput.isUpMoved = function () {
+        return this._deltaY < 0 && this._pressedTime % 10 === 0;
+    };
+
+    TouchInput.isDownMoved = function () {
+        return this._deltaY > 0 && this._pressedTime % 10 === 0;
     };
 
 })();
