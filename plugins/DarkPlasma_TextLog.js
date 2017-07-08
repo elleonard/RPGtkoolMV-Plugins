@@ -3,6 +3,9 @@
 // This software is released under the MIT license.
 // http://opensource.org/licenses/mit-license.php
 
+// version 1.3.0
+// - ログが空の場合にメニューからテキストウィンドウを開こうとするとフリーズする不具合を修正
+// - 空のログウィンドウ表示可否フラグを実装
 // version 1.2.1
 // - 選択肢でログに空文字列が記録される不具合を修正
 // - ログが空でもメニューやプラグインコマンドから開けた不具合を修正
@@ -49,6 +52,10 @@
  * @desc 該当スイッチがONの間はログを開かない。0なら常にログを開ける
  * @defalt 0
  * 
+ * @param Show Log Window Without Text
+ * @desc ログに表示すべきテキストがない場合でもログウィンドウを開く
+ * @default true
+ * 
  * @help
  *  イベントのテキストログを表示します
  * 
@@ -66,6 +73,10 @@
  * 
  *  YEP_MainMenuManager.jsに対応しています
  *    適切に設定すればステータスメニューからログを開くことができます
+ *    設定例：
+ *      Show: true
+ *      Enabled: this.isTextLogEnabled()
+ *      Main Bind: this.commandTextLog.bind(this)
  * 
  *  プラグインコマンド showTextLog から開くことも可能です
  * 
@@ -89,6 +100,7 @@
     DarkPlasma.TextLog.disableLoggingSwitch = Number(DarkPlasma.Parameters['Disable Logging Switch']);
     DarkPlasma.TextLog.openLogKey = String(DarkPlasma.Parameters['Open Log Key']);
     DarkPlasma.TextLog.disableShowLogSwitch = Number(DarkPlasma.Parameters['Disable Show Log Switch']);
+    DarkPlasma.TextLog.showLogWindowWithoutText = String(DarkPlasma.Parameters['Show Log Window Without Text']) !== 'false';
 
     // 必要変数初期化
     DarkPlasma.TextLog.texts = [];
@@ -319,10 +331,14 @@
     };
 
     // テキストログを表示できるかどうか
-    // ログが１行以上あり、スイッチで禁止されていない
+    // A ログが１行以上ある
+    // B 空のログウィンドウを表示するフラグがtrue
+    // C スイッチで禁止されていない
+    // (A || B) && C
     DarkPlasma.TextLog.isTextLogEnabled = function () {
-        return (DarkPlasma.TextLog.texts.length > 0 ||
-                DarkPlasma.TextLog.prevTexts.length > 0) &&
+        return (DarkPlasma.TextLog.showLogWindowWithoutText ||
+                    (DarkPlasma.TextLog.texts.length > 0 ||
+                    DarkPlasma.TextLog.prevTexts.length > 0)) &&
                 (DarkPlasma.TextLog.disableShowLogSwitch === 0 ||
                 !$gameSwitches.value(DarkPlasma.TextLog.disableShowLogSwitch));
     };
@@ -446,9 +462,12 @@
     // Scene_Menu拡張
     // YEP_MainMenuManager.jsでコマンド指定する際に実行する
     Scene_Menu.prototype.commandTextLog = function () {
-        if (DarkPlasma.TextLog.isTextLogEnabled()) {
-            SceneManager.push(Scene_TextLog);
-        }
+        SceneManager.push(Scene_TextLog);
+    };
+
+    // Window_MenuCommand拡張
+    Window_MenuCommand.prototype.isTextLogEnabled = function () {
+        return DarkPlasma.TextLog.isTextLogEnabled();
     };
 
 })();
