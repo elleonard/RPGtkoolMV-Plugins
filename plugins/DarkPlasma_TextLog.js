@@ -3,8 +3,10 @@
 // This software is released under the MIT license.
 // http://opensource.org/licenses/mit-license.php
 
+// version 1.4.0
+// - ログウィンドウがスクロール可能な場合にスクロール可能アイコンを表示する機能を実装
 // version 1.3.0
-// - ログが空の場合にメニューからテキストウィンドウを開こうとするとフリーズする不具合を修正
+// - ログが空の場合にメニューからログウィンドウを開こうとするとフリーズする不具合を修正
 // - 空のログウィンドウ表示可否フラグを実装
 // version 1.2.1
 // - 選択肢でログに空文字列が記録される不具合を修正
@@ -250,9 +252,15 @@
 
     Window_TextLog.prototype.update = function () {
         Window_Base.prototype.update.call(this);
+        this.updateArrows();
         this.processCursorMove();
         this.processHandling();
         this.refresh();
+    };
+
+    Window_TextLog.prototype.updateArrows = function () {
+        this.upArrowVisible = this.cursor() > 0;
+        this.downArrowVisible = !this.isCursorMax();
     };
 
     Window_TextLog.prototype.refresh = function () {
