@@ -1,4 +1,4 @@
-// DarkPlasma_PassiveSkill
+// DarkPlasma_TextLog
 // Copyright (c) 2017 DarkPlasma
 // This software is released under the MIT license.
 // http://opensource.org/licenses/mit-license.php
