@@ -3,6 +3,9 @@
 // This software is released under the MIT license.
 // http://opensource.org/licenses/mit-license.php
 
+// version 1.5.1
+// - 冗長な変数名を修正
+// - パラメータの型を明示
 // version 1.5.0
 // - マウスドラッグやスワイプでログウィンドウをスクロールする機能のおためし版を実装
 // version 1.4.0
@@ -39,26 +42,36 @@
  * @param Max View Count
  * @desc １画面に表示する最大のメッセージ数
  * @default 16
+ * @type number
  * 
  * @param Overflow Buzzer
  * @desc テキストログの端より先にスクロールしようとした時、ブザーを鳴らすかどうか
  * @default false
+ * @type boolean
  * 
  * @param Disable Logging Switch
  * @desc 該当スイッチがONの間はログを残さない。0なら常にログを残す
  * @default 0
+ * @type number
  * 
  * @param Open Log Key
  * @desc テキストログを表示するためのボタン
  * @default pageup
+ * @type select
+ * @option pageup
+ * @option shift
+ * @option control
+ * @option tab
  * 
  * @param Disable Show Log Switch
  * @desc 該当スイッチがONの間はログを開かない。0なら常にログを開ける
  * @defalt 0
+ * @type number
  * 
  * @param Show Log Window Without Text
  * @desc ログに表示すべきテキストがない場合でもログウィンドウを開く
  * @default true
+ * @type boolean
  * 
  * @help
  *  イベントのテキストログを表示します
@@ -97,22 +110,19 @@
     'use strict';
     var pluginName = 'DarkPlasma_TextLog';
 
-    var DarkPlasma = DarkPlasma || {};
-    DarkPlasma.TextLog = DarkPlasma.TextLog || {};
-
     // パラメータ取得
-    DarkPlasma.Parameters = PluginManager.parameters(pluginName);
-    DarkPlasma.TextLog.maxViewCount = Number(DarkPlasma.Parameters['Max View Count']);
-    DarkPlasma.TextLog.overflowBuzzer = String(DarkPlasma.Parameters['Overflow Buzzer']) === 'true';
-    DarkPlasma.TextLog.disableLoggingSwitch = Number(DarkPlasma.Parameters['Disable Logging Switch']);
-    DarkPlasma.TextLog.openLogKey = String(DarkPlasma.Parameters['Open Log Key']);
-    DarkPlasma.TextLog.disableShowLogSwitch = Number(DarkPlasma.Parameters['Disable Show Log Switch']);
-    DarkPlasma.TextLog.showLogWindowWithoutText = String(DarkPlasma.Parameters['Show Log Window Without Text']) !== 'false';
+    var Parameters = PluginManager.parameters(pluginName);
+    var maxViewCount = Number(Parameters['Max View Count']);
+    var overflowBuzzer = String(Parameters['Overflow Buzzer']) === 'true';
+    var disableLoggingSwitch = Number(Parameters['Disable Logging Switch']);
+    var openLogKey = String(Parameters['Open Log Key']);
+    var disableShowLogSwitch = Number(Parameters['Disable Show Log Switch']);
+    var showLogWindowWithoutText = String(Parameters['Show Log Window Without Text']) !== 'false';
 
     // 必要変数初期化
-    DarkPlasma.TextLog.texts = [];
-    DarkPlasma.TextLog.prevTexts = [];
-    DarkPlasma.TextLog.viewTexts = [];
+    var texts = [];
+    var prevTexts = [];
+    var viewTexts = [];
 
     // ログ表示用シーン
     function Scene_TextLog() {
@@ -124,10 +134,10 @@
 
     Scene_TextLog.prototype.initialize = function () {
         Scene_Base.prototype.initialize.call(this);
-        if (DarkPlasma.TextLog.texts.length > 0) {
-            DarkPlasma.TextLog.viewTexts = DarkPlasma.TextLog.texts;
+        if (texts.length > 0) {
+            viewTexts = texts;
         } else {
-            DarkPlasma.TextLog.viewTexts = DarkPlasma.TextLog.prevTexts;
+            viewTexts = prevTexts;
         }
     };
 
@@ -167,7 +177,7 @@
         Window_Base.prototype.initialize.call(this, 0, 0, Graphics.boxWidth, Graphics.boxHeight);
         this._cursor = this.calcDefaultCursor();
         this._handlers = {};
-        this._maxViewCount = DarkPlasma.TextLog.maxViewCount;
+        this._maxViewCount = maxViewCount;
     };
 
     Window_TextLog.prototype.cursor = function () {
@@ -200,10 +210,10 @@
 
     // これ以上下にスクロールできない状態かどうかを計算する
     Window_TextLog.prototype.isCursorMax = function () {
-        var size = DarkPlasma.TextLog.viewTexts.length;
+        var size = viewTexts.length;
         var height = 0;
         for (var i = this.cursor(); i < size; i++) {
-            var text = DarkPlasma.TextLog.viewTexts[i].text;
+            var text = viewTexts[i].text;
             height += this.calcMessageHeight(text);
             if (height > Graphics.boxHeight - this.lineHeight()) {
                 return false;
@@ -230,7 +240,7 @@
                 this.cursorUp();
                 moved = true;
             }
-            if (DarkPlasma.TextLog.overflowBuzzer && moved && lastCursor === this.cursor()) {
+            if (overflowBuzzer && moved && lastCursor === this.cursor()) {
                 SoundManager.playBuzzer();
             }
         }
@@ -276,8 +286,8 @@
     Window_TextLog.prototype.drawTextLog = function () {
         var height = 0;
         for (var i = this.cursor(); i < this.cursor() + this._maxViewCount; i++) {
-            if (i < DarkPlasma.TextLog.viewTexts.length) {
-                var text = DarkPlasma.TextLog.viewTexts[i].text;
+            if (i < viewTexts.length) {
+                var text = viewTexts[i].text;
                 this.drawTextEx(text, 0, height);
                 height += this.calcMessageHeight(text);
                 if (height > Graphics.boxHeight) {
@@ -290,9 +300,9 @@
     // デフォルトのスクロール位置を計算する
     Window_TextLog.prototype.calcDefaultCursor = function () {
         var height = 0;
-        var size = DarkPlasma.TextLog.viewTexts.length;
+        var size = viewTexts.length;
         for (var i = 0; i < size; i++) {
-            var text = DarkPlasma.TextLog.viewTexts[size - 1 - i].text;
+            var text = viewTexts[size - 1 - i].text;
             height += this.calcMessageHeight(text);
             if (height > Graphics.boxHeight - this.lineHeight()) {
                 return (i > 0) ? size - i : size - 1;
@@ -330,17 +340,17 @@
     };
 
     // Window_Message.terminateMessageから呼ぶ
-    DarkPlasma.TextLog.addTextLog = function (text, height) {
+    var addTextLog = function (text, height) {
         var message = {};
         message.text = text;
         message.height = height;
-        DarkPlasma.TextLog.texts.push(message);
+        texts.push(message);
     }
 
-    DarkPlasma.TextLog.moveToPrevLog = function () {
-        DarkPlasma.TextLog.prevTexts =
-            JSON.parse(JSON.stringify(DarkPlasma.TextLog.texts));
-        DarkPlasma.TextLog.texts = [];
+    var moveToPrevLog = function () {
+        prevTexts =
+            JSON.parse(JSON.stringify(texts));
+        texts = [];
     };
 
     // テキストログを表示できるかどうか
@@ -348,30 +358,30 @@
     // B 空のログウィンドウを表示するフラグがtrue
     // C スイッチで禁止されていない
     // (A || B) && C
-    DarkPlasma.TextLog.isTextLogEnabled = function () {
-        return (DarkPlasma.TextLog.showLogWindowWithoutText ||
-                    (DarkPlasma.TextLog.texts.length > 0 ||
-                    DarkPlasma.TextLog.prevTexts.length > 0)) &&
-                (DarkPlasma.TextLog.disableShowLogSwitch === 0 ||
-                !$gameSwitches.value(DarkPlasma.TextLog.disableShowLogSwitch));
+    var isTextLogEnabled = function () {
+        return (showLogWindowWithoutText ||
+                    (texts.length > 0 ||
+                    prevTexts.length > 0)) &&
+                (disableShowLogSwitch === 0 ||
+                !$gameSwitches.value(disableShowLogSwitch));
     };
 
     // Scene_Mapの拡張
-    DarkPlasma.TextLog.Scene_Map_start = Scene_Map.prototype.start;
+    var Scene_Map_start = Scene_Map.prototype.start;
     Scene_Map.prototype.start = function () {
-        DarkPlasma.TextLog.Scene_Map_start.call(this);
+        Scene_Map_start.call(this);
 
         // 呼び出し中フラグの初期化
         this.textLogCalling = false;
     };
 
-    DarkPlasma.TextLog.Scene_Map_update = Scene_Map.prototype.update;
+    var Scene_Map_update = Scene_Map.prototype.update;
     Scene_Map.prototype.update = function () {
         // isSceneChangeOK時はイベント中も含まれるため、特殊な条件で許可する
         if (this.isActive() && !SceneManager.isSceneChanging()) {
             this.updateCallTextLog();
         }
-        DarkPlasma.TextLog.Scene_Map_update.call(this);
+        Scene_Map_update.call(this);
     };
 
     Scene_Map.prototype.updateCallTextLog = function () {
@@ -397,11 +407,11 @@
         return ($gameSystem.isMenuEnabled() ||
             $gameMap.isEventRunning() &&
             !this._messageWindow.isClosed()) &&
-            DarkPlasma.TextLog.isTextLogEnabled();
+            isTextLogEnabled();
     };
 
     Scene_Map.prototype.isTextLogCalled = function () {
-        return Input.isTriggered(DarkPlasma.TextLog.openLogKey);
+        return Input.isTriggered(openLogKey);
     };
 
     Scene_Map.prototype.callTextLog = function () {
@@ -412,18 +422,18 @@
 
     // Window_Messageの拡張
     // メッセージ表示時にログに追加する
-    DarkPlasma.TextLog.Window_Message_terminateMessage = Window_Message.prototype.terminateMessage;
+    var Window_Message_terminateMessage = Window_Message.prototype.terminateMessage;
     Window_Message.prototype.terminateMessage = function () {
-        if ((DarkPlasma.TextLog.disableLoggingSwitch === 0 || 
-            !$gameSwitches.value(DarkPlasma.TextLog.disableLoggingSwitch)) && 
+        if ((disableLoggingSwitch === 0 || 
+            !$gameSwitches.value(disableLoggingSwitch)) && 
             $gameMessage.hasText()) {
             // YEP_MessageCore.js のネーム表示ウィンドウに対応
             if (this.hasNameWindow() && this._nameWindow.active) {
-                DarkPlasma.TextLog.addTextLog(this._nameWindow._text, 1);
+                addTextLog(this._nameWindow._text, 1);
             }
-            DarkPlasma.TextLog.addTextLog(this.convertEscapeCharacters($gameMessage.allText()), 4);
+            addTextLog(this.convertEscapeCharacters($gameMessage.allText()), 4);
         }
-        DarkPlasma.TextLog.Window_Message_terminateMessage.call(this);
+        Window_Message_terminateMessage.call(this);
     }
 
     // YEP_MessageCore.js のネーム表示ウィンドウを使用しているかどうか
@@ -432,16 +442,16 @@
     };
 
     // イベント終了時にそのイベントのログを直前のイベントのログとして保持する
-    DarkPlasma.TextLog.Game_Interpreter_terminate = Game_Interpreter.prototype.terminate;
+    var Game_Interpreter_terminate = Game_Interpreter.prototype.terminate;
     Game_Interpreter.prototype.terminate = function () {
         // 以下の場合はリセットしない
         //  - バトルイベント終了時
         //  - コモンイベント終了時
         //  - 並列イベント終了時
         if (!this.isCommonOrBattleEvent() && !this.isParallelEvent()) {
-            DarkPlasma.TextLog.moveToPrevLog();
+            moveToPrevLog();
         }
-        DarkPlasma.TextLog.Game_Interpreter_terminate.call(this);
+        Game_Interpreter_terminate.call(this);
     };
 
     // コモンイベントは以下の条件を満たす
@@ -460,12 +470,12 @@
     };
 
     // プラグインコマンド showTextLog
-    DarkPlasma.TextLog.Game_Interpreter_pluginCommand = Game_Interpreter.prototype.pluginCommand;
+    var Game_Interpreter_pluginCommand = Game_Interpreter.prototype.pluginCommand;
     Game_Interpreter.prototype.pluginCommand = function (command, args) {
-        DarkPlasma.TextLog.Game_Interpreter_pluginCommand.call(this, command, args);
+        Game_Interpreter_pluginCommand.call(this, command, args);
         switch ((command || '')) {
             case 'showTextLog':
-                if (DarkPlasma.TextLog.isTextLogEnabled()) {
+                if (isTextLogEnabled()) {
                     SceneManager.push(Scene_TextLog);
                 }
                 break;
@@ -480,27 +490,27 @@
 
     // Window_MenuCommand拡張
     Window_MenuCommand.prototype.isTextLogEnabled = function () {
-        return DarkPlasma.TextLog.isTextLogEnabled();
+        return isTextLogEnabled();
     };
 
     // TouchInput拡張 マウスドラッグ/スワイプ対応
-    DarkPlasma.TextLog.TouchInput_clear = TouchInput.clear;
+    var TouchInput_clear = TouchInput.clear;
     TouchInput.clear = function () {
-        DarkPlasma.TextLog.TouchInput_clear.call(this);
+        TouchInput_clear.call(this);
         this._deltaX = 0;
         this._deltaY = 0;
     };
 
-    DarkPlasma.TextLog.TouchInput_update = TouchInput.update;
+    var TouchInput_update = TouchInput.update;
     TouchInput.update = function () {
-        DarkPlasma.TextLog.TouchInput_update.call(this);
+        TouchInput_update.call(this);
         if (!this.isPressed()) {
             this._deltaX = 0;
             this._deltaY = 0;
         }
     };
 
-    DarkPlasma.TextLog.TouchInput_onMove = TouchInput._onMove;
+    var TouchInput_onMove = TouchInput._onMove;
     TouchInput._onMove = function (x, y) {
         if (this._x !== 0) {
             this._deltaX = x - this._x;
@@ -508,7 +518,7 @@
         if (this._y !== 0) {
             this._deltaY = y - this._y;
         }
-        DarkPlasma.TextLog.TouchInput_onMove.call(this, x, y);
+        TouchInput_onMove.call(this, x, y);
     };
 
     // 上下にドラッグ、スワイプしているかどうか

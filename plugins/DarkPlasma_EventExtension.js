@@ -3,8 +3,12 @@
 // This software is released under the MIT license.
 // http://opensource.org/licenses/mit-license.php
 
+// version 1.0.1
+// - 冗長な変数名を修正
+
 /*:
  * @plugindesc イベントを拡張する
+ * @author DarkPlasma
  * 
  * @help イベントのスクリプトで下記メソッドを利用できるようにする
  * 
@@ -19,20 +23,17 @@
     'user strict';
     var pluginName = 'DarkPlasma_EventExtension';
 
-    var DarkPlasma = DarkPlasma || {};
-    DarkPlasma.EventExtension = DarkPlasma.EventExtension || {};
-
-    DarkPlasma.EventExtension.DataManager_makeEmptyMap = DataManager.makeEmptyMap;
+    var DataManager_makeEmptyMap = DataManager.makeEmptyMap;
     DataManager.makeEmptyMap = function () {
-        DarkPlasma.EventExtension.DataManager_makeEmptyMap.call(this);
+        DataManager_makeEmptyMap.call(this);
 
         // イベント名とイベントIDの対応
         $dataMap.namedEvents = {};
     };
 
-    DarkPlasma.EventExtension.DataManager_onLoad = DataManager.onLoad;
+    var DataManager_onLoad = DataManager.onLoad;
     DataManager.onLoad = function () {
-        DarkPlasma.EventExtension.DataManager_onLoad.call(this);
+        DataManager_onLoad.call(this);
 
         // イベント名とイベントIDの対応
         if (object === $dataMap && Array.isArray(array)) {
