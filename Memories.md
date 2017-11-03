@@ -2,7 +2,7 @@
 
 * DarkPlasma_Memories.js を動作させるには、ツクールMVプロジェクトのdataディレクトリ下にMemories.jsonを配置する必要がある
 * Memories.jsonの記入方法について記す
-* もし記入方法がわからない場合は[サンプル](https://github.com/elleonard/RPGtkoolMV-Plugins/blob/master/sample/Memories.json)を参考にしてほしい
+* もし記入方法がわからない場合は[サンプル](https://github.com/elleonard/RPGtkoolMV-Plugins/blob/master/plugins/sample/Memories.json)を参考にしてほしい
 
 ## 記述の仕様
 
