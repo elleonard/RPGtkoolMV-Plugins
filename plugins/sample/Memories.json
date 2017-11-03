@@ -1,0 +1,240 @@
+{
+  "tags": [
+    {
+      "text": "サキ",
+      "symbol": "saki"
+    },
+    {
+      "text": "ミノリ",
+      "symbol": "minori"
+    },
+    {
+      "text": "リリー",
+      "symbol": "lily"
+    },
+    {
+      "text": "ティアリス",
+      "symbol": "tearis"
+    },
+    {
+      "text": "ナディ",
+      "symbol": "nadi"
+    }
+  ],
+  "scenes": [
+    {
+      "title": "オープニング",
+      "thumbnail": "still_オープニング1-1_R_thumbnail",
+      "switch": 43,
+      "commonEvent": 2,
+      "isAdult": true,
+      "tags": ["saki", "lily"]
+    },
+    {
+      "title": "幼馴染のスキンシップ",
+      "thumbnail": "still_幼馴染のスキンシップ1-1_R_thumbnail",
+      "switch": 45,
+      "commonEvent": 18,
+      "isAdult": false,
+      "tags": ["saki", "minori"]
+    },
+    {
+      "title": "ナディ陵辱1",
+      "thumbnail": "still_ナディ陵辱1-1-1_R_thumbnail",
+      "switch": 42,
+      "commonEvent": 3,
+      "isAdult": true,
+      "tags": ["saki", "lily", "nadi"]
+    },
+    {
+      "title": "明日も見られるかな",
+      "thumbnail": "still_明日も見られるかな1_R_thumbnail",
+      "switch": 46,
+      "commonEvent": 19,
+      "isAdult": false,
+      "tags": ["saki", "lily"]
+    },
+    {
+      "title": "ミノリの髪を梳くサキ",
+      "thumbnail": "still_ミノリの髪を梳くサキ1-1_R_thumbnail",
+      "switch": 102,
+      "commonEvent": 20,
+      "isAdult": false,
+      "tags": ["saki", "minori"]
+    },
+    {
+      "title": "サキ＆リリー陵辱1",
+      "thumbnail": "still_サキリリー陵辱1-1-1-1_R_thumbnail",
+      "switch": 101,
+      "commonEvent": 17,
+      "isAdult": true,
+      "tags": ["saki", "lily"]
+    },
+    {
+      "title": "ミノリ編敗北",
+      "thumbnail": "still_ミノリ正常位1-1_R_thumbnail",
+      "switch": 181,
+      "commonEvent": 24,
+      "isAdult": true,
+      "tags": ["saki", "minori", "lily", "tearis"]
+    }
+  ],
+  "cgs": [
+    {
+      "title": "オープニング",
+      "thumbnail": "still_オープニング1-1_R_thumbnail",
+      "pictures": {
+        "prefix": "still_オープニング",
+        "indexes": ["1-1", "1-2"],
+        "suffix": "_R"
+      },
+      "switch": 43,
+      "isAdult": true,
+      "tags": ["saki", "lily"]
+    },
+    {
+      "title": "幼馴染のスキンシップ",
+      "thumbnail": "still_幼馴染のスキンシップ1-1_R_thumbnail",
+      "pictures": {
+        "prefix": "still_幼馴染のスキンシップ",
+        "indexes": ["1-1", "1-2", "2-1", "2-2", "2-3", "2-4", "3-1", "3-2", "3-3"],
+        "suffix": "_R"
+      },
+      "switch": 45,
+      "isAdult": false,
+      "tags": ["saki", "minori"]
+    },
+    {
+      "title": "その身を呈して",
+      "thumbnail": "still_ナディ陵辱1-1-1_R_thumbnail",
+      "pictures": {
+        "prefix": "still_ナディ陵辱",
+        "indexes": ["1-1-1", "1-1-2", "1-2-1", "1-2-2", "1-3-1", "1-4-1", "1-5-1", "1-5-1-2", "1-5-1-3", "1-5-2", "1-5-3", "1-6-1", "1-7-1", "1-8-1", "1-8-2", "1-9-1", "1-10-1"],
+        "suffix": "_R"
+      },
+      "switch": 42,
+      "isAdult": true,
+      "tags": ["nadi"]
+    },
+    {
+      "title": "祈り届かず",
+      "thumbnail": "still_ナディ陵辱2-1_R_thumbnail",
+      "pictures": {
+        "prefix": "still_ナディ陵辱",
+        "indexes": ["2-1", "2-2", "2-3", "2-4"],
+        "suffix": "_R"
+      },
+      "switch": 42,
+      "isAdult": true,
+      "tags": ["saki", "lily", "nadi"]
+    },
+    {
+      "title": "祈りの残骸",
+      "thumbnail": "still_ナディ陵辱3_R_thumbnail",
+      "pictures": {
+        "prefix": "still_ナディ陵辱",
+        "indexes": ["3"],
+        "suffix": "_R"
+      },
+      "switch": 42,
+      "isAdult": true,
+      "tags": ["nadi"]
+    },
+    {
+      "title": "明日も見られるかな",
+      "thumbnail": "still_明日も見られるかな1_R_thumbnail",
+      "pictures": {
+        "prefix": "still_明日も見られるかな",
+        "indexes": ["1", "2"],
+        "suffix": "_R"
+      },
+      "switch": 46,
+      "isAdult": false,
+      "tags": ["saki", "lily"]
+    },
+    {
+      "title": "思い出話をしながら",
+      "thumbnail": "still_ミノリの髪を梳くサキ1-1_R_thumbnail",
+      "pictures": {
+        "prefix": "still_ミノリの髪を梳くサキ",
+        "indexes": ["1-1", "1-2", "1-3", "1-4", "1-5", "1-6", "1-7"],
+        "suffix": "_R"
+      },
+      "switch": 102,
+      "isAdult": false,
+      "tags": ["saki", "minori"]
+    },
+    {
+      "title": "あの頃は逆だった",
+      "thumbnail": "still_ミノリの髪を梳くサキ_past_R_thumbnail",
+      "pictures": {
+        "prefix": "still_ミノリの髪を梳くサキ",
+        "indexes": ["_past"],
+        "suffix": "_R"
+      },
+      "switch": 102,
+      "isAdult": false,
+      "tags": ["saki", "minori"]
+    },
+    {
+      "title": "目の前で散る百合",
+      "thumbnail": "still_サキリリー陵辱1-1-1-1_R_thumbnail",
+      "pictures": {
+        "prefix": "still_サキリリー陵辱",
+        "indexes": ["1-1-1-1", "1-1-1-2", "1-2-1", "1-2-2", "1-2-3", "1-3-1", "1-3-2", "1-4-1", "1-5-1", "1-5-3", "1-5-4", "1-5-5", "1-5-6"],
+        "suffix": "_R"
+      },
+      "switch": 101,
+      "isAdult": true,
+      "tags": ["saki", "lily"]
+    },
+    {
+      "title": "ミノリ手コキ",
+      "thumbnail": "still_ミノリ手コキ5-1_R_thumbnail",
+      "pictures": {
+        "prefix": "still_ミノリ手コキ",
+        "indexes": ["1-1", "2-1", "3-1", "3-2-1-1", "3-2-1-2", "3-2-2", "3-3", "4-1", "5-1", "5-2", "6-1", "6-2", "6-3"],
+        "suffix": "_R"
+      },
+      "switch": 181,
+      "isAdult": true,
+      "tags": ["minori"]
+    },
+    {
+      "title": "ミノリ正常位",
+      "thumbnail": "still_ミノリ正常位1-1_R_thumbnail",
+      "pictures": {
+        "prefix": "still_ミノリ正常位",
+        "indexes": ["1-1", "2-1", "3-1", "3-2", "3-3", "3-4", "3-6", "3-7"],
+        "suffix": "_R"
+      },
+      "switch": 181,
+      "isAdult": true,
+      "tags": ["minori"]
+    },
+    {
+      "title": "ティアリス松葉崩し",
+      "thumbnail": "still_ティアリス松葉くずし1_R_thumbnail",
+      "pictures": {
+        "prefix": "still_ティアリス松葉くずし",
+        "indexes": ["1", "2", "3", "4"],
+        "suffix": "_R"
+      },
+      "switch": 181,
+      "isAdult": true,
+      "tags": ["tearis"]
+    },
+    {
+      "title": "覚めぬ悪夢に堕ちる眠り",
+      "thumbnail": "still_サキリリー睡姦1_R_thumbnail",
+      "pictures": {
+        "prefix": "still_サキリリー睡姦",
+        "indexes": ["1", "2", "3", "4", "5"],
+        "suffix": "_R"
+      },
+      "switch": 181,
+      "isAdult": true,
+      "tags": ["saki", "lily"]
+    }
+  ]
+}
