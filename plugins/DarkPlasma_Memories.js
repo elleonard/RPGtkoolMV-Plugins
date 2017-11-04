@@ -4,6 +4,9 @@
 // http://opensource.org/licenses/mit-license.php
 
 /**
+ * version 1.0.1
+ *  - キャンセルキーで回想モードから抜けられるように
+ *  - コモンイベントが終わると強制的に回想モードになる不具合の修正
  * version 1.0.0
  *  - 公開
  */
@@ -96,6 +99,9 @@ var $dataMemories = null;
   var DEFAULT_TAG = 'all';
   var BACK_TAG = 'back';
 
+  /* 回想モードかどうか */
+  var isMemories = false;
+
   var settings = {
     "bgm": {
       "name": String(pluginParameters['Mode BGM File']),
@@ -154,6 +160,7 @@ var $dataMemories = null;
     $dataMemories.tags.forEach(function (tag) {
       this._commandWindow.setHandler(tag.symbol, this.commandTag.bind(this));
     }, this);
+    this._commandWindow.setHandler('cancel', this.goBackToTitle.bind(this));
     this._commandWindow.setHandler(BACK_TAG, this.goBackToTitle.bind(this));
     this._commandWindow.setHandler('toggle_mode', this.commandMode.bind(this));
     this.addWindow(this._commandWindow);
@@ -199,6 +206,7 @@ var $dataMemories = null;
     this._progressWindow.refresh();
     this._listWindow.refresh();
     AudioManager.playBgm(settings.bgm);
+    isMemories = true;
 
     /**
      * 回想から戻ってきた場合、カーソルを復元する
@@ -221,6 +229,7 @@ var $dataMemories = null;
 
   Scene_Memories.prototype.goBackToTitle = function () {
     this.resetCursor();
+    isMemories = false;
     SceneManager.goto(Scene_Title);
   };
 
@@ -340,7 +349,7 @@ var $dataMemories = null;
    */
   var _Game_Interpreter_command118 = Game_Interpreter.prototype.command118;
   Game_Interpreter.prototype.command118 = function () {
-    if (this._params[0] === settings.terminateLabel) {
+    if (this._params[0] === settings.terminateLabel && isMemories) {
       SceneManager.goto(Scene_Memories);
     }
     return _Game_Interpreter_command118.call(this);
