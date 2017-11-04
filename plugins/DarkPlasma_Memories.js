@@ -4,6 +4,8 @@
 // http://opensource.org/licenses/mit-license.php
 
 /**
+ * version 1.0.2
+ *  - 未開放シーンを閲覧できる不具合の修正
  * version 1.0.1
  *  - キャンセルキーで回想モードから抜けられるように
  *  - コモンイベントが終わると強制的に回想モードになる不具合の修正
@@ -668,6 +670,10 @@ var $dataMemories = null;
     return this._data ? this._data.filter(function (memory) {
       return this.isEnabled(memory);
     }, this).length : 0;
+  };
+
+  Window_MemoryList.prototype.isCurrentItemEnabled = function () {
+    return this.isEnabled(this._data[this.index()]);
   };
 
   Window_MemoryList.prototype.isEnabled = function (memory) {
