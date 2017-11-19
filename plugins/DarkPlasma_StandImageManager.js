@@ -3,10 +3,14 @@
 // This software is released under the MIT license.
 // http://opensource.org/licenses/mit-license.php
 
-// version 1.0.2
-// ピクチャの消去時に初期化が漏れていた不具合を修正
-// version 1.0.1
-// フェードインがうまく動いていなかった不具合を修正
+/*
+ * version 1.1.0
+ *  - hideAllStandコマンドを追加
+ * version 1.0.2
+ *  - ピクチャの消去時に初期化が漏れていた不具合を修正
+ * version 1.0.1
+ *  - フェードインがうまく動いていなかった不具合を修正
+*/
 
 var Imported = Imported || {};
 Imported.DarkPlasma_StandImageManager = true;
@@ -44,8 +48,13 @@ DarkPlasma.SIM = DarkPlasma.SIM || {};
  * イベント開始時に「ピクチャの表示」で透明なまま立ち絵を読み込んでおき、
  * 立ち絵を表示したいときにプラグインコマンド showStand を実行します
  * 立ち絵を非表示にしたいときにはプラグインコマンド hideStand を実行します
+ * 
+ * コマンド説明:
+ * showStand: 指定した名前の立ち絵を表示します
+ * hideStand: 指定した名前の立ち絵を非表示にします
+ * hideAllStand: すべての立ち絵を非表示にします
  *
- * 記述例：
+ * 記述例:
  * showStand 立ち絵1 right reverse fade
  * （ピクチャファイル 立ち絵1 を右側に反転して、フェードイン表示させる）
  *
@@ -158,7 +167,25 @@ Game_Interpreter.prototype.pluginCommand = function (command, args) {
       }
       
       // 立ち絵非表示
-      $gameScreen.movePicture(pictureId, 1, 0, 0, 100, 100, 0, 0, 1);
+      this.hideStandImage(pictureId);
+      break;
+    case 'hideAllStand':
+      if (DarkPlasma.SIM.left != -1) {
+        this.hideStandImage(DarkPlasma.SIM.left);
+        DarkPlasma.SIM.left = -1;
+      }
+      if (DarkPlasma.SIM.right != -1) {
+        this.hideStandImage(DarkPlasma.SIM.right);
+        DarkPlasma.SIM.right = -1;
+      }
       break;
   }
+
+  /**
+   * 指定したIDのピクチャファイルを非表示にする
+   * @param pictureId number
+   */
+  Game_Interpreter.prototype.hideStandImage = function(pictureId) {
+    $gameScreen.movePicture(pictureId, 1, 0, 0, 100, 100, 0, 0, 1);
+  };
 };
