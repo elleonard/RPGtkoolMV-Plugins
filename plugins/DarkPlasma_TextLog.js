@@ -38,6 +38,7 @@
 /*:
  * @plugindesc イベントのテキストログを表示する
  * @author DarkPlasma
+ * @license MIT
  * 
  * @param Max View Count
  * @desc １画面に表示する最大のメッセージ数

@@ -9,6 +9,7 @@
 /*:
  * @plugindesc イベントを拡張する
  * @author DarkPlasma
+ * @license MIT
  * 
  * @help イベントのスクリプトで下記メソッドを利用できるようにする
  * 
