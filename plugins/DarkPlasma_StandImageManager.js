@@ -12,15 +12,10 @@
  *  - フェードインがうまく動いていなかった不具合を修正
 */
 
-var Imported = Imported || {};
-Imported.DarkPlasma_StandImageManager = true;
-
-var DarkPlasma = DarkPlasma || {};
-DarkPlasma.SIM = DarkPlasma.SIM || {};
-
 /*:
  * @plugindesc 立ち絵管理/切り替えを楽にするプラグイン
  * @author DarkPlasma
+ * @license MIT
  *
  * @param Left X
  * @desc 左側立ち絵のX座標
@@ -64,6 +59,12 @@ DarkPlasma.SIM = DarkPlasma.SIM || {};
  * hideStand 立ち絵3
  * （ピクチャファイル 立ち絵3 を非表示にする）
  */
+
+var Imported = Imported || {};
+Imported.DarkPlasma_StandImageManager = true;
+
+var DarkPlasma = DarkPlasma || {};
+DarkPlasma.SIM = DarkPlasma.SIM || {};
 
 // パラメータ読み込み
 DarkPlasma.Parameters = PluginManager.parameters('DarkPlasma_StandImageManager');

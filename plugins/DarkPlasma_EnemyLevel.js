@@ -6,6 +6,7 @@
 /*:
  * @plugindesc 敵にレベルを設定できるようにする
  * @author DarkPlasma
+ * @license MIT
  * 
  * @help 
  * 敵キャラにレベルを設定できるようになります

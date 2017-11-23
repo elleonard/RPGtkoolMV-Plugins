@@ -11,6 +11,7 @@
 /*:
  * @plugindesc 隊列並び替え系プラグインコマンド
  * @author DarkPlasma
+ * @license MIT
  * 
  * @param Reset Leader When Event Ending
  * @desc イベント終了時にリーダーをイベント開始時のリーダーに戻す（パーティにいる場合のみ）

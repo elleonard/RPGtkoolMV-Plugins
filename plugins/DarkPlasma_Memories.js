@@ -17,6 +17,8 @@
  * @plugindesc シーン回想 CG閲覧
  * @author DarkPlasma
  * 
+ * @license MIT
+ * 
  * @help
  * タイトルメニューに回想シーンリストを追加します
  * 回想シーンの内容は data/Memories.json に記入してください

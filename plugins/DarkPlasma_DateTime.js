@@ -3,15 +3,11 @@
 // This software is released under the MIT license.
 // http://opensource.org/licenses/mit-license.php
 
-var Imported = Imported || {};
-Imported.DarkPlasma_DateTime = true;
-
-var DarkPlasma = DarkPlasma || {};
-DarkPlasma.DateTime = DarkPlasma.DateTime || {};
 
 /*:
  * @plugindesc スクリプト呼び出しで日時を簡単に扱う
  * @author DarkPlasma
+ * @license MIT
  *
  * @help
  * このスクリプトにパラメータ設定はありません
@@ -23,6 +19,12 @@ DarkPlasma.DateTime = DarkPlasma.DateTime || {};
  *  DarkPlasma.DateTime.isTodaysDate('12/25')         : 12/25の間のみtrue
  *  DarkPlasma.DateTime.isTodaysDay('水')             : 水曜日のみtrue
  */
+
+ var Imported = Imported || {};
+Imported.DarkPlasma_DateTime = true;
+
+var DarkPlasma = DarkPlasma || {};
+DarkPlasma.DateTime = DarkPlasma.DateTime || {};
 
 // 現在時刻がdateString1とdateString2の間かどうか
 // 引数はjsが日時としてパースできる形式
