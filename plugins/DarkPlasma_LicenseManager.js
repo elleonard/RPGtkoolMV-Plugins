@@ -3,6 +3,11 @@
 // This software is released under the MIT license.
 // http://opensource.org/licenses/mit-license.php
 
+/**
+ * version 1.0.0
+ *  - 公開
+ */
+
 /*:
  * 確実にライセンス情報を読み取るための記述例:
  * @license MIT
