@@ -4,6 +4,7 @@
 // http://opensource.org/licenses/mit-license.php
 
 /**
+ * 2018/01/07 1.0.1 他の語句を含む語句がハイライトされない不具合の修正
  * 2018/01/01 1.0.0 公開
  */
 
@@ -43,14 +44,25 @@
   var highlightSettings = JSON.parse(pluginParameters['Highlight Words'])
     .map(function (e) { return JSON.parse(e); }, this);
 
+  // ハイライト語句と色の対応
+  var highlightColors = {};
+  highlightSettings.forEach(function (highlight) {
+    highlightColors[highlight.word] = highlight.color;
+  }, this);
+  // 語句検索用正規表現
+  var highlightRegexp = new RegExp(
+    "(" + highlightSettings.map(function (highlight) { return highlight.word; }, this).join("|") + ")",
+    "gi"
+  );
+
   var _Window_Message_convertEscapeCharacters = Window_Message.prototype.convertEscapeCharacters;
   Window_Message.prototype.convertEscapeCharacters = function (text) {
     text = _Window_Message_convertEscapeCharacters.call(this, text);
 
     // オートハイライト
-    highlightSettings.forEach(function (highlight) {
-      text = text.replace(highlight.word, "\x1bC["+highlight.color+"]"+highlight.word+"\x1bC[0]");
-    }, this);
+    text = text.replace(highlightRegexp, function (match) {
+      return "\x1bC[" + highlightColors[match] + "]" + match + "\x1bC[0]";
+    });
     return text;
   };
 })();
