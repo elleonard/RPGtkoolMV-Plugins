@@ -1,4 +1,4 @@
-// DarkPlasma_Memories
+// DarkPlasma_HelpItem
 // Copyright (c) 2018 DarkPlasma
 // This software is released under the MIT license.
 // http://opensource.org/licenses/mit-license.php
