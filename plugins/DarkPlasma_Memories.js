@@ -4,6 +4,8 @@
 // http://opensource.org/licenses/mit-license.php
 
 /**
+ * version 1.0.3
+ *  - ブラウザでプレイするとシーン一覧が点滅する不具合の修正
  * version 1.0.2
  *  - 未開放シーンを閲覧できる不具合の修正
  * version 1.0.1
@@ -591,6 +593,7 @@ var $dataMemories = null;
     this._waiting = false;
     this.getSwitches();
 
+    this.createContents();
     this.refresh();
     this.select(0);
   };
@@ -749,7 +752,9 @@ var $dataMemories = null;
 
   Window_MemoryList.prototype.refresh = function () {
     this.makeItemList();
-    this.createContents();
+    if(this.contents) {
+      this.contents.clear();
+    }
     this.drawAllItems();
     if (this._progressWindow) {
       this._progressWindow.refresh();
