@@ -4,6 +4,8 @@
 // http://opensource.org/licenses/mit-license.php
 
 /**
+ * version 1.0.1
+ *  - 表示すべきプラグインがすべて除外されている著者が表示される不具合の修正
  * version 1.0.0
  *  - 公開
  */
@@ -160,7 +162,7 @@ var $dataLicense = null;
   var enableOutputLicenseMenu = String(pluginParameters['Enable Output License Menu']) === "true";
   var licenseMenuOnTitle = String(pluginParameters['License Menu On Title'] !== "false");
 
-  // licenseData[] = {
+  // pluginData[] = {
   //   "pluginName": "pluginName",
   //   "author": "author",
   //   "copyright": "Copyright (c) YYYY author",
@@ -829,11 +831,14 @@ var $dataLicense = null;
   };
 
   /**
-   * licenseData から著者リストを取得する
+   * pluginData から著者リストを取得する
    */
   var getAuthorList = function () {
-    return pluginData.map(function (license) {
-      return license.author != null ? license.author : "?";
+    return pluginData.filter(function (plugin) {
+      // 除外されたプラグインは対象外
+      return !plugin.excluded;
+    }, this).map(function (plugin) {
+      return plugin.author != null ? plugin.author : "?";
     }, this).filter(function (x, i, self) {
       return self.indexOf(x) === i;
     }, this);
