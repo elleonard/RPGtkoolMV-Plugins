@@ -74,6 +74,10 @@ js/pluginsフォルダを暗号化したりパッキングして配布する場�
 data/Memories.json に回想用のデータを記述して利用してください
 sample/Memories.json にサンプル用のデータが載せてあります
 
+## DarkPlasma_ShutdownMenu.js
+
+タイトルメニュー及びゲーム終了メニューにシャットダウンの項目を追加します
+
 ## DarkPlasma_StandImageManager.js
 
 立ち絵を1枚絵で用意する人向けの立ち絵表示プラグイン
