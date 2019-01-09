@@ -4,6 +4,8 @@
 // http://opensource.org/licenses/mit-license.php
 
 /**
+ * version 1.1.0
+ *  - 回想モードのウィンドウカラーを設定項目に追加
  * version 1.0.3
  *  - ブラウザでプレイするとシーン一覧が点滅する不具合の修正
  * version 1.0.2
@@ -94,6 +96,11 @@
  * @default 500
  * @type number
  * @min 0
+ * 
+ * @param Window Tone
+ * @desc 改装モードのウィンドウの色
+ * @default ["0","0","100"]
+ * @type number[]
  */
 
 var $dataMemories = null;
@@ -123,6 +130,8 @@ var $dataMemories = null;
     "terminateLabel": String(pluginParameters['Terminate Label']),
     "waitAfterMemory": Number(pluginParameters['Wait After Memory'])
   };
+
+  var windowTone = JSON.parse(pluginParameters['Window Tone']).map(function(tone){ return Number(tone); });
 
   /**
    * 回想から戻った時用のカーソル記憶
@@ -415,6 +424,10 @@ var $dataMemories = null;
     }
   };
 
+  Window_MemoriesCommand.prototype.updateTone = function () {
+    this.setTone(windowTone[0], windowTone[1], windowTone[2]);
+  };
+
   /**
    * モード選択ウィンドウ
    */
@@ -480,6 +493,10 @@ var $dataMemories = null;
     }
   };
 
+  Window_MemoriesMode.prototype.updateTone = function () {
+    this.setTone(windowTone[0], windowTone[1], windowTone[2]);
+  };
+
   /**
    * タイトル表示ウィンドウ
    */
@@ -527,6 +544,10 @@ var $dataMemories = null;
     }
   };
 
+  Window_MemoryTitle.prototype.updateTone = function () {
+    this.setTone(windowTone[0], windowTone[1], windowTone[2]);
+  };
+
   /**
    * 回収率表示ウィンドウ
    */
@@ -567,6 +588,10 @@ var $dataMemories = null;
       this.contents.clear();
       this.drawProgress();
     }
+  };
+
+  Window_MemoriesProgress.prototype.updateTone = function () {
+    this.setTone(windowTone[0], windowTone[1], windowTone[2]);
   };
 
   /**
@@ -759,6 +784,10 @@ var $dataMemories = null;
     if (this._progressWindow) {
       this._progressWindow.refresh();
     }
+  };
+
+  Window_MemoryList.prototype.updateTone = function () {
+    this.setTone(windowTone[0], windowTone[1], windowTone[2]);
   };
 
   /**

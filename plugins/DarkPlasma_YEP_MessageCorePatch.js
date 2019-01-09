@@ -3,6 +3,8 @@
 // This software is released under the MIT license.
 // http://opensource.org/licenses/mit-license.php
 
+// 1.0.1 2018/10/12 戦闘開始時に一瞬だけ謎のウィンドウが表示されるバグを修正
+
 /*:
  * @plugindesc YEP_MessageCoreのバグを修正する
  * @author DarkPlasma
@@ -23,9 +25,6 @@
       this._messageWindow._nameWindow.visible = false;
     }
     _SceneMap_snapForBattleBackground.call(this);
-    if (this.hasNameWindow()) {
-      this._messageWindow._nameWindow.visible = true;
-    }
   };
 
   Scene_Map.prototype.hasNameWindow = function () {
