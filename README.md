@@ -52,6 +52,10 @@ Trb_TextColor.js を採用している場合は色番号ではなくカラーコ
 
 セルフスイッチと違い、マップ移動で初期化される状態がほしい場合に利用できます
 
+## DarkPlasma_ForceFormation.js
+
+全滅時に強制的に後衛と入れ替えるプラグイン
+
 ## DarkPlasma_HelpItem.js
 
 救済アイテム配布用プラグイン
@@ -92,6 +96,10 @@ sample/Memories.json にサンプル用のデータが載せてあります
 `showStand 立ち絵1 right reverse`
 こんな具合に入力すると右側の立ち絵を立ち絵1に切り替えてくれます
 ただし、予め「ピクチャの表示」で立ち絵1を読み込んでいる必要があります
+
+## DarkPlasma_TEM_Formation_Battle.js
+
+戦闘中に隊列を変更できるコマンドを追加するプラグイン
 
 ## DarkPlasma_TextLog.js
 
