@@ -4,6 +4,7 @@
 // http://opensource.org/licenses/mit-license.php
 
 /**
+ * 2019/01/24 1.0.1 XPスタイルバトルとの競合を修正
  * 2019/01/23 1.0.0 公開
  */
 
@@ -38,7 +39,7 @@
     // Scene_Battle
     Scene_Battle.prototype.initialize = function () {
         $gameParty.members().forEach(function (actor) { ImageManager.loadFace(actor.faceName()); }, this);
-        Scene_Base.prototype.initialize.call(this);
+        Scene_Battle.prototype.initialize.call(this);
     };
 
     Scene_Battle.prototype.createPartyCommandWindow = function () {
