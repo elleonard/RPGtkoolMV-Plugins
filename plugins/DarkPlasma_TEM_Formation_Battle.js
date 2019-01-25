@@ -4,6 +4,7 @@
 // http://opensource.org/licenses/mit-license.php
 
 /**
+ * 2019/01/25 1.0.2 戦闘開始時にフリーズする不具合を修正
  * 2019/01/24 1.0.1 XPスタイルバトルとの競合を修正
  * 2019/01/23 1.0.0 公開
  */
@@ -37,9 +38,10 @@
     };
 
     // Scene_Battle
+    var _SceneBattle_initialize = Scene_Battle.prototype.initialize;
     Scene_Battle.prototype.initialize = function () {
         $gameParty.members().forEach(function (actor) { ImageManager.loadFace(actor.faceName()); }, this);
-        Scene_Battle.prototype.initialize.call(this);
+        _SceneBattle_initialize.call(this);
     };
 
     Scene_Battle.prototype.createPartyCommandWindow = function () {
