@@ -1,5 +1,5 @@
 // DarkPlasma_TEM_Formation_Battle
-// Copyright (c) 2019 DarkPlasma
+// Copyright (c) 2016 みみおとこ
 // This software is released under the MIT license.
 // http://opensource.org/licenses/mit-license.php
 
