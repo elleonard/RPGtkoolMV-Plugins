@@ -4,7 +4,7 @@
 // http://opensource.org/licenses/mit-license.php
 
 /**
- * 2019/06/15 1.0.0 公開
+ * 2019/06/15 1.0.1 公開
  */
 
 /*:
@@ -64,16 +64,16 @@
   var _extractMetadata = DataManager.extractMetadata;
     DataManager.extractMetadata = function (data) {
         _extractMetadata.call(this, data);
-        if (data.meta.noPreemptive !== undefined) {
+        if (data.meta.NoPreemptive !== undefined) {
             data.noPreemptive = true;
         }
-        if (data.meta.noSurprise !== undefined) {
+        if (data.meta.NoSurprise !== undefined) {
           data.noSurprise = true;
         }
-        if (data.meta.forcePreemptive !== undefined) {
+        if (data.meta.ForcePreemptive !== undefined) {
           data.forcePreemptive = true;
         }
-        if (data.meta.forceSurprise !== undefined) {
+        if (data.meta.ForceSurprise !== undefined) {
           data.forceSurprise = true;
         }
     }
