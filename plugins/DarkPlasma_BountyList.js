@@ -78,6 +78,10 @@
  *  <isBounty>
  *  <bountyShowSwitch:xx> スイッチxx番がONなら表示する
  * 
+ *  賞金首リストには、<isBounty>が設定されており、なおかつ以下のいずれかを満たす敵キャラが表示されます。
+ *  - 倒したことがある
+ *  - <bountyShowSwitch:xx>を指定しており、スイッチxx番がONである
+ *
  *  また、表示したい情報があれば、以下を記述してください。
  *  <bountyRequest:賞金首の依頼内容>
  *  <bountyWhere:賞金首の出現場所>
