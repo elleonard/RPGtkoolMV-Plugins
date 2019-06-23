@@ -16,6 +16,10 @@ RPGツクールMVのプラグイン管理から読み込んでください
 語句と色番号を指定するだけでメッセージ内のテキストに色をつけてくれます
 Trb_TextColor.js を採用している場合は色番号ではなくカラーコードも指定できます
 
+## DarkPlasma_BountyList.js
+
+賞金首一覧を表示するプラグイン
+
 ## DarkPlasma_ChangeFormation.js
 
 隊列を変更するプラグインコマンド
