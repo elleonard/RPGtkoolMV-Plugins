@@ -4,7 +4,7 @@
 // http://opensource.org/licenses/mit-license.php
 
 /**
- * 2019/06/24 1.0.0 公開
+ * 2019/06/24 1.0.1 公開
  */
 
 /*:
@@ -204,7 +204,7 @@
       return true;
     }
     // スイッチが立っている
-    if (enemy.bountyShowSwitch && $gameSwitches[enemy.bountyShowSwitch]) {
+    if (enemy.bountyShowSwitch && $gameSwitches.value(enemy.bountyShowSwitch)) {
       return true;
     }
     return false;
