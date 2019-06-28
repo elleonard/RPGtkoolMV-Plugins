@@ -4,7 +4,8 @@
 // http://opensource.org/licenses/mit-license.php
 
 /**
- * 2019/06/28 1.1.0 強制入れ替え時にコモンイベントを実行する機能を追加
+ * 2019/06/28 1.2.0 強制入れ替え時に次のターンへ移行するオプションを追加
+ *            1.1.0 強制入れ替え時にコモンイベントを実行する機能を追加
  */
 
 /*:
@@ -24,6 +25,12 @@
  * @default 0
  * @type common_event
  *
+ * @param Force Turn Change
+ * @text 強制入れ替え時に次ターンへ
+ * @desc 強制的に入れ替える際に次のターンへ移行する
+ * @default false
+ * @type boolean
+ *
  * @help
  *  戦闘時 前衛が全滅したら強制的に後衛と入れ替えます。
  *
@@ -39,6 +46,7 @@
   var settings = {
     message: String(pluginParameters['Force Formation Message']) || "倒れた前衛に代わって後衛が戦闘に加わった！",
     commonEvent: Number(pluginParameters['Force Formation Common Event']) || 0,
+    turnChange: String(pluginParameters['Force Turn Change'] === "true") || false,
   };
 
   // Window_BattleLog
@@ -64,6 +72,9 @@
         this._logWindow.displayForceChangedFormation();
         if (settings.commonEvent > 0) {
           $gameTemp.reserveCommonEvent(settings.commonEvent);
+        }
+        if (settings.turnChange) {
+          this._phase = "turnEnd";
         }
         return false;
       }
