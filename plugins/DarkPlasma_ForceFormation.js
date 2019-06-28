@@ -4,22 +4,32 @@
 // http://opensource.org/licenses/mit-license.php
 
 /**
- * 2019/01/23 1.0.0 公開
+ * 2019/06/28 1.1.0 強制入れ替え時にコモンイベントを実行する機能を追加
  */
 
 /*:
  * @plugindesc 全滅時に後衛と強制的に入れ替える
  * @author DarkPlasma
  * @license MIT
- * 
+ *
  * @param Force Formation Message
  * @text 強制入れ替えのメッセージ
  * @desc 強制的に入れ替える際のメッセージ
  * @default 倒れた前衛に代わって後衛が戦闘に加わった！
  * @type string
- * 
+ *
+ * @param Force Formation Common Event
+ * @text 強制入れ替え時のコモンイベント
+ * @desc 強制的に入れ替える際に実行するコモンイベントID
+ * @default 0
+ * @type common_event
+ *
  * @help
- *  戦闘時 前衛が全滅したら強制的に後衛と入れ替えます
+ *  戦闘時 前衛が全滅したら強制的に後衛と入れ替えます。
+ *
+ *  XPスタイルバトルで useSimpleBattleLog を有効にしている場合、
+ *  強制入れ替え時のメッセージが表示されません。
+ *  コモンイベントを指定してください。
  */
 (function () {
   'use strict';
@@ -27,7 +37,8 @@
   var pluginParameters = PluginManager.parameters(pluginName);
 
   var settings = {
-    message: String(pluginParameters['Force Formation Message']) || "倒れた前衛に代わって後衛が戦闘に加わった！"
+    message: String(pluginParameters['Force Formation Message']) || "倒れた前衛に代わって後衛が戦闘に加わった！",
+    commonEvent: Number(pluginParameters['Force Formation Common Event']) || 0,
   };
 
   // Window_BattleLog
@@ -51,6 +62,9 @@
       if ($gameParty.forwardMembersAreAllDead()) {
         $gameParty.forceFormation();
         this._logWindow.displayForceChangedFormation();
+        if (settings.commonEvent > 0) {
+          $gameTemp.reserveCommonEvent(settings.commonEvent);
+        }
         return false;
       }
     }
