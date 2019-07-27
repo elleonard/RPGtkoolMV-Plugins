@@ -4,7 +4,8 @@
 // http://opensource.org/licenses/mit-license.php
 
 /**
- * 2019/07/28 2.0.0 レイアウト変更
+ * 2019/07/28 2.1.0 MOG_SceneMenuに対応 クラス非表示オプション追加
+ *            2.0.0 レイアウト変更
  * 2019/01/25 1.0.2 戦闘開始時にフリーズする不具合を修正
  * 2019/01/24 1.0.1 XPスタイルバトルとの競合を修正
  * 2019/01/23 1.0.0 公開
@@ -58,6 +59,12 @@
  * @default 27
  * @type number
  *
+ * @param View Class
+ * @text 職業表示
+ * @desc 職業表示するかどうか
+ * @default false
+ * @type boolean
+ *
  * @help
  * 戦闘中のパーティーコマンドに隊列変更を追加します
  * DarkPlasma_ForceFormation.js に対応しています
@@ -77,7 +84,8 @@
         formationWindowMaxCols: Number(pluginParameters['Formation Window Max Cols'] || 2),
         formationWindowVisibleRows: Number(pluginParameters['Formation Window Visible Rows'] || 2),
         formationWindowHeight: Number(pluginParameters['Formation Window Height'] || 400),
-        faceOffsetY: Number(pluginParameters['Formation Window Face Offset Y'] || 27)
+        faceOffsetY: Number(pluginParameters['Formation Window Face Offset Y'] || 27),
+        viewClass: String(pluginParameters['View Class']) === "true"
     };
 
     // Scene_Battle
@@ -182,6 +190,37 @@
     Window_FStatus.prototype = Object.create(Window_MenuStatus.prototype);
     Window_FStatus.prototype.constructor = Window_FStatus;
 
+    /**
+     * デフォルトのWindow_Selectableのものと同様の記述
+     * MOG_SceneMenuで上書きされる
+     */
+    Window_FStatus.prototype.processCursorMove = function() {
+        if (this.isCursorMovable()) {
+            var lastIndex = this.index();
+            if (Input.isRepeated('down')) {
+                this.cursorDown(Input.isTriggered('down'));
+            }
+            if (Input.isRepeated('up')) {
+                this.cursorUp(Input.isTriggered('up'));
+            }
+            if (Input.isRepeated('right')) {
+                this.cursorRight(Input.isTriggered('right'));
+            }
+            if (Input.isRepeated('left')) {
+                this.cursorLeft(Input.isTriggered('left'));
+            }
+            if (!this.isHandled('pagedown') && Input.isTriggered('pagedown')) {
+                this.cursorPagedown();
+            }
+            if (!this.isHandled('pageup') && Input.isTriggered('pageup')) {
+                this.cursorPageup();
+            }
+            if (this.index() !== lastIndex) {
+                SoundManager.playCursor();
+            }
+        }
+    };
+
     Window_FStatus.prototype.windowWidth = function() {
         return Graphics.boxWidth - settings.formationWindowX*2;
     };
@@ -220,7 +259,7 @@
     Window_FStatus.prototype.drawItemStatus = function (index) {
         var actor = $gameParty.allMembers()[index];
         var rect = this.itemRect(index);
-        var x = rect.x + 142;
+        var x = rect.x + 162;
         var y = rect.y + 1;
         var width = rect.width - this.textPadding();
         this.drawActorSimpleStatus(actor, x, y, width);
@@ -235,7 +274,9 @@
         this.drawActorHp(actor, x, y + lineHeight * 2, width2);
         this.drawActorMp(actor, x, y + lineHeight * 3, width2);
         this.drawActorIcons(actor, x, y + lineHeight * 4);
-        this.drawActorClass(actor, x2, y);
+        if (settings.viewClass) {
+            this.drawActorClass(actor, x2, y);
+        }
     };
 
     Window_FStatus.prototype.drawActorLevel = function(actor, x, y) {
