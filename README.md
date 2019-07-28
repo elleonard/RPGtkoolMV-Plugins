@@ -51,6 +51,10 @@ Trb_TextColor.js を採用している場合は色番号ではなくカラーコ
 敵キャラごとにレベルを設定できるプラグイン
 スキルのダメージ計算などに `b.level` で対象のレベルを組み込んだ計算式が書けます
 
+## DarkPlasma_EquipLayout.js
+
+装備画面のレイアウトをちょっといじれるプラグイン
+
 ## DarkPlasma_EventExtension.js
 
 イベントを拡張するプラグイン
