@@ -19,6 +19,7 @@
 /*:
  * @plugindesc Random Enemies emergence. Version 2.0.0
  * @author Suppon
+ * @license MIT
  *
  * 
  * @help
