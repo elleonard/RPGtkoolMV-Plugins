@@ -4,6 +4,7 @@
 // http://opensource.org/licenses/mit-license.php
 
 /**
+ * 2019/08/18 2.2.0 顔グラ読み込みをloadからreserveに変更
  * 2019/07/28 2.1.0 MOG_SceneMenuに対応 クラス非表示オプション追加
  *            2.0.0 レイアウト変更
  * 2019/01/25 1.0.2 戦闘開始時にフリーズする不具合を修正
@@ -240,13 +241,6 @@
     Window_FStatus.prototype.numVisibleRows = function() {
         return settings.formationWindowVisibleRows;
     };
-
-    Window_FStatus.prototype.loadImages = function () {
-        $gameParty.allMembers().forEach(function (actor) {
-            ImageManager.loadFace(actor.faceName());
-        }, this);
-    };
-
 
     Window_FStatus.prototype.drawItemImage = function (index) {
         var actor = $gameParty.allMembers()[index];
