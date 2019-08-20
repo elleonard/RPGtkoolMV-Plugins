@@ -113,7 +113,14 @@ sample/Memories.json にサンプル用のデータが載せてあります
 
 ## DarkPlasma_ShutdownMenu.js
 
-タイトルメニュー及びゲーム終了メニューにシャットダウンの項目を追加します
+タイトルメニュー及びゲーム終了メニューにシャットダウンの項目を追加するプラグイン
+
+## DarkPlasma_SkillCostExtension.js
+
+スキルのコストを拡張するプラグイン
+
+HPを消費する, HPを割合で消費する, MPを割合で消費する, アイテムを消費する, お金を消費する などの設定が可能です
+アイテムは複数種類の消費に対応しています
 
 ## DarkPlasma_StandImageManager.js
 
