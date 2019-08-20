@@ -4,11 +4,12 @@
 // http://opensource.org/licenses/mit-license.php
 
 /**
- * 2019/08/20 1.0.0 公開
+ * 2019/08/20 1.0.1 MOT_ItemFavoriteSort.js がない時にエラーになる不具合の修正
+ *            1.0.0 公開
  */
 
  /*:
- * @plugindesc スキル/アイテムの表示順序を書き換える
+ * @plugindesc スキル/アイテムの表示順序IDを書き換える
  * @author DarkPlasma
  * @license MIT
  *
@@ -24,6 +25,9 @@
  *  https://tm.lucky-duet.com/viewtopic.php?f=5&t=728&start=20
  *  https://twitter.com/hajimari_midori
  */
+
+var Imported = Imported || {};
+
 (function () {
   'use strict';
   var pluginName = 'DarkPlasma_OrderIdAlias';
@@ -49,7 +53,7 @@
   // MOT_ItemFavoriteSort.js 対応
   // https://tm.lucky-duet.com/viewtopic.php?f=5&t=728&start=20
   // https://twitter.com/hajimari_midori
-  if (Window_ItemFavoriteSortList) {
+  if (Imported && Imported.MOT_ItemFavoriteSort) {
     var _ascending = Window_ItemFavoriteSortList.prototype.ascending;
     Window_ItemFavoriteSortList.prototype.ascending = function (mode) {
       if (mode === 'id') {
