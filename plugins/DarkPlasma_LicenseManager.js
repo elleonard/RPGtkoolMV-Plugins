@@ -4,10 +4,9 @@
 // http://opensource.org/licenses/mit-license.php
 
 /**
- * version 1.0.1
- *  - 表示すべきプラグインがすべて除外されている著者が表示される不具合の修正
- * version 1.0.0
- *  - 公開
+ * 2019/08/23 1.0.2 最新のNW.jsに対応
+ * 2018/10/03 1.0.1 表示すべきプラグインがすべて除外されている著者が表示される不具合の修正
+ * 2017/11/23 1.0.0 公開
  */
 
 /*:
@@ -924,11 +923,9 @@ var $dataLicense = null;
   };
 
   StorageManager.localDataFileDirectoryPath = function () {
-    var path = window.location.pathname.replace(/(\/www|)\/[^\/]*$/, '/data/');
-    if (path.match(/^\/([A-Z]\:)/)) {
-      path = path.slice(1);
-    }
-    return decodeURIComponent(path);
+    var path = require('path');
+    var base = path.dirname(process.mainModule.filename);
+    return path.join(base, 'data/');
   };
 
   /**
