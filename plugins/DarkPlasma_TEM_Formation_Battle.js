@@ -4,6 +4,7 @@
 // http://opensource.org/licenses/mit-license.php
 
 /**
+ * 2019/08/25 2.2.1 loadFaceせずにreserveFaceするよう修正
  * 2019/08/18 2.2.0 顔グラ読み込みをloadからreserveに変更
  * 2019/07/28 2.1.0 MOG_SceneMenuに対応 クラス非表示オプション追加
  *            2.0.0 レイアウト変更
@@ -90,12 +91,6 @@
     };
 
     // Scene_Battle
-    var _SceneBattle_initialize = Scene_Battle.prototype.initialize;
-    Scene_Battle.prototype.initialize = function () {
-        $gameParty.members().forEach(function (actor) { ImageManager.loadFace(actor.faceName()); }, this);
-        _SceneBattle_initialize.call(this);
-    };
-
     Scene_Battle.prototype.createPartyCommandWindow = function () {
         this._partyCommandWindow = new Window_PartyCommand();
         this._partyCommandWindow.setHandler('fight', this.commandFight.bind(this));
@@ -190,6 +185,11 @@
 
     Window_FStatus.prototype = Object.create(Window_MenuStatus.prototype);
     Window_FStatus.prototype.constructor = Window_FStatus;
+
+    Window_FStatus.prototype.initialize = function (x, y) {
+        this.loadImages();
+        Window_MenuStatus.prototype.initialize.call(this, x, y);
+    };
 
     /**
      * デフォルトのWindow_Selectableのものと同様の記述
