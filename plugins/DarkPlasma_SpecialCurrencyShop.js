@@ -4,6 +4,7 @@
 // http://opensource.org/licenses/mit-license.php
 
 /**
+ * 2019/09/23 1.0.1 strictモードが正しく効いていない不具合の修正
  * 2019/09/22 1.0.0 公開
  */
 
@@ -41,7 +42,7 @@
   */
 
 (function(){
-  `use strict`;
+  'use strict';
 
   const pluginName = 'DarkPlasma_SpecialCurrencyShop';
   const pluginParameters = PluginManager.parameters(pluginName);
@@ -53,7 +54,7 @@
     currencyVariable: Number(pluginParameters['Currency Variable'] || 0),
   };
 
-  DarkPlasma_SpecialCurrencyShop = {};
+  var DarkPlasma_SpecialCurrencyShop = {};
 
   DarkPlasma_SpecialCurrencyShop.currencyItem = function () {
     if ($gameSwitches.value(settings.specialShopSwitch)) {

@@ -111,6 +111,10 @@ sample/Memories.json にサンプル用のデータが載せてあります
 
 後々追加したスキルやアイテムの表示をどこかに差し込みたいときなどにどうぞ
 
+## DarkPlasma_ShopStock.js
+
+在庫つきショップを実現するプラグイン
+
 ## DarkPlasma_ShutdownMenu.js
 
 タイトルメニュー及びゲーム終了メニューにシャットダウンの項目を追加するプラグイン
