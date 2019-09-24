@@ -4,6 +4,8 @@
 // http://opensource.org/licenses/mit-license.php
 
 /**
+ * 2019/09/24 1.1.0 ドロップ率表記オプションを追加
+ *                  レイアウト崩れの修正
  * 2019/09/23 1.0.0 公開
  */
 
@@ -27,14 +29,19 @@
  * @default off
  *
  * @param Enemy Percent Label
- * @desc Label for an Enemy Percent
+ * @desc Label for an Enemy Percent.
  * @type string
  * @default Enemy
  *
  * @param Drop Item Percent Label
- * @desc Label for an Drop Item Percent
+ * @desc Label for an Drop Item Percent.
  * @type string
  * @default Drop Item
+ *
+ * @param Display Drop Rate
+ * @desc Display drop rate with drop item.
+ * @type boolean
+ * @default false
  *
  * @help
  * The original plugin is RMMV official plugin written by Yoji Ojima.
@@ -48,8 +55,8 @@
  *   EnemyBook clear        # Clear the enemy book
  *
  * Script:
- *  $gameSystem.percentCompleteEnemy() # Get percentage of enemy.
- *  $gameSystem.percentCompleteDrop()  # Get percentage of drop item.
+ *   $gameSystem.percentCompleteEnemy() # Get percentage of enemy.
+ *   $gameSystem.percentCompleteDrop()  # Get percentage of drop item.
  *
  * Enemy Note:
  *   <desc1:foobar>         # Description text in the enemy book, line 1
@@ -91,6 +98,12 @@
  * @type string
  * @default Drop Item
  *
+ * @param Display Drop Rate
+ * @desc ドロップ率を表示するかどうか
+ * @text ドロップ率表示
+ * @type boolean
+ * @default false
+ *
  * @help
  * このプラグインはYoji Ojima氏によって書かれたRPGツクール公式プラグインを元に
  * DarkPlasmaが改変を加えたものです。
@@ -103,8 +116,8 @@
  *   EnemyBook clear        # 図鑑をクリアする
  *
  * スクリプト:
- *  $gameSystem.percentCompleteEnemy() # 図鑑のエネミー遭遇達成率を取得する
- *  $gameSystem.percentCompleteDrop()  # 図鑑のドロップアイテム取得達成率を取得する
+ *   $gameSystem.percentCompleteEnemy() # 図鑑のエネミー遭遇達成率を取得する
+ *   $gameSystem.percentCompleteDrop()  # 図鑑のドロップアイテム取得達成率を取得する
  *
  * 敵キャラのメモ:
  *   <desc1:なんとか>       # 説明１行目
@@ -123,7 +136,8 @@
         grayOutUnknown: String(parameters['Gray out Unknown']) === 'true',
         maskUnknownDropItem: String(parameters['Mask Unknown Drop Item']) === 'true',
         enemyPercentLabel: String(parameters['Enemy Percent Label'] || 'enemy'),
-        dropItemPercentLabel: String(parameters['Drop Item Percent Label'] || 'Drop Item')
+        dropItemPercentLabel: String(parameters['Drop Item Percent Label'] || 'Drop Item'),
+        displayDropRate: String(parameters['Display Drop Rate']) === 'true'
     };
 
     const _Game_Interpreter_pluginCommand =
@@ -362,7 +376,7 @@
 
     Window_EnemyBookIndex.prototype.initialize = function (x, y) {
         var width = Graphics.boxWidth;
-        var height = this.fittingHeight(5);
+        var height = this.fittingHeight(4);
         Window_Selectable.prototype.initialize.call(this, x, y, width, height);
         this.refresh();
         this.setTopRow(Window_EnemyBookIndex.lastTopRow);
@@ -526,18 +540,21 @@
 
         enemy.dropItems.forEach((dropItems, index) => {
             if (dropItems.kind > 0) {
+                const dropRateWidth = this.textWidth('0000000');
                 if ($gameSystem.isInEnemyBookDrop(enemy, index)) {
                     const item = Game_Enemy.prototype.itemObject(dropItems.kind, dropItems.dataId);
-                    this.drawItemName(item, x, y, rewardsWidth);
+                    this.drawItemName(item, x, y, settings.displayDropRate ? rewardsWidth - dropRateWidth : rewardsWidth);
+                    this.drawDropRate(dropItems.denominator, x, y, rewardsWidth);
                 } else {
                     this.changePaintOpacity(!settings.grayOutUnknown);
                     if (settings.maskUnknownDropItem) {
                         this.resetTextColor();
-                        this.drawText(settings.unknownData, x, y, rewardsWidth);
+                        this.drawText(settings.unknownData, x, y, settings.displayDropRate ? rewardsWidth - dropRateWidth : rewardsWidth);
                     } else {
                         const item = Game_Enemy.prototype.itemObject(dropItems.kind, dropItems.dataId);
-                        this.drawItemName(item, x, y, rewardsWidth);
+                        this.drawItemName(item, x, y, settings.displayDropRate ? rewardsWidth - dropRateWidth : rewardsWidth);
                     }
+                    this.drawDropRate(dropItems.denominator, x, y, rewardsWidth);
                     this.changePaintOpacity(true);
                 }
                 y += lineHeight;
@@ -549,6 +566,14 @@
         y = this.textPadding() + lineHeight * 7;
         this.drawTextEx(enemy.meta.desc1, x, y + lineHeight * 0, descWidth);
         this.drawTextEx(enemy.meta.desc2, x, y + lineHeight * 1, descWidth);
+    };
+
+    Window_EnemyBookStatus.prototype.drawDropRate = function (denominator, x, y, width) {
+        if (!settings.displayDropRate || !denominator) {
+            return;
+        }
+        const dropRate = Number(100/denominator).toFixed(1);
+        this.drawText(`${dropRate}％`, x, y, width, 'right');
     };
 
 })();
