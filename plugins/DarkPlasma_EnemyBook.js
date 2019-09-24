@@ -4,6 +4,7 @@
 // http://opensource.org/licenses/mit-license.php
 
 /**
+ * 2019/09/25 1.2.0 詳細表示モードを追加
  * 2019/09/24 1.1.0 ドロップ率表記オプションを追加
  *                  レイアウト崩れの修正
  * 2019/09/23 1.0.0 公開
@@ -42,6 +43,31 @@
  * @desc Display drop rate with drop item.
  * @type boolean
  * @default false
+ *
+ * @param Detail Mode
+ *
+ * @param Enable Detail Mode
+ * @desc Enable Ok button for display enemy detail.
+ * @type boolean
+ * @default false
+ *
+ * @param Element Icons
+ * @desc Element Icons for weak and resist.(The order is corresponding to elements settings in database.)
+ * @type number[]
+ * @default ["0", "76", "64", "65", "66", "67", "68", "69", "70", "71"]
+ * @parent Detail Mode
+ *
+ * @param Weak Element And State Label
+ * @desc Label for weak elements and states.
+ * @type string
+ * @default Weak
+ * @parent Detail Mode
+ *
+ * @param Resist Element And State Label
+ * @desc Label for resist elements and states.
+ * @type string
+ * @default Resist
+ * @parent Detail Mode
  *
  * @help
  * The original plugin is RMMV official plugin written by Yoji Ojima.
@@ -99,10 +125,41 @@
  * @default Drop Item
  *
  * @param Display Drop Rate
- * @desc ドロップ率を表示するかどうか
+ * @desc ドロップ率を表示します。
  * @text ドロップ率表示
  * @type boolean
  * @default false
+ *
+ * @param Detail Mode
+ * @text 詳細モード
+ *
+ * @param Enable Detail Mode
+ * @desc 詳細モードを有効にします。決定キーで詳細モードON/OFFを切り替えます。
+ * @text 詳細モード
+ * @type boolean
+ * @default false
+ * @parent Detail Mode
+ *
+ * @param Element Icons
+ * @desc 属性アイコンリストを設定します（順序はデータベースのタイプ設定に対応します）
+ * @text 属性アイコンリスト
+ * @type number[]
+ * @default ["0", "76", "64", "65", "66", "67", "68", "69", "70", "71"]
+ * @parent Detail Mode
+ *
+ * @param Weak Element And State Label
+ * @desc 弱点属性/ステートのラベルを設定します。
+ * @text 弱点ラベル
+ * @type string
+ * @default 弱点属性/ステート
+ * @parent Detail Mode
+ *
+ * @param Resist Element And State Label
+ * @desc 耐性属性/ステートのラベルを設定します。
+ * @text 耐性ラベル
+ * @type string
+ * @default 耐性属性/ステート
+ * @parent Detail Mode
  *
  * @help
  * このプラグインはYoji Ojima氏によって書かれたRPGツクール公式プラグインを元に
@@ -126,6 +183,7 @@
  */
 
 (function () {
+    'use strict';
 
     const pluginName = 'DarkPlasma_EnemyBook';
     const parameters = PluginManager.parameters(pluginName);
@@ -137,7 +195,11 @@
         maskUnknownDropItem: String(parameters['Mask Unknown Drop Item']) === 'true',
         enemyPercentLabel: String(parameters['Enemy Percent Label'] || 'enemy'),
         dropItemPercentLabel: String(parameters['Drop Item Percent Label'] || 'Drop Item'),
-        displayDropRate: String(parameters['Display Drop Rate']) === 'true'
+        displayDropRate: String(parameters['Display Drop Rate']) === 'true',
+        enableDetailMode: String(parameters['Enable Detail Mode']) === 'true',
+        elementIcons: JSON.parse(parameters['Element Icons']).map(icon => Number(icon)),
+        weakLabel: String(parameters['Weak Element And State Label'] || 'Weak'),
+        resistLabel: String(parameters['Resist Element And State Label'] || 'Resist'),
     };
 
     const _Game_Interpreter_pluginCommand =
@@ -299,7 +361,7 @@
      * ドロップアイテムリスト生成メソッド 上書き
      */
     Game_Enemy.prototype.makeDropItems = function () {
-        return this.enemy().dropItems.reduce(function(accumlator, dropItem, index) {
+        return this.enemy().dropItems.reduce(function (accumlator, dropItem, index) {
             if (this.dropItemLots(dropItem)) {
                 $gameSystem.addDropItemToEnemyBook(this.enemy().id, index);
                 return accumlator.concat(this.itemObject(dropItem.kind, dropItem.dataId));
@@ -322,8 +384,10 @@
 
     Scene_EnemyBook.prototype.create = function () {
         Scene_MenuBase.prototype.create.call(this);
+        this._detailMode = false;
         this._percentWindow = new Window_EnemyBookPercent(0, 0);
         this._indexWindow = new Window_EnemyBookIndex(0, this._percentWindow.height);
+        this._indexWindow.setHandler('ok', this.toggleDetailMode.bind(this));
         this._indexWindow.setHandler('cancel', this.popScene.bind(this));
         var wy = this._indexWindow.height + this._percentWindow.height;
         var ww = Graphics.boxWidth;
@@ -333,6 +397,12 @@
         this.addWindow(this._indexWindow);
         this.addWindow(this._statusWindow);
         this._indexWindow.setStatusWindow(this._statusWindow);
+    };
+
+    Scene_EnemyBook.prototype.toggleDetailMode = function () {
+        this._detailMode = !this._detailMode;
+        this._indexWindow.setDetailMode(this._detailMode);
+        this._statusWindow.setDetailMode(this._detailMode);
     };
 
     function Window_EnemyBookPercent() {
@@ -355,8 +425,8 @@
         const percentWidth = this.textWidth('0000000');
         this.drawText(`${settings.enemyPercentLabel}:`, 0, 0, width - percentWidth);
         this.drawText(`${Number($gameSystem.percentCompleteEnemy()).toFixed(1)}％`, 0, 0, width, 'right');
-        this.drawText(`${settings.dropItemPercentLabel}:`, width+offset, 0, width - percentWidth);
-        this.drawText(`${Number($gameSystem.percentCompleteDrop()).toFixed(1)}％`, width+offset, 0, width, 'right');
+        this.drawText(`${settings.dropItemPercentLabel}:`, width + offset, 0, width - percentWidth);
+        this.drawText(`${Number($gameSystem.percentCompleteDrop()).toFixed(1)}％`, width + offset, 0, width, 'right');
     };
 
     Window_EnemyBookPercent.prototype.refresh = function () {
@@ -409,16 +479,28 @@
         }
     };
 
-    Window_EnemyBookIndex.prototype.refresh = function () {
-        this._list = [];
-        for (var i = 1; i < $dataEnemies.length; i++) {
-            var enemy = $dataEnemies[i];
-            if (enemy.name && enemy.meta.book !== 'no') {
-                this._list.push(enemy);
-            }
+    Window_EnemyBookIndex.prototype.makeItemList = function () {
+        if (this._list) {
+            return;
         }
+        this._list = $dataEnemies.filter(enemy => {
+            return enemy && enemy.name && enemy.meta.book !== 'no';
+        });
+    };
+
+    Window_EnemyBookIndex.prototype.refresh = function () {
+        this.makeItemList();
         this.createContents();
         this.drawAllItems();
+    };
+
+    Window_EnemyBookIndex.prototype.isCurrentItemEnabled = function () {
+        return this.isEnabled(this.index());
+    };
+
+    Window_EnemyBookIndex.prototype.isEnabled = function (index) {
+        const enemy = this._list[index];
+        return $gameSystem.isInEnemyBook(enemy);
     };
 
     Window_EnemyBookIndex.prototype.drawItem = function (index) {
@@ -435,10 +517,28 @@
         this.changePaintOpacity(true);
     };
 
+    Window_EnemyBookIndex.prototype.processOk = function () {
+        if (!settings.enableDetailMode) {
+            return;
+        }
+        if (this.isCurrentItemEnabled()) {
+            this.playOkSound();
+            this.callOkHandler();
+        } else {
+            this.playBuzzerSound();
+        }
+    };
+
     Window_EnemyBookIndex.prototype.processCancel = function () {
         Window_Selectable.prototype.processCancel.call(this);
         Window_EnemyBookIndex.lastTopRow = this.topRow();
         Window_EnemyBookIndex.lastIndex = this.index();
+    };
+
+    Window_EnemyBookIndex.prototype.setDetailMode = function (mode) {
+        this.height = this.fittingHeight(mode ? 1 : 4);
+        this.setTopRow(this.row());
+        this.refresh();
     };
 
     function Window_EnemyBookStatus() {
@@ -457,7 +557,13 @@
         this._enemySprite.x = width / 2 - 20;
         this._enemySprite.y = height / 2;
         this.addChildToBack(this._enemySprite);
+        this._detailMode = false;
         this.refresh();
+    };
+
+    Window_EnemyBookStatus.prototype.contentsHeight = function () {
+        const maxHeight = settings.enableDetailMode ? Graphics.boxHeight - this.lineHeight(1) * 2 : this.height;
+        return maxHeight - this.standardPadding() * 2;
     };
 
     Window_EnemyBookStatus.prototype.setEnemy = function (enemy) {
@@ -510,6 +616,45 @@
         x = this.textPadding();
         y = lineHeight + this.textPadding();
 
+        this.drawStatus(x, y);
+
+        var rewardsWidth = 280;
+        if (this._detailMode) {
+            x = this.textPadding();
+            y = lineHeight * 9 + this.textPadding();
+        } else {
+            x = this.contents.width - rewardsWidth;
+            y = lineHeight + this.textPadding();
+        }
+
+        this.drawExpAndGold(x, y);
+
+        const dropItemWidth = this._detailMode ? 480 : rewardsWidth;
+        x = this.contents.width - dropItemWidth;
+        y = this._detailMode ? lineHeight * 7 + this.textPadding() : y + lineHeight;
+
+        this.drawDropItems(x, y, dropItemWidth);
+
+        if (this._detailMode) {
+            const weakAndResistWidth = 280;
+            x = this.contents.width - weakAndResistWidth;
+            y = lineHeight + this.textPadding();
+            this._weakLines = 1;
+            this.drawWeakElementsAndStates(x, y, weakAndResistWidth);
+            y += lineHeight * (1 + this._weakLines);
+            this.drawResistElementsAndStates(x, y, weakAndResistWidth);
+        }
+
+        var descWidth = 480;
+        x = this.contents.width - descWidth;
+        y = this.textPadding() + lineHeight * (this._detailMode ? 10 : 7);
+        this.drawTextEx(enemy.meta.desc1, x, y + lineHeight * 0, descWidth);
+        this.drawTextEx(enemy.meta.desc2, x, y + lineHeight * 1, descWidth);
+    };
+
+    Window_EnemyBookStatus.prototype.drawStatus = function (x, y) {
+        const lineHeight = this.lineHeight();
+        const enemy = this._enemy;
         for (var i = 0; i < 8; i++) {
             this.changeTextColor(this.systemColor());
             this.drawText(TextManager.param(i), x, y, 160);
@@ -517,42 +662,55 @@
             this.drawText(enemy.params[i], x + 160, y, 60, 'right');
             y += lineHeight;
         }
+    };
 
-        var rewardsWidth = 280;
-        x = this.contents.width - rewardsWidth;
-        y = lineHeight + this.textPadding();
+    Window_EnemyBookStatus.prototype.drawExpAndGold = function (x, y) {
+        const enemy = this._enemy;
+        if (this._detailMode) {
+            this.changeTextColor(this.systemColor());
+            this.drawText(TextManager.exp, x, y, 160);
+            this.resetTextColor();
+            this.drawText(enemy.exp, x + 160, y, 60, 'right');
 
-        this.resetTextColor();
-        this.drawText(enemy.exp, x, y);
-        x += this.textWidth(enemy.exp) + 6;
-        this.changeTextColor(this.systemColor());
-        this.drawText(TextManager.expA, x, y);
-        x += this.textWidth(TextManager.expA + '  ');
+            this.changeTextColor(this.systemColor());
+            this.drawText('お金', x, y + this.lineHeight(), 160);
+            this.resetTextColor();
+            this.drawText(enemy.gold, x + 160, y + this.lineHeight(), 60, 'right');
+        } else {
+            this.resetTextColor();
+            this.drawText(enemy.exp, x, y);
+            x += this.textWidth(enemy.exp) + 6;
+            this.changeTextColor(this.systemColor());
+            this.drawText(TextManager.expA, x, y);
+            x += this.textWidth(TextManager.expA + '  ');
 
-        this.resetTextColor();
-        this.drawText(enemy.gold, x, y);
-        x += this.textWidth(enemy.gold) + 6;
-        this.changeTextColor(this.systemColor());
-        this.drawText(TextManager.currencyUnit, x, y);
+            this.resetTextColor();
+            this.drawText(enemy.gold, x, y);
+            x += this.textWidth(enemy.gold) + 6;
+            this.changeTextColor(this.systemColor());
+            this.drawText(TextManager.currencyUnit, x, y);
+        }
+    };
 
-        x = this.contents.width - rewardsWidth;
-        y += lineHeight;
-
+    Window_EnemyBookStatus.prototype.drawDropItems = function (x, y, rewardsWidth) {
+        const enemy = this._enemy;
+        const lineHeight = this.lineHeight();
+        const displayDropRate = settings.displayDropRate || this._detailMode;
         enemy.dropItems.forEach((dropItems, index) => {
             if (dropItems.kind > 0) {
                 const dropRateWidth = this.textWidth('0000000');
                 if ($gameSystem.isInEnemyBookDrop(enemy, index)) {
                     const item = Game_Enemy.prototype.itemObject(dropItems.kind, dropItems.dataId);
-                    this.drawItemName(item, x, y, settings.displayDropRate ? rewardsWidth - dropRateWidth : rewardsWidth);
+                    this.drawItemName(item, x, y, displayDropRate ? rewardsWidth - dropRateWidth : rewardsWidth);
                     this.drawDropRate(dropItems.denominator, x, y, rewardsWidth);
                 } else {
                     this.changePaintOpacity(!settings.grayOutUnknown);
                     if (settings.maskUnknownDropItem) {
                         this.resetTextColor();
-                        this.drawText(settings.unknownData, x, y, settings.displayDropRate ? rewardsWidth - dropRateWidth : rewardsWidth);
+                        this.drawText(settings.unknownData, x, y, displayDropRate ? rewardsWidth - dropRateWidth : rewardsWidth);
                     } else {
                         const item = Game_Enemy.prototype.itemObject(dropItems.kind, dropItems.dataId);
-                        this.drawItemName(item, x, y, settings.displayDropRate ? rewardsWidth - dropRateWidth : rewardsWidth);
+                        this.drawItemName(item, x, y, displayDropRate ? rewardsWidth - dropRateWidth : rewardsWidth);
                     }
                     this.drawDropRate(dropItems.denominator, x, y, rewardsWidth);
                     this.changePaintOpacity(true);
@@ -560,20 +718,75 @@
                 y += lineHeight;
             }
         });
-
-        var descWidth = 480;
-        x = this.contents.width - descWidth;
-        y = this.textPadding() + lineHeight * 7;
-        this.drawTextEx(enemy.meta.desc1, x, y + lineHeight * 0, descWidth);
-        this.drawTextEx(enemy.meta.desc2, x, y + lineHeight * 1, descWidth);
     };
 
     Window_EnemyBookStatus.prototype.drawDropRate = function (denominator, x, y, width) {
-        if (!settings.displayDropRate || !denominator) {
+        if (!settings.displayDropRate && !this._detailMode || !denominator) {
             return;
         }
-        const dropRate = Number(100/denominator).toFixed(1);
+        const dropRate = Number(100 / denominator).toFixed(1);
         this.drawText(`${dropRate}％`, x, y, width, 'right');
     };
 
+    Window_EnemyBookStatus.prototype.elementRate = function (elementId) {
+        const trait = this._enemy.traits
+            .filter(trait => trait.code === Game_BattlerBase.TRAIT_ELEMENT_RATE && trait.dataId === elementId);
+        return trait[0] ? trait[0].value : 1;
+    };
+
+    Window_EnemyBookStatus.prototype.stateRate = function (stateId) {
+        const isNoEffect = this._enemy.traits
+            .find(trait => trait.code === Game_BattlerBase.TRAIT_STATE_RESIST && trait.dataId === stateId);
+        if (isNoEffect) {
+            return 0;
+        }
+        const trait = this._enemy.traits
+            .filter(trait => trait.code === Game_BattlerBase.TRAIT_STATE_RATE && trait.dataId === stateId);
+        return trait[0] ? trait[0].value : 1;
+    };
+
+    Window_EnemyBookStatus.prototype.maxIconsPerLine = function () {
+        return 8;
+    };
+
+    Window_EnemyBookStatus.prototype.drawWeakElementsAndStates = function (x, y, width) {
+        var targetIcons = $dataSystem.elements
+            .map((_, index) => index)
+            .filter(elementId => this.elementRate(elementId) > 1)
+            .map(elementId => settings.elementIcons[elementId])
+            .concat($dataStates
+            .filter(state => state && this.stateRate(state.id) > 1)
+            .map(state => state.iconIndex));
+        this.changeTextColor(this.systemColor());
+        this.drawText(settings.weakLabel, x, y, width);
+        y += this.lineHeight();
+        targetIcons.forEach((icon, index) => {
+            this.drawIcon(icon, x + 32 * (index % this.maxIconsPerLine()), y + 32 * Math.floor(index / this.maxIconsPerLine()))
+        });
+        this._weakLines = Math.floor(targetIcons.length/this.maxIconsPerLine())+1;
+    };
+
+    Window_EnemyBookStatus.prototype.drawResistElementsAndStates = function (x, y, width) {
+        var targetIcons = $dataSystem.elements
+            .map((_, index) => index)
+            .filter(elementId => this.elementRate(elementId) < 1)
+            .map(elementId => settings.elementIcons[elementId])
+            .concat($dataStates
+            .filter(state => state && this.stateRate(state.id) < 1)
+            .map(state => state.iconIndex));
+        this.changeTextColor(this.systemColor());
+        this.drawText(settings.resistLabel, x, y, width);
+        y += this.lineHeight();
+        targetIcons.forEach((icon, index) => {
+            this.drawIcon(icon, x + 32 * (index % this.maxIconsPerLine()), y + 32 * Math.floor(index / this.maxIconsPerLine()))
+        });
+    };
+
+    Window_EnemyBookStatus.prototype.setDetailMode = function (mode) {
+        const y = mode ? this.fittingHeight(1) * 2 : this.fittingHeight(1) + this.fittingHeight(4);
+        this.y = y;
+        this.height = Graphics.boxHeight - y;
+        this._detailMode = mode;
+        this.refresh();
+    };
 })();
