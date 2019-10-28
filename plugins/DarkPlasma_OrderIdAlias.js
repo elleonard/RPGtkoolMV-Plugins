@@ -4,6 +4,7 @@
 // http://opensource.org/licenses/mit-license.php
 
 /**
+ * 2019/10/29 1.0.2 装備を外すとエラーになる不具合の修正
  * 2019/08/20 1.0.1 MOT_ItemFavoriteSort.js がない時にエラーになる不具合の修正
  *            1.0.0 公開
  */
@@ -41,7 +42,7 @@ var Imported = Imported || {};
   var _Window_ItemList_makeItemList = Window_ItemList.prototype.makeItemList;
   Window_ItemList.prototype.makeItemList = function () {
     _Window_ItemList_makeItemList.call(this);
-    this._data.sort((a, b) => a.orderId - b.orderId);
+    this._data.sort((a, b) => (a === null || b === null) ? 0 : a.orderId - b.orderId);
   };
 
   var _Window_SkillList_makeItemList = Window_SkillList.prototype.makeItemList;
