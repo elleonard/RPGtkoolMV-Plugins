@@ -112,6 +112,12 @@ js/pluginsフォルダを暗号化したりパッキングして配布する場�
 data/Memories.json に回想用のデータを記述して利用してください
 sample/Memories.json にサンプル用のデータが載せてあります
 
+## DarkPlasma_NameWindow.js
+
+メッセージウィンドウに名前ウィンドウを付属させるプラグイン
+
+アクターごとに名前の色を指定したり、開きカッコを検出して自動で名前ウィンドウを表示したりできます
+
 ## DarkPlasma_OrderIdAlias.js
 
 スキル/アイテムの表示順IDを制御するプラグイン
