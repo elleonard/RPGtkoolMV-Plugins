@@ -4,6 +4,7 @@
 // http://opensource.org/licenses/mit-license.php
 
 /**
+ * 2020/01/01 1.0.1 味方にスキルを仕様するとエラー落ちする不具合を修正
  * 2019/12/30 1.0.0 公開
  */
 
@@ -91,6 +92,18 @@
         this.showNormalAnimation(additionalAnimationTargets, additionalAnimation.animation, false);
       });
     }
+  };
+
+  Game_Actor.prototype.isAdditionalAnimationTarget = function (additionalAnimation) {
+    if (additionalAnimation.onlyForSomeEnemies) {
+      return false;
+    }
+    if (additionalAnimation.onlyForSomeStates) {
+      if (!additionalAnimation.states.some(stateId => this.isStateAffected(stateId))) {
+        return false;
+      }
+    }
+    return true;
   };
 
   Game_Enemy.prototype.isAdditionalAnimationTarget = function (additionalAnimation) {
