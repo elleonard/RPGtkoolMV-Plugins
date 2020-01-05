@@ -4,6 +4,7 @@
 // http://opensource.org/licenses/mit-license.php
 
 /**
+ * 2020/01/05 1.0.1 デバフ倍率を正の値に設定すると逆に強化されてしまう不具合を修正
  * 2020/01/02 1.0.0 公開
  */
 
@@ -114,8 +115,8 @@
   function findDebuffRateSettings (paramId) {
     return [
       0,
-      Number(parsedParameters[paramId]['Debuff Rate 1'] || 25),
-      Number(parsedParameters[paramId]['Debuff Rate 2'] || 50)
+      -1.0 * Number(parsedParameters[paramId]['Debuff Rate 1'] || 25),
+      -1.0 * Number(parsedParameters[paramId]['Debuff Rate 2'] || 50)
     ];
   }
   
@@ -138,7 +139,7 @@
       case PARAM_ID.MAGIC_DEFENSE:
       case PARAM_ID.AGILITY:
       case PARAM_ID.LUCK:
-        const buffRate = this._buffs[paramId] > 0 ? settings.buffRate[paramId][this._buffs[paramId]] : settings.debuffRate[paramId][this._buffs[paramId]];
+        const buffRate = this._buffs[paramId] > 0 ? settings.buffRate[paramId][this._buffs[paramId]] : settings.debuffRate[paramId][-1.0 * this._buffs[paramId]];
         return buffRate / 100 + 1.0;
     }
     return _Game_BattlerBase_paramBuffRate.call(this, paramId);
