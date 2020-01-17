@@ -3,6 +3,7 @@
 // This software is released under the MIT license.
 // http://opensource.org/licenses/mit-license.php
 
+// 2020/01/18 1.5.2 DarkPlasma_NameWindowに対応
 // version 1.5.1
 // - 冗長な変数名を修正
 // - パラメータの型を明示
@@ -437,9 +438,9 @@
         Window_Message_terminateMessage.call(this);
     }
 
-    // YEP_MessageCore.js のネーム表示ウィンドウを使用しているかどうか
+    // YEP_MessageCore.js や DarkPlasma_NameWindow のネーム表示ウィンドウを使用しているかどうか
     Window_Message.prototype.hasNameWindow = function () {
-        return this._nameWindow && typeof Window_NameBox !== 'undefined';
+        return this._nameWindow && (typeof Window_NameBox !== 'undefined' || typeof Window_SpeakerName !== 'undefined');
     };
 
     // イベント終了時にそのイベントのログを直前のイベントのログとして保持する
