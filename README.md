@@ -196,6 +196,12 @@ HPを消費する, HPを割合で消費する, MPを割合で消費する, ア�
 pageupキー（L2ボタン）でログを表示し、上下キーでスクロール、キャンセルキーで戻ります
 YEP_MessageCore.jsに対応しています（v1.18で動作確認済み）
 
+## DarkPlasma_WordWrapForJapanese.js
+
+日本語テキスト自動折り返しプラグイン
+
+ウィンドウの端でテキストを自動的に折り返し、改行します
+
 ## DarkPlasma_YEP_MessageCorePatch.js
 
 YEP_MessageCore.jsの以下のバグを修正します（v1.18で動作確認済み）
