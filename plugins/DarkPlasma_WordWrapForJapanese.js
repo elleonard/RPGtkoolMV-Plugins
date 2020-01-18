@@ -4,7 +4,8 @@
 // http://opensource.org/licenses/mit-license.php
 
 /**
- * 2020/01/18 1.0.0 公開
+ * 2020/01/18 1.0.1 軽微なリファクタ
+ *            1.0.0 公開
  */
 
 /*:
@@ -132,7 +133,7 @@
   };
 
   Window_Base.prototype.wordwrapWidth = function () {
-    return this.contents.width;
+    return this.contentsWidth();
   };
 
   Window_Base.prototype.saveCurrentWindowSettings = function () {
