@@ -4,7 +4,8 @@
 // http://opensource.org/licenses/mit-license.php
 
 /**
- * 2020/01/18 1.0.1 軽微なリファクタ
+ * 2020/01/18 1.0.2 選択肢ウィンドウを開こうとするとフリーズする不具合を修正
+ *            1.0.1 軽微なリファクタ
  *            1.0.0 公開
  */
 
@@ -76,7 +77,7 @@
   };
 
   Window_Base.prototype.wordWrapEnabled = function () {
-    if (this._checkWordWrapMode) {
+    if (this._checkWordWrapMode || this._ignoreWordWrap) {
       return false;
     }
     if (Yanfly && Yanfly.Message) {
@@ -108,7 +109,7 @@
   };
 
   Window_Base.prototype.checkWordWrap = function (textState) {
-    if (!textState) return false;
+    if (!textState || textState.index === 0) return false;
     if (!this.wordWrapEnabled()) return false;
     const nextCharacterIndex = textState.index + 1;
     const nextCharacter = textState.text.substring(textState.index, nextCharacterIndex);
@@ -183,6 +184,13 @@
     this._wordWrap = wordWrap;
     return value;
   };
+
+  const _Window_ChoiceList_initialize = Window_ChoiceList.prototype.initialize;
+  Window_ChoiceList.prototype.initialize = function(messageWindow) {
+    _Window_ChoiceList_initialize.call(this, messageWindow);
+    // 選択肢リストウィンドウは選択肢幅によってウィンドウサイズを決めるため、折り返し不可
+    this._ignoreWordWrap = true;
+  }
 
   /**
    * YEP_MessageCore対応
