@@ -3,6 +3,7 @@
 // This software is released under the MIT license.
 // http://opensource.org/licenses/mit-license.php
 
+// 2020/01/23 1.5.3 選択肢が開いている最中にログウィンドウを開いて戻ろうとするとエラーで落ちる不具合を修正
 // 2020/01/18 1.5.2 DarkPlasma_NameWindowに対応
 // version 1.5.1
 // - 冗長な変数名を修正
@@ -441,6 +442,15 @@
     // YEP_MessageCore.js や DarkPlasma_NameWindow のネーム表示ウィンドウを使用しているかどうか
     Window_Message.prototype.hasNameWindow = function () {
         return this._nameWindow && (typeof Window_NameBox !== 'undefined' || typeof Window_SpeakerName !== 'undefined');
+    };
+
+    const _Window_ChoiceList_windowWidth = Window_ChoiceList.prototype.windowWidth;
+    Window_ChoiceList.prototype.windowWidth = function () {
+        // 再開時に選択肢が開いているとエラーになる不具合対策
+        if (!this._windowContentsSprite) {
+            return 96;
+        }
+        return _Window_ChoiceList_windowWidth.call(this);
     };
 
     // イベント終了時にそのイベントのログを直前のイベントのログとして保持する
