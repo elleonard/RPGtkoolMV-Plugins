@@ -4,7 +4,8 @@
 // http://opensource.org/licenses/mit-license.php
 
 /**
- * 2020/01/26 1.0.1 メッセージウィンドウの位置によって名前ウィンドウの位置がズレる不具合を修正
+ * 2020/01/26 1.1.0 パディング幅の設定項目追加
+ *            1.0.1 メッセージウィンドウの位置によって名前ウィンドウの位置がズレる不具合を修正
  * 2019/11/01 1.0.0 公開
  */
 
@@ -20,9 +21,15 @@
  * @type boolean
  * @default false
  *
- * @param Name Window Padding
- * @desc 名前ウィンドウのパディング幅
- * @text 名前ウィンドウパディング幅
+ * @param Name Window Padding Standard
+ * @desc 名前ウィンドウの基本パディング幅
+ * @text 名前ウィンドウ基本パディング幅
+ * @type number
+ * @default 18
+ *
+ * @param Name Window Padding Horizontal
+ * @desc 名前ウィンドウの横パディング幅
+ * @text 名前ウィンドウ横パディング幅
  * @type number
  * @default 72
  *
@@ -95,7 +102,8 @@
 
   const settings = {
     isClearNameWindow: String(pluginParameters['Is Clear Name Window'] || 'false') === 'true',
-    nameWindowPadding: Number(pluginParameters['Name Window Padding'] || 72),
+    nameWindowPaddingStaandard: Number(pluginParameters['Name Window Padding Standard'] || 18),
+    nameWindowPaddingHorizontal: Number(pluginParameters['Name Window Padding Horizontal'] || 72),
     defaultTextColor: Number(pluginParameters['Default Text Color'] || 6),
     windowOffsetX: Number(pluginParameters['Window Offset X'] || -28),
     windowOffsetY: Number(pluginParameters['Window Offset Y'] || 0),
@@ -134,6 +142,10 @@
     this.hide();
   };
 
+  Window_SpeakerName.prototype.standardPadding = function () {
+    return settings.nameWindowPaddingStaandard;
+  };
+
   Window_SpeakerName.prototype.wordWrapEnabled = function () {
     return false;
   }
@@ -141,7 +153,7 @@
   Window_SpeakerName.prototype.windowWidth = function (enableEscapeCharacter) {
     this.resetFontSettings();
     let textWidth = enableEscapeCharacter ? this.textWidthEx(this._text) : this.textWidth(this._text);
-    let width = textWidth + this.padding * 2 + settings.nameWindowPadding;
+    let width = textWidth + this.padding * 2 + settings.nameWindowPaddingHorizontal;
     return Math.ceil(width);
   };
 
@@ -151,6 +163,10 @@
 
   Window_SpeakerName.prototype.windowHeight = function () {
     return this.fittingHeight(1);
+  };
+
+  Window_SpeakerName.prototype.contentsHeight = function () {
+    return this.lineHeight();
   };
 
   Window_SpeakerName.prototype.update = function () {
@@ -168,7 +184,7 @@
     this.createContents();
     this.contents.clear();
     this.resetFontSettings();
-    let padding = settings.nameWindowPadding / 2;
+    let padding = settings.nameWindowPaddingHorizontal / 2;
     if (enableEscapeCharacter) {
       this.drawTextEx(this._text, padding, 0);
     } else {
