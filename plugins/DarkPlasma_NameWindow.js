@@ -4,6 +4,7 @@
 // http://opensource.org/licenses/mit-license.php
 
 /**
+ * 2020/01/26 1.0.1 メッセージウィンドウの位置によって名前ウィンドウの位置がズレる不具合を修正
  * 2019/11/01 1.0.0 公開
  */
 
@@ -133,6 +134,10 @@
     this.hide();
   };
 
+  Window_SpeakerName.prototype.wordWrapEnabled = function () {
+    return false;
+  }
+
   Window_SpeakerName.prototype.windowWidth = function (enableEscapeCharacter) {
     this.resetFontSettings();
     let textWidth = enableEscapeCharacter ? this.textWidthEx(this._text) : this.textWidth(this._text);
@@ -208,16 +213,17 @@
   };
 
   Window_SpeakerName.prototype.adjustPositionY = function () {
+    const parentWindowY = $gameMessage.positionType() * (Graphics.boxHeight - this._parentWindow.windowHeight()) / 2;
     if ($gameMessage.positionType() === 0) {
-      this.y = this._parentWindow.y + this._parentWindow.height;
+      this.y = parentWindowY + this._parentWindow.height;
       this.y -= settings.windowOffsetY;
     } else {
-      this.y = this._parentWindow.y;
+      this.y = parentWindowY;
       this.y -= this.height;
       this.y += settings.windowOffsetY;
     }
     if (this.y < 0) {
-      this.y = this._parentWindow.y + this._parentWindow.height;
+      this.y = parentWindowY + this._parentWindow.height;
       this.y -= settings.windowOffsetY;
     }
   };
