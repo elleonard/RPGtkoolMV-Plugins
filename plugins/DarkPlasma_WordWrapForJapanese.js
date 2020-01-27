@@ -4,8 +4,8 @@
 // http://opensource.org/licenses/mit-license.php
 
 /**
- * 2020/01/27 1.1.0 DarkPlasma_TextLog.jsに対応
- *            1.1.1 メモリリークを修正
+ * 2020/01/27 1.1.1 メモリリークを修正
+ *            1.1.0 DarkPlasma_TextLog.jsに対応
  * 2020/01/18 1.0.2 選択肢ウィンドウを開こうとするとフリーズする不具合を修正
  *            1.0.1 軽微なリファクタ
  *            1.0.0 公開
