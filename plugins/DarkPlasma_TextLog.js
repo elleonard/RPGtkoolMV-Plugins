@@ -3,7 +3,9 @@
 // This software is released under the MIT license.
 // http://opensource.org/licenses/mit-license.php
 
-// 2020/01/27 1.6.0 ログウィンドウを開くボタンでログウィンドウを閉じられるよう修正
+// 2020/01/27 1.6.1 ログ表示時の順序が逆になる不具合を修正
+//                  DarkPlasma_WordWrapForJapanese（1.0.2以降）に対応
+//            1.6.0 ログウィンドウを開くボタンでログウィンドウを閉じられるよう修正
 //                  メッセージ同士の間隔やテキストログの行間の設定項目を追加
 //                  DarkPlasma_NameWindowに対応できていなかった不具合を修正
 //                  記録できるイベントログ数を無制限に変更
@@ -200,7 +202,7 @@
         Scene_Base.prototype.initialize.call(this);
         viewTexts = [];
         if (loggedEventCount > 0) {
-            viewTexts = pastEventLog.map(pastLog => pastLog.messages)
+            viewTexts = pastEventLog.map(pastLog => pastLog.messages).reverse()
                 .reduce((accumlator, currentValue) => currentValue.concat(accumlator));
         }
         if (currentEventLog.messages.length > 0) {
@@ -281,11 +283,12 @@
 
     // これ以上下にスクロールできない状態かどうかを計算する
     Window_TextLog.prototype.isCursorMax = function () {
-        var size = viewTexts.length;
-        var height = 0;
-        for (var i = this.cursor(); i < size; i++) {
-            var text = viewTexts[i].text;
-            height += this.calcMessageHeight(text);
+        const size = viewTexts.length;
+        let height = 0;
+        for (let i = this.cursor(); i < size; i++) {
+            const text = viewTexts[i].text;
+            let wordWraps = viewTexts[i].wordWraps;
+            height += this.calcMessageHeight(text, wordWraps);
             if (height > Graphics.boxHeight - this.lineHeight()) {
                 return false;
             }
@@ -355,12 +358,13 @@
     };
 
     Window_TextLog.prototype.drawTextLog = function () {
-        var height = 0;
-        for (var i = this.cursor(); i < this.cursor() + this._maxViewCount; i++) {
+        let height = 0;
+        for (let i = this.cursor(); i < this.cursor() + this._maxViewCount; i++) {
             if (i < viewTexts.length) {
-                var text = viewTexts[i].text;
+                const text = viewTexts[i].text;
+                const wordWraps = viewTexts[i].wordWraps;
                 this.drawTextEx(text, 0, height);
-                height += this.calcMessageHeight(text);
+                height += this.calcMessageHeight(text, wordWraps);
                 if (height > Graphics.boxHeight) {
                     break;
                 }
@@ -373,8 +377,9 @@
         var height = 0;
         var size = viewTexts.length;
         for (var i = 0; i < size; i++) {
-            var text = viewTexts[size - 1 - i].text;
-            height += this.calcMessageHeight(text);
+            const text = viewTexts[size - 1 - i].text;
+            const wordWraps = viewTexts[size - 1 - i].wordWraps;
+            height += this.calcMessageHeight(text, wordWraps);
             if (height > Graphics.boxHeight - this.lineHeight()) {
                 return (i > 0) ? size - i : size - 1;
             }
@@ -386,14 +391,14 @@
         return this.contents.fontSize + settings.lineSpacing;
     };
 
-    Window_TextLog.prototype.calcMessageHeight = function (text) {
-        var height = 0;
-        var lines = text.split('\n');
-        for (var i = 0; i < lines.length; i++) {
-            var maxFontSize = this.contents.fontSize;
-            var regExp = /x1b[\{\}]/g;
+    Window_TextLog.prototype.calcMessageHeight = function (text, wordWraps) {
+        let height = 0;
+        let lines = text.split('\n');
+        for (let i = 0; i < lines.length; i++) {
+            let maxFontSize = this.contents.fontSize;
+            let regExp = /x1b[\{\}]/g;
             for (; ;) {
-                var array = regExp.exec(lines[i]);
+                let array = regExp.exec(lines[i]);
                 if (array) {
                     if (array[0] === '\x1b{' && maxFontSize <= 96) {
                         maxFontSize += 12;
@@ -405,16 +410,16 @@
                     break;
                 }
             }
-            height += maxFontSize + settings.lineSpacing;
+            height += (maxFontSize + settings.lineSpacing) * ((wordWraps.length > 0 && i < 3 ? wordWraps[i] : 0) + 1);
         }
         return height + settings.messageSpacing;
     };
 
     // Window_Message.terminateMessageから呼ぶ
-    const addTextLog = function (text, height) {
+    const addTextLog = function (text, wordWraps) {
         currentEventLog.messages.push({
             text: text,
-            height: height
+            wordWraps: wordWraps
         });
         if (settings.logMessageCount > 0 && currentEventLog.messages.length > settings.logMessageCount) {
             currentEventLog.messages.splice(0, currentEventLog.messages.length - settings.logMessageCount);
@@ -423,7 +428,7 @@
 
     const moveToPrevLog = function () {
         if (settings.autoEventLogSplit) {
-            addTextLog(settings.eventLogSplitter, 1);
+            addTextLog(settings.eventLogSplitter, []);
         }
         pastEventLog[loggedEventCount++] = currentEventLog;
         if (settings.logEventCount > 0 && loggedEventCount > settings.logEventCount) {
@@ -446,9 +451,9 @@
     // (A || B) && C
     var isTextLogEnabled = function () {
         return (showLogWindowWithoutText ||
-                    (currentEventLog.messages.length > 0 ||
-                    pastEventLog.length > 0)) &&
-                (disableShowLogSwitch === 0 ||
+            (currentEventLog.messages.length > 0 ||
+                pastEventLog.length > 0)) &&
+            (disableShowLogSwitch === 0 ||
                 !$gameSwitches.value(disableShowLogSwitch));
     };
 
@@ -510,22 +515,23 @@
     // メッセージ表示時にログに追加する
     var Window_Message_terminateMessage = Window_Message.prototype.terminateMessage;
     Window_Message.prototype.terminateMessage = function () {
-        if ((disableLoggingSwitch === 0 || 
-            !$gameSwitches.value(disableLoggingSwitch)) && 
+        if ((disableLoggingSwitch === 0 ||
+            !$gameSwitches.value(disableLoggingSwitch)) &&
             $gameMessage.hasText()) {
-                let message = {
-                    text: "",
-                    height: 0
-                };
+            let message = {
+                text: "",
+                wordWraps: []
+            };
             // YEP_MessageCore.js or DarkPlasma_NameWindow.js のネーム表示ウィンドウに対応
             if (this.hasNameWindow() && this._nameWindow.active) {
                 const nameColor = this.nameColorInLog(this._nameWindow._text);
-                message.text += "\x1bC["+nameColor+"]" + this._nameWindow._text + "\n\x1bC[0]";
-                message.height++;
+                message.text += "\x1bC[" + nameColor + "]" + this._nameWindow._text + "\n\x1bC[0]";
             }
             message.text += this.convertEscapeCharacters($gameMessage.allText());
-            message.height += 4;
-            addTextLog(message.text, message.height);
+            if (PluginManager.isLoadedPlugin('DarkPlasma_WordWrapForJapanese')) {
+                message.wordWraps = $gameMessage.wordWrapCounts();
+            }
+            addTextLog(message.text, message.wordWraps);
         }
         Window_Message_terminateMessage.call(this);
     }
@@ -534,7 +540,7 @@
     Window_Message.prototype.hasNameWindow = function () {
         return this._nameWindow &&
             (typeof Window_NameBox !== 'undefined' ||
-            PluginManager.isLoadedPlugin('DarkPlasma_NameWindow'));
+                PluginManager.isLoadedPlugin('DarkPlasma_NameWindow'));
     };
 
     Window_Message.prototype.nameColorInLog = function (name) {
@@ -595,7 +601,7 @@
                 }
                 break;
             case 'insertLogSplitter':
-                addTextLog(settings.eventLogSplitter, 1);
+                addTextLog(settings.eventLogSplitter, []);
                 break;
         }
     }
