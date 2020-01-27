@@ -4,6 +4,7 @@
 // http://opensource.org/licenses/mit-license.php
 
 /**
+ * 2020/01/27 1.1.0 DarkPlasma_TextLog.jsに対応
  * 2020/01/18 1.0.2 選択肢ウィンドウを開こうとするとフリーズする不具合を修正
  *            1.0.1 軽微なリファクタ
  *            1.0.0 公開
@@ -99,10 +100,19 @@
     return text.replace(/<(?:BR|line break|WordWrap|wrap)>/gi, '');
   };
 
+  const _Window_Base_processCharacter = Window_Base.prototype.processCharacter;
+  Window_Base.prototype.processCharacter = function(textState) {
+    if (textState.text[textState.index] === '\n') {
+      $gameMessage.newLine();
+    }
+    _Window_Base_processCharacter.call(this, textState);
+  }
+
   const _Window_Base_processNormalCharacter = Window_Base.prototype.processNormalCharacter;
   Window_Base.prototype.processNormalCharacter = function (textState) {
     if (this.checkWordWrap(textState)) {
       textState.index -= 1;
+      $gameMessage.wordWrap();
       return this.processNewLine(textState);
     }
     _Window_Base_processNormalCharacter.call(this, textState);
@@ -191,6 +201,25 @@
     // 選択肢リストウィンドウは選択肢幅によってウィンドウサイズを決めるため、折り返し不可
     this._ignoreWordWrap = true;
   }
+
+  const _Game_Message_clear = Game_Message.prototype.clear;
+  Game_Message.prototype.clear = function () {
+    _Game_Message_clear.call(this);
+    this._currentLine = 0;
+    this._wordWrapCount = [0, 0, 0];  // TextLog用 行中の折り返しの数
+  }
+
+  Game_Message.prototype.newLine = function () {
+    this._currentLine++;
+  };
+
+  Game_Message.prototype.wordWrap = function () {
+    this._wordWrapCount[this._currentLine]++;
+  };
+
+  Game_Message.prototype.wordWrapCounts = function () {
+    return this._wordWrapCount;
+  };
 
   /**
    * YEP_MessageCore対応
