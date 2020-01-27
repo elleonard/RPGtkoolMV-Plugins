@@ -5,6 +5,7 @@
 
 /**
  * 2020/01/27 1.1.0 DarkPlasma_TextLog.jsに対応
+ *            1.1.1 メモリリークを修正
  * 2020/01/18 1.0.2 選択肢ウィンドウを開こうとするとフリーズする不具合を修正
  *            1.0.1 軽微なリファクタ
  *            1.0.0 公開
@@ -101,7 +102,7 @@
   };
 
   const _Window_Base_processCharacter = Window_Base.prototype.processCharacter;
-  Window_Base.prototype.processCharacter = function(textState) {
+  Window_Message.prototype.processCharacter = function (textState) {
     if (textState.text[textState.index] === '\n') {
       $gameMessage.newLine();
     }
@@ -112,7 +113,9 @@
   Window_Base.prototype.processNormalCharacter = function (textState) {
     if (this.checkWordWrap(textState)) {
       textState.index -= 1;
-      $gameMessage.wordWrap();
+      if (this instanceof Window_Message) {
+        $gameMessage.wordWrap();
+      }
       return this.processNewLine(textState);
     }
     _Window_Base_processNormalCharacter.call(this, textState);
