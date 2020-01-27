@@ -3,8 +3,10 @@
 // This software is released under the MIT license.
 // http://opensource.org/licenses/mit-license.php
 
-// 2020/01/27 1.6.1 ログ表示時の順序が逆になる不具合を修正
-//                  DarkPlasma_WordWrapForJapanese（1.0.2以降）に対応
+// 2020/01/27 1.6.2 決定キーでログウィンドウを閉じられるよう修正
+//                  ログ開閉キーにpagedownキーを設定できるよう修正
+//            1.6.1 ログ表示時の順序が逆になる不具合を修正
+//                  DarkPlasma_WordWrapForJapanese（1.0.3以降）に対応
 //            1.6.0 ログウィンドウを開くボタンでログウィンドウを閉じられるよう修正
 //                  メッセージ同士の間隔やテキストログの行間の設定項目を追加
 //                  DarkPlasma_NameWindowに対応できていなかった不具合を修正
@@ -74,6 +76,7 @@
  * @default pageup
  * @type select
  * @option pageup
+ * @option pagedown
  * @option shift
  * @option control
  * @option tab
@@ -336,7 +339,8 @@
     };
 
     Window_TextLog.prototype.isCancelTriggered = function () {
-        return Input.isRepeated('cancel') || Input.isTriggered(openLogKey) || TouchInput.isCancelled();
+        return Input.isRepeated('cancel') || Input.isTriggered('ok') ||
+            Input.isTriggered(openLogKey) || TouchInput.isCancelled();
     };
 
     Window_TextLog.prototype.update = function () {
