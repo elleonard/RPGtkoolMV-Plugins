@@ -3,6 +3,12 @@
 // This software is released under the MIT license.
 // http://opensource.org/licenses/mit-license.php
 
+// 2020/01/27 1.6.0 ログウィンドウを開くボタンでログウィンドウを閉じられるよう修正
+//                  メッセージ同士の間隔やテキストログの行間の設定項目を追加
+//                  DarkPlasma_NameWindowに対応できていなかった不具合を修正
+//                  記録できるイベントログ数を無制限に変更
+//                  記録できるイベント数、メッセージ数の設定を追加
+//                  イベントごとにログを区切る機能を追加
 // 2020/01/23 1.5.3 選択肢が開いている最中にログウィンドウを開いて戻ろうとするとエラーで落ちる不具合を修正
 // 2020/01/18 1.5.2 DarkPlasma_NameWindowに対応
 // version 1.5.1
@@ -44,21 +50,25 @@
  * 
  * @param Max View Count
  * @desc １画面に表示する最大のメッセージ数
+ * @text 1画面のメッセージ数上限
  * @default 16
  * @type number
  * 
  * @param Overflow Buzzer
  * @desc テキストログの端より先にスクロールしようとした時、ブザーを鳴らすかどうか
+ * @text 限界以上スクロール時ブザー
  * @default false
  * @type boolean
  * 
  * @param Disable Logging Switch
  * @desc 該当スイッチがONの間はログを残さない。0なら常にログを残す
+ * @text ログ記録無効スイッチ
  * @default 0
  * @type number
  * 
  * @param Open Log Key
- * @desc テキストログを表示するためのボタン
+ * @desc テキストログウィンドウを開閉するためのボタン
+ * @text ログウィンドウボタン
  * @default pageup
  * @type select
  * @option pageup
@@ -68,25 +78,60 @@
  * 
  * @param Disable Show Log Switch
  * @desc 該当スイッチがONの間はログを開かない。0なら常にログを開ける
+ * @text ログウィンドウ無効スイッチ
  * @defalt 0
  * @type number
  * 
  * @param Show Log Window Without Text
  * @desc ログに表示すべきテキストがない場合でもログウィンドウを開く
+ * @text 白紙ログでも開く
  * @default true
  * @type boolean
- * 
+ *
+ * @param Line Spacing
+ * @desc ログ表示時の行間
+ * @text ログの行間
+ * @default 8
+ * @type number
+ *
+ * @param Message Spacing
+ * @desc ログ表示時のメッセージ間隔（イベントコマンド単位でひとかたまり）
+ * @text メッセージの間隔
+ * @default 0
+ * @type number
+ *
+ * @param Log Event Count
+ * @desc 直近何件のイベントのログを記録するか（0以下で無限）
+ * @text ログ記録イベント数
+ * @default 0
+ * @type number
+ *
+ * @param Log Event Message Count
+ * @desc 直近何メッセージのログを記録するか（0以下で無限）
+ * @text ログ記録メッセージ数
+ * @default 0
+ * @type number
+ *
+ * @param Event Log Splitter
+ * @desc イベントとイベントの間に挟むための区切り線
+ * @text イベントログ区切り線
+ * @default -------------------------------------------------------
+ * @type string
+ *
+ * @param Auto Event Split
+ * @desc イベントとイベントのログの間に区切り線を自動でいれるか
+ * @text 自動イベント区切り線
+ * @default true
+ * @type boolean
+ *
  * @help
  *  イベントのテキストログを表示します
  * 
  *  イベント会話中またはマップ上で pageup キー（L2ボタン）でログを表示します
  *  イベント会話中はそのイベントの直前までのログを表示します
  *  ログは上下キーでスクロールすることができます
- *  キャンセルキーでログから抜け、イベントやマップに戻ります
+ *  キャンセルキーやログ開閉キーでログから抜け、イベントやマップに戻ります
  *  イベントに戻る際、最後のメッセージをもう一度最初から流してしまう仕様になっています
- * 
- *  イベント実行中は、実行中のイベントのみ
- *  マップ上では直前のイベントのみログを表示できます
  * 
  *  YEP_MessageCore.jsに対応しています
  *    ツクール公式から配布されているv1.02は古いので必ず本家から最新を落として利用するようにしてください
@@ -99,6 +144,9 @@
  *      Main Bind: this.commandTextLog.bind(this)
  * 
  *  プラグインコマンド showTextLog から開くことも可能です
+ *
+ *  プラグインコマンド insertLogSplitter を使用することで、イベントログに区切り線を追加できます
+ *  自動イベント区切り線 設定をONにしておくことで、イベントごとに自動で区切り線を挿入させることもできます
  * 
  *  操作方法（デフォルト）
  *   pageupキー（L2ボタン） : ログを表示する
@@ -111,21 +159,34 @@
 
 (function () {
     'use strict';
-    var pluginName = 'DarkPlasma_TextLog';
+    const pluginName = 'DarkPlasma_TextLog';
 
     // パラメータ取得
-    var Parameters = PluginManager.parameters(pluginName);
-    var maxViewCount = Number(Parameters['Max View Count']);
-    var overflowBuzzer = String(Parameters['Overflow Buzzer']) === 'true';
-    var disableLoggingSwitch = Number(Parameters['Disable Logging Switch']);
-    var openLogKey = String(Parameters['Open Log Key']);
-    var disableShowLogSwitch = Number(Parameters['Disable Show Log Switch']);
-    var showLogWindowWithoutText = String(Parameters['Show Log Window Without Text']) !== 'false';
+    const Parameters = PluginManager.parameters(pluginName);
+    const maxViewCount = Number(Parameters['Max View Count']);
+    const overflowBuzzer = String(Parameters['Overflow Buzzer']) === 'true';
+    const disableLoggingSwitch = Number(Parameters['Disable Logging Switch']);
+    const openLogKey = String(Parameters['Open Log Key']);
+    const disableShowLogSwitch = Number(Parameters['Disable Show Log Switch']);
+    const showLogWindowWithoutText = String(Parameters['Show Log Window Without Text']) !== 'false';
+
+    const settings = {
+        lineSpacing: Number(Parameters['Line Spacing'] || 8),
+        messageSpacing: Number(Parameters['Message Spacing'] || 0),
+        logEventCount: Number(Parameters['Log Event Count'] || 0),
+        logMessageCount: Number(Parameters['Log Event Message Count'] || 0),
+        eventLogSplitter: String(Parameters['Event Log Splitter'] || '-------------------------------'),
+        autoEventLogSplit: String(Parameters['Auto Event Split'] || 'true') === 'true'
+    };
 
     // 必要変数初期化
-    var texts = [];
-    var prevTexts = [];
-    var viewTexts = [];
+    let viewTexts = [];
+    let currentEventLog = {
+        messages: [],
+        eventId: 0
+    };
+    let pastEventLog = [];
+    let loggedEventCount = 0;
 
     // ログ表示用シーン
     function Scene_TextLog() {
@@ -137,10 +198,17 @@
 
     Scene_TextLog.prototype.initialize = function () {
         Scene_Base.prototype.initialize.call(this);
-        if (texts.length > 0) {
-            viewTexts = texts;
-        } else {
-            viewTexts = prevTexts;
+        viewTexts = [];
+        if (loggedEventCount > 0) {
+            viewTexts = pastEventLog.map(pastLog => pastLog.messages)
+                .reduce((accumlator, currentValue) => currentValue.concat(accumlator));
+        }
+        if (currentEventLog.messages.length > 0) {
+            viewTexts = viewTexts.concat(currentEventLog.messages);
+        }
+        // 表示行数制限
+        if (settings.logMessageCount > 0 && viewTexts.length > settings.logMessageCount) {
+            viewTexts.splice(0, viewTexts.length - settings.logMessageCount);
         }
     };
 
@@ -265,7 +333,7 @@
     };
 
     Window_TextLog.prototype.isCancelTriggered = function () {
-        return Input.isRepeated('cancel') || TouchInput.isCancelled();
+        return Input.isRepeated('cancel') || Input.isTriggered(openLogKey) || TouchInput.isCancelled();
     };
 
     Window_TextLog.prototype.update = function () {
@@ -315,7 +383,7 @@
     };
 
     Window_TextLog.prototype.lineHeight = function () {
-        return this.contents.fontSize + 8;
+        return this.contents.fontSize + settings.lineSpacing;
     };
 
     Window_TextLog.prototype.calcMessageHeight = function (text) {
@@ -337,23 +405,38 @@
                     break;
                 }
             }
-            height += maxFontSize + 8;
+            height += maxFontSize + settings.lineSpacing;
         }
-        return height;
+        return height + settings.messageSpacing;
     };
 
     // Window_Message.terminateMessageから呼ぶ
-    var addTextLog = function (text, height) {
-        var message = {};
-        message.text = text;
-        message.height = height;
-        texts.push(message);
-    }
+    const addTextLog = function (text, height) {
+        currentEventLog.messages.push({
+            text: text,
+            height: height
+        });
+        if (settings.logMessageCount > 0 && currentEventLog.messages.length > settings.logMessageCount) {
+            currentEventLog.messages.splice(0, currentEventLog.messages.length - settings.logMessageCount);
+        }
+    };
 
-    var moveToPrevLog = function () {
-        prevTexts =
-            JSON.parse(JSON.stringify(texts));
-        texts = [];
+    const moveToPrevLog = function () {
+        if (settings.autoEventLogSplit) {
+            addTextLog(settings.eventLogSplitter, 1);
+        }
+        pastEventLog[loggedEventCount++] = currentEventLog;
+        if (settings.logEventCount > 0 && loggedEventCount > settings.logEventCount) {
+            pastEventLog.splice(0, pastEventLog.length - settings.logEventCount);
+        }
+        initializeCurrentEventLog();
+    };
+
+    const initializeCurrentEventLog = function () {
+        currentEventLog = {
+            messages: [],
+            eventId: 0
+        };
     };
 
     // テキストログを表示できるかどうか
@@ -363,8 +446,8 @@
     // (A || B) && C
     var isTextLogEnabled = function () {
         return (showLogWindowWithoutText ||
-                    (texts.length > 0 ||
-                    prevTexts.length > 0)) &&
+                    (currentEventLog.messages.length > 0 ||
+                    pastEventLog.length > 0)) &&
                 (disableShowLogSwitch === 0 ||
                 !$gameSwitches.value(disableShowLogSwitch));
     };
@@ -430,18 +513,38 @@
         if ((disableLoggingSwitch === 0 || 
             !$gameSwitches.value(disableLoggingSwitch)) && 
             $gameMessage.hasText()) {
-            // YEP_MessageCore.js のネーム表示ウィンドウに対応
+                let message = {
+                    text: "",
+                    height: 0
+                };
+            // YEP_MessageCore.js or DarkPlasma_NameWindow.js のネーム表示ウィンドウに対応
             if (this.hasNameWindow() && this._nameWindow.active) {
-                addTextLog(this._nameWindow._text, 1);
+                const nameColor = this.nameColorInLog(this._nameWindow._text);
+                message.text += "\x1bC["+nameColor+"]" + this._nameWindow._text + "\n\x1bC[0]";
+                message.height++;
             }
-            addTextLog(this.convertEscapeCharacters($gameMessage.allText()), 4);
+            message.text += this.convertEscapeCharacters($gameMessage.allText());
+            message.height += 4;
+            addTextLog(message.text, message.height);
         }
         Window_Message_terminateMessage.call(this);
     }
 
     // YEP_MessageCore.js や DarkPlasma_NameWindow のネーム表示ウィンドウを使用しているかどうか
     Window_Message.prototype.hasNameWindow = function () {
-        return this._nameWindow && (typeof Window_NameBox !== 'undefined' || typeof Window_SpeakerName !== 'undefined');
+        return this._nameWindow &&
+            (typeof Window_NameBox !== 'undefined' ||
+            PluginManager.isLoadedPlugin('DarkPlasma_NameWindow'));
+    };
+
+    Window_Message.prototype.nameColorInLog = function (name) {
+        if (PluginManager.isLoadedPlugin('DarkPlasma_NameWindow')) {
+            return this.colorByName(name);
+        }
+        if (Yanfly && Yanfly.Param && Yanfly.Param.MSGNameBoxColor) {
+            return Yanfly.Param.MSGNameBoxColor;
+        }
+        return 0;
     };
 
     const _Window_ChoiceList_windowWidth = Window_ChoiceList.prototype.windowWidth;
@@ -490,6 +593,9 @@
                 if (isTextLogEnabled()) {
                     SceneManager.push(Scene_TextLog);
                 }
+                break;
+            case 'insertLogSplitter':
+                addTextLog(settings.eventLogSplitter, 1);
                 break;
         }
     }
@@ -544,5 +650,8 @@
         return this._deltaY > 0 && this._pressedTime % 10 === 0;
     };
 
+    PluginManager.isLoadedPlugin = function (name) {
+        return $plugins.some(plugin => plugin.name === name);
+    };
 })();
 
