@@ -3,6 +3,7 @@
 // This software is released under the MIT license.
 // http://opensource.org/licenses/mit-license.php
 
+// 2020/01/28 1.6.3 文章を表示しないイベントに自動区切り線を入れないよう修正
 // 2020/01/27 1.6.2 決定キーでログウィンドウを閉じられるよう修正
 //                  ログ開閉キーにpagedownキーを設定できるよう修正
 //            1.6.1 ログ表示時の順序が逆になる不具合を修正
@@ -431,6 +432,10 @@
     };
 
     const moveToPrevLog = function () {
+        // 文章を表示しないイベントは無視する
+        if (currentEventLog.messages.length === 0) {
+            return;
+        }
         if (settings.autoEventLogSplit) {
             addTextLog(settings.eventLogSplitter, []);
         }
