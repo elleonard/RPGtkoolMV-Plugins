@@ -92,6 +92,10 @@ Trb_TextColor.js を採用している場合は色番号ではなくカラーコ
 
 セルフスイッチと違い、マップ移動で初期化される状態がほしい場合に利用できます
 
+## DarkPlasma_FaceToStand.js
+
+顔グラの代わりに立ち絵を表示するプラグイン
+
 ## DarkPlasma_FixRandomTarget.js
 
 ランダム対象スキルの対象を狙われ率の最も高いキャラクターに固定するプラグイン
