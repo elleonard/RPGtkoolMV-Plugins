@@ -144,6 +144,10 @@ sample/Memories.json にサンプル用のデータが載せてあります
 
 後々追加したスキルやアイテムの表示をどこかに差し込みたいときなどにどうぞ
 
+## DarkPlasma_PreventMultiDamageSe.js
+
+PromptlyPopup.js における連続攻撃や全体攻撃のダメージ/回避SEの再生をそれぞれ1回に抑えるプラグイン
+
 ## DarkPlasma_ShopStock.js
 
 在庫つきショップを実現するプラグイン
