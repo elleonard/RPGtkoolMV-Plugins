@@ -4,7 +4,8 @@
 // http://opensource.org/licenses/mit-license.php
 
 /**
- * 2020/02/16 1.0.0 公開
+ * 2020/02/16 1.1.0 立ち絵ディレクトリの設定項目を追加
+ *            1.0.0 公開
  */
 
 /*:
@@ -35,6 +36,12 @@
  * @text 立ち絵フェードアウト
  * @type boolean
  * @default true
+ *
+ * @param Stand Image Directory
+ * @desc 立ち絵を格納するディレクトリ
+ * @text 立ち絵ディレクトリ
+ * @type string
+ * @default img/pictures/
  *
  * @param Face Image To Stand Image
  * @desc 顔グラと立ち絵の設定の対応
@@ -79,13 +86,13 @@
  * @max 8
  *
  * @param Stand X
- * @desc 立ち絵のX座標
+ * @desc 立ち絵のX座標（原点は中央）
  * @text 立ち絵のX座標
  * @type number
  * @default 200
  *
  * @param Stand Y
- * @desc 立ち絵のY座標
+ * @desc 立ち絵のY座標（原点は中央）
  * @text 立ち絵のY座標
  * @type number
  * @default 600
@@ -132,6 +139,7 @@
     rightFadeSwitch: Number(pluginParameters['Right Fade Switch'] || 2),
     standPictureIdVariable: Number(pluginParameters['Stand Picture Id Variable'] || 1),
     fadeOut: String(pluginParameters['Fade Out Stand Image'] || 'true') === 'true',
+    standImageDirectory: String(pluginParameters['Stand Image Directory'] || 'img/pictures/'),
     faceToStand: JSON.parse(pluginParameters['Face Image To Stand Image']).map(function (e) {
       const obj = JSON.parse(e);
       return {
@@ -161,11 +169,11 @@
   };
 
   ImageManager.requestStandImage = function (filename, hue) {
-    return this.requestBitmap('img/pictures/', filename, hue, true);
+    return this.requestBitmap(settings.standImageDirectory, filename, hue, true);
   };
 
   ImageManager.loadStandImage = function (filename, hue) {
-    return this.loadBitmap('img/pictures/', filename, hue);
+    return this.loadBitmap(settings.standImageDirectory, filename, hue);
   };
 
   const _Game_Message_setFaceImage = Game_Message.prototype.setFaceImage;
