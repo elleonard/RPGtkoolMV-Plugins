@@ -12,12 +12,13 @@
  * プラグイン説明:
  * http://supponweblog.blog88.fc2.com/blog-category-13.html
  * 
+ * 2020/02/17 2.1.0 確定出現枠を指定するプラグインコマンドを追加
  * 2019/07/29 2.0.0 タッチ（クリック）操作でエネミーが選択できるよう修正
  *                  大幅リファクタ
  */
 
 /*:
- * @plugindesc Random Enemies emergence. Version 2.0.0
+ * @plugindesc Random Enemies emergence.
  * @author Suppon
  * @license MIT
  *
@@ -30,8 +31,12 @@
  *   times : Repetition number
  *   id    : Enemy ID
  *
+ *   fixedEnemy id id id...
+ *   id    : Enemy ID
+ *
  * Example
  *   supponREE 80 20 1 2 3 4
+ *   (Optional) fixedEnemy 1
  *   
  *   Enter the sentence in Battle Event 1st page of Troops.
  *   It doesen't work when it put other page.
@@ -40,7 +45,7 @@
  */
 
 /*:ja
- * @plugindesc モンスターランダム出現です。
+ * @plugindesc モンスターランダム出現プラグイン
  * @author Suppon
  *
  * @help
@@ -50,10 +55,18 @@
  *   ratio : 出現確率％です。
  *   times : 繰り返す回数です。
  *   id    : エネミーのIDです。
+ *   times回、羅列したIDのモンスターのうちどれかを出現させるかどうか判定します。
+ *   確定出現枠の指定（後述）がない場合、最初の1回は必ず羅列したIDのどれか1体を出現させます。
+ *
+ *   fixedEnemy id id id...
+ *   id    : エネミーのIDです。
+ *   確定出現枠を指定します。
+ *   このプラグインコマンドで指定したIDのモンスターは全て、確定で出現します。
  * 
  * 使用例
  *   supponREE 80 20 1 2 3 4
- * 
+ *   fixedEnemy 1
+ *
  * TroopsのBattle Eventの1ページ目に入れてください。ほかのページでは動きません。
  * 複数行いれてもOKです。数字はスペースで区切ってください。最後にスペースを入れないでください。
  */
@@ -73,13 +86,21 @@
         this._troopId = troopId;
         // バトルイベントによるランダムエンカウント処理
         this.supponReUsed = false;
-        var enemyNumber = 0;
+        let enemyNumber = 0;
         const lists = $dataTroops[this._troopId].pages[0].list;
-        const pluginCommand = lists.find(list => {
+        const fixedEnemyCommand = lists.find(list => {
+          return !!list.parameters[0] && list.code === 356 && list.parameters[0].split(" ")[0] === "fixedEnemy";
+        });
+        if (fixedEnemyCommand && fixedEnemyCommand.parameters[0].split(" ").length > 1) {
+          const enemyIds = fixedEnemyCommand.parameters[0].split(" ").slice(1);
+          enemyIds.forEach(enemyId => this._enemies.push(new Game_Enemy(enemyId, 0, 0))); // 暫定で0, 0にセット
+          enemyNumber += enemyIds.length;
+        }
+        const randomEnemyCommand = lists.find(list => {
             return !!list.parameters[0] && list.code === 356 && list.parameters[0].split(" ")[0] === "supponREE";
         });
-        if (pluginCommand && pluginCommand.parameters[0].split(" ").length > 2) {
-            const commandArgs = pluginCommand.parameters[0].split(" ").slice(1);
+        if (randomEnemyCommand && randomEnemyCommand.parameters[0].split(" ").length > 2) {
+            const commandArgs = randomEnemyCommand.parameters[0].split(" ").slice(1);
             const ratio = commandArgs[0];
             const times = commandArgs[1];
             const enemyIds = commandArgs.slice(2);
