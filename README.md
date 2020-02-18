@@ -64,6 +64,10 @@ Trb_TextColor.js を採用している場合は色番号ではなくカラーコ
 
 と入力すればクリスマスの日のみその分岐に入ることができます
 
+## DarkPlasma_DefaultBareHandsElement.js
+
+素手による通常攻撃時のデフォルト属性を設定するプラグイン
+
 ## DarkPlasma_EnemyBook.js
 
 拡張エネミー図鑑プラグイン
