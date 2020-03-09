@@ -176,6 +176,12 @@ PromptlyPopup.js における連続攻撃や全体攻撃のダメージ/回避SE
 HPを消費する, HPを割合で消費する, MPを割合で消費する, アイテムを消費する, お金を消費する などの設定が可能です
 アイテムは複数種類の消費に対応しています
 
+## DarkPlasma_SkipCommandPersonal.js
+
+メニュー画面でキャラクター選択をスキップするプラグイン
+
+強制的に先頭のキャラクターを選択します
+
 ## DarkPlasma_SpecialCurrencyShop.js
 
 特殊な通貨で取引するショッププラグイン
