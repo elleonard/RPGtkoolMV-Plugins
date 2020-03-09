@@ -4,6 +4,7 @@
 // http://opensource.org/licenses/mit-license.php
 
 /**
+ * 2020/03/09 1.1.2 Yanfly系プラグインが読まれていないとエラーが発生する不具合を修正
  * 2020/01/27 1.1.1 メモリリークを修正
  *            1.1.0 DarkPlasma_TextLog.jsに対応
  * 2020/01/18 1.0.2 選択肢ウィンドウを開こうとするとフリーズする不具合を修正
@@ -224,10 +225,14 @@
     return this._wordWrapCount;
   };
 
+  PluginManager.isLoadedPlugin = function (name) {
+    return $plugins.some(plugin => plugin.name === name && plugin.status);
+  };
+
   /**
    * YEP_MessageCore対応
    */
-  if (Yanfly && Yanfly.Message) {
+  if (PluginManager.isLoadedPlugin("YEP_MessageCore")) {
     Window_NameBox.prototype.wordWrapEnabled = function () {
       return false;
     };
@@ -236,7 +241,7 @@
   /**
    * YEP_QuestJournal対応
    */
-  if (Yanfly && Yanfly.Quest) {
+  if (PluginManager.isLoadedPlugin("YEP_QuestJournal")) {
     Window_QuestData.prototype.calcTextHeight = function (textState, all) {
       let textHeight = Window_Base.prototype.calcTextHeight.call(this, textState, all);
       if (all) {
