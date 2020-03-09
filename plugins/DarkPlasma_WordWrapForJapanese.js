@@ -4,7 +4,8 @@
 // http://opensource.org/licenses/mit-license.php
 
 /**
- * 2020/03/09 1.1.2 Yanfly系プラグインが読まれていないとエラーが発生する不具合を修正
+ * 2020/03/09 1.1.3 下記不具合が修正しきれていなかったので再修正
+ *            1.1.2 Yanfly系プラグインが読まれていないとエラーが発生する不具合を修正
  * 2020/01/27 1.1.1 メモリリークを修正
  *            1.1.0 DarkPlasma_TextLog.jsに対応
  * 2020/01/18 1.0.2 選択肢ウィンドウを開こうとするとフリーズする不具合を修正
@@ -83,7 +84,7 @@
     if (this._checkWordWrapMode || this._ignoreWordWrap) {
       return false;
     }
-    if (Yanfly && Yanfly.Message) {
+    if (PluginManager.isLoadedPlugin("YEP_MessageCore")) {
       return this._wordWrap;
     }
     return true;
