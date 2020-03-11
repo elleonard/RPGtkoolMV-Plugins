@@ -4,7 +4,8 @@
 // http://opensource.org/licenses/mit-license.php
 
 /**
- * 2020/03/11 1.0.0 公開
+ * 2020/03/11 1.0.1 リファクタ
+ *            1.0.0 公開
  */
 
  /*:
@@ -13,8 +14,8 @@
  * @license MIT
  *
  * @param Non Removable Equip Type Ids
- * @desc 空にできない装備タイプ
- * @text 空にできない装備タイプ
+ * @desc 空にできない装備タイプID一覧
+ * @text 空にできない装備タイプID
  * @type number[]
  * @default []
  *
@@ -42,7 +43,7 @@
   const _Game_Actor_isEquipChangeOk = Game_Actor.prototype.isEquipChangeOk;
   Game_Actor.prototype.isEquipChangeOk = function (slotId) {
     // 最強装備で一時的に外す場合以外は、設定した装備アイテムは外せない
-    if ($gameTemp._clearingEquipment && !$gameTemp._optimizingEquipments && !this.isClearEquipOk(slotId)) {
+    if ($gameTemp.clearingEquipments() && !$gameTemp.optimizingEquipments() && !this.isClearEquipOk(slotId)) {
       return false;
     }
     return _Game_Actor_isEquipChangeOk.call(this, slotId);
@@ -50,29 +51,28 @@
 
   const _Game_Actor_clearEquipments = Game_Actor.prototype.clearEquipments;
   Game_Actor.prototype.clearEquipments = function () {
-    $gameTemp._clearingEquipment = true;
+    $gameTemp.startClearEquipments();
     _Game_Actor_clearEquipments.call(this);
-    $gameTemp._clearingEquipment = false;
+    $gameTemp.endClearEquipments();
   }
 
   const _Game_Actor_optimizeEquipments = Game_Actor.prototype.optimizeEquipments;
   Game_Actor.prototype.optimizeEquipments = function () {
-    $gameTemp._optimizingEquipments = true;
+    $gameTemp.startOptimizeEquipments();
     // 最強装備実行前に何も装備していないスロットを保持しておく
     this.equips().map((equip, index) => {
       return {
         object: equip,
         slotId: index
       };
-    }).filter(equip => equip.object === null).forEach(equip => $gameTemp._emptySlotsBeforeOptimize.push(equip.slotId));
+    }).filter(equip => equip.object === null).forEach(equip => $gameTemp.backupEmptySlotBeforeOptimize(equip.slotId));
     _Game_Actor_optimizeEquipments.call(this);
-    $gameTemp._optimizingEquipments = false;
-    $gameTemp._emptySlotsBeforeOptimize = [];
+    $gameTemp.endOptimizeEquipments();
   };
 
   const _Game_Actor_bestEquipItem = Game_Actor.prototype.bestEquipItem;
   Game_Actor.prototype.bestEquipItem = function (slotId) {
-    if (this.isClearEquipOk(slotId) || $gameTemp._emptySlotsBeforeOptimize.includes(slotId)) {
+    if (this.isClearEquipOk(slotId) || $gameTemp.isEmptySlotBeforeOptimize(slotId)) {
       return _Game_Actor_bestEquipItem.call(this, slotId);
     }
     // 空にできない装備タイプ かつ 最強装備前に何か装備している場合は最強装備計算の方式を変える
@@ -94,9 +94,42 @@
   const _Game_Temp_initialize = Game_Temp.prototype.initialize;
   Game_Temp.prototype.initialize = function () {
     _Game_Temp_initialize.call(this);
-    this._clearingEquipment = false;
+    this._clearingEquipments = false;
     this._optimizingEquipments = false;
     this._emptySlotsBeforeOptimize = [];
+  };
+
+  Game_Temp.prototype.clearingEquipments = function () {
+    return this._clearingEquipments;
+  };
+
+  Game_Temp.prototype.startClearEquipments = function () {
+    this._clearingEquipments = true;
+  };
+
+  Game_Temp.prototype.endClearEquipments = function () {
+    this._clearingEquipments = false;
+  };
+
+  Game_Temp.prototype.optimizingEquipments = function () {
+    return this._optimizingEquipments;
+  };
+
+  Game_Temp.prototype.startOptimizeEquipments = function () {
+    this._optimizingEquipments = true;
+  };
+
+  Game_Temp.prototype.endOptimizeEquipments = function () {
+    this._optimizingEquipments = false;
+    this._emptySlotsBeforeOptimize = [];
+  };
+
+  Game_Temp.prototype.isEmptySlotBeforeOptimize = function (slotId) {
+    return this._emptySlotsBeforeOptimize.includes(slotId);
+  };
+
+  Game_Temp.prototype.backupEmptySlotBeforeOptimize = function (slotId) {
+    this._emptySlotsBeforeOptimize.push(slotId);
   };
 
   const _Window_EquipItem_isEnabled = Window_EquipItem.prototype.isEnabled;
