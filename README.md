@@ -151,6 +151,12 @@ sample/Memories.json にサンプル用のデータが載せてあります
 
 アクターごとに名前の色を指定したり、開きカッコを検出して自動で名前ウィンドウを表示したりできます
 
+## DarkPlasma_NonOptimizeEquipType.js
+
+最強装備の対象にならない装備タイプIDを指定するプラグイン
+
+装飾品など、特殊効果をメインとする装備タイプにどうぞ
+
 ## DarkPlasma_NonRemovableEquipType.js
 
 何も装備していない状態にできない装備タイプIDを指定するプラグイン
