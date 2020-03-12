@@ -116,6 +116,10 @@ Trb_TextColor.js を採用している場合は色番号ではなくカラーコ
 セーブデータをロードした際に特定のアイテムをプレイヤーに獲得させます
 詰んでしまったプレイヤーの救済などにどうぞ
 
+## DarkPlasma_HideMenuStatusWindow.js
+
+メニュー画面のキャラクターステータスウィンドウを非表示にするプラグイン
+
 ## DarkPlasma_IgnoreDisableDashMap.js
 
 マップのダッシュ禁止フラグを無視するプラグイン
