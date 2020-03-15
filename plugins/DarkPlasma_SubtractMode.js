@@ -4,7 +4,9 @@
 // http://opensource.org/licenses/mit-license.php
 
 /**
- * 2020/03/15 1.0.0 公開
+ * 2020/03/15 1.0.1 2回動的に減算モードにすると減算から戻せなくなる不具合を修正
+ *                  ピクチャ表示前に動的に減算モードにしようとするとエラーになる不具合を修正
+ *            1.0.0 公開
  */
 
 /*:
@@ -40,7 +42,8 @@
  *   Xで指定したIDのピクチャについて、合成モードを減算でなくします。
  *
  * 注意:
- *   MakeScreenCapture.js には対応していません。
+ *   - MakeScreenCapture.js には対応していません。
+ *   - 減算合成はWebGLモードで実行される場合のみ有効です。
  */
 
 (function () {
@@ -62,15 +65,22 @@
   const _Graphics_createRenderer = Graphics._createRenderer;
   Graphics._createRenderer = function () {
     _Graphics_createRenderer.call(this);
-    this._renderer.state.blendModes[BLEND_MODES.SUBTRACT] = [
-      this._renderer.gl.ZERO,
-      this._renderer.gl.ONE_MINUS_SRC_COLOR
-    ];
+    if (this.isWebGL()) {
+      this._renderer.state.blendModes[BLEND_MODES.SUBTRACT] = [
+        this._renderer.gl.ZERO,
+        this._renderer.gl.ONE_MINUS_SRC_COLOR
+      ];
+    } else {
+      // Canvasモードでは減算は使えない
+      this._renderer.state.blendModes[BLEND_MODES.SUBTRACT] = 'source-over';
+    }
   };
 
   Game_Picture.prototype.subtractMode = function () {
-    this._originalBlendMode = this._blendMode;
-    this._blendMode = BLEND_MODES.SUBTRACT;
+    if (this._blendMode !== BLEND_MODES.SUBTRACT) {
+      this._originalBlendMode = this._blendMode;
+      this._blendMode = BLEND_MODES.SUBTRACT;
+    }
   };
 
   Game_Picture.prototype.backFromSubtractMode = function () {
@@ -139,14 +149,20 @@
         if (args.length > 0) {
           const pictureId = Number(args[0]);
           $gameScreen.addDynamicSubtractPicture(pictureId);
-          $gameScreen.picture(pictureId).subtractMode();
+          const picture = $gameScreen.picture(pictureId);
+          if (picture) {
+            picture.subtractMode();
+          }
         }
         break;
       case 'removeSubtractPictureId':
         if (args.length > 0) {
           const pictureId = Number(args[0]);
           $gameScreen.removeDynamicSubtractPicture(pictureId);
-          $gameScreen.picture(pictureId).backFromSubtractMode();
+          const picture = $gameScreen.picture(pictureId);
+          if (picture) {
+            picture.backFromSubtractMode();
+          }
         }
         break;
     }
