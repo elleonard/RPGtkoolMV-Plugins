@@ -4,7 +4,8 @@
 // http://opensource.org/licenses/mit-license.php
 
 /**
- * 2020/03/15 1.0.1 2回動的に減算モードにすると減算から戻せなくなる不具合を修正
+ * 2020/03/15 1.0.2 canvasモードでエラーになる不具合を修正
+ *            1.0.1 2回動的に減算モードにすると減算から戻せなくなる不具合を修正
  *                  ピクチャ表示前に動的に減算モードにしようとするとエラーになる不具合を修正
  *            1.0.0 公開
  */
@@ -72,7 +73,7 @@
       ];
     } else {
       // Canvasモードでは減算は使えない
-      this._renderer.state.blendModes[BLEND_MODES.SUBTRACT] = 'source-over';
+      this._renderer.blendModes[BLEND_MODES.SUBTRACT] = 'source-over';
     }
   };
 
