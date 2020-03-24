@@ -124,6 +124,12 @@ Trb_TextColor.js を採用している場合は色番号ではなくカラーコ
 
 メニュー画面のキャラクターステータスウィンドウを非表示にするプラグイン
 
+## DarkPlasma_HiME_MenuMusicPatch.js
+
+HiME_MenuMusic.js のパッチプラグイン
+
+ロード後に再生するBGM/BGSを、セーブ時にメニューを開く前に再生していたBGM/BGSにすることができます
+
 ## DarkPlasma_IgnoreDisableDashMap.js
 
 マップのダッシュ禁止フラグを無視するプラグイン
