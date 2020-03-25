@@ -4,6 +4,7 @@
 // http://opensource.org/licenses/mit-license.php
 
 /**
+ * 2020/03/25 1.0.1 マウスクリックやタッチでキャンセル項目を選択した際に決定SEが再生される不具合を修正
  * 2020/03/17 1.0.0 公開
  */
 
@@ -38,5 +39,30 @@
       return true;
     }
     return _Window_ChoiceList_isCancelTriggered.call(this);
+  };
+
+  /**
+   * キャンセルに相当する選択肢がタッチされたかどうか
+   * @param {boolean} triggered
+   * @return {boolean}
+   */
+  Window_ChoiceList.prototype.isTouchedCancel = function (triggered) {
+    if (!triggered || !this.isCancelEnabled() || this.index() !== $gameMessage.choiceCancelType()) {
+      return false;
+    }
+    const hitIndex = this.hitTest(
+      this.canvasToLocalX(TouchInput.x),
+      this.canvasToLocalY(TouchInput.y)
+    );
+    return hitIndex >= 0 && hitIndex === this.index();
+  };
+
+  const _Window_ChoiceList_onTouch = Window_ChoiceList.prototype.onTouch;
+  Window_ChoiceList.prototype.onTouch = function (triggered) {
+    if (this.isTouchedCancel(triggered)) {
+      this.processCancel();
+    } else {
+      _Window_ChoiceList_onTouch.call(this, triggered);
+    }
   };
 })();
