@@ -129,6 +129,8 @@ Trb_TextColor.js を採用している場合は色番号ではなくカラーコ
 HiME_MenuMusic.js のパッチプラグイン
 
 ロード後に再生するBGM/BGSを、セーブ時にメニューを開く前に再生していたBGM/BGSにすることができます
+※HiME_MenuMusic.js は潜在的なバグがあるため、利用を推奨しません。
+可能であれば DarkPlasma_MenuMusic.js をご利用ください。
 
 ## DarkPlasma_IgnoreDisableDashMap.js
 
@@ -147,6 +149,12 @@ HiME_MenuMusic.js のパッチプラグイン
 js/pluginsフォルダを暗号化したりパッキングして配布する場合にもゲーム内で簡易的にライセンスが確認できるようになります
 ただし、あくまでも簡易的な表示なのでオープンソースライセンスについてもっと厳密に扱いたい場合は、
 ライセンスの全文を記したテキストファイルを添付して配布すると良いでしょう
+
+## DarkPlasma_MenuMusic.js
+
+メニュー画面のBGMを設定するプラグイン
+
+ゲームの進行状況などによってメニューのBGMを変えたい場合には変数を使ってメニューBGMを切り替えることも可能です
 
 ## DarkPlasma_Memories.js
 

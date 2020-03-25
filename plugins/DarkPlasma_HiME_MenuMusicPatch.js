@@ -25,6 +25,10 @@
  * @default true
  *
  * @help
+ * ※HiME_MenuMusic.js には潜在的なバグがあるため、利用は推奨しません。
+ * 可能であれば DarkPlasma_MenuMusic.js をご利用ください。
+ * 当プラグインは HiME_MenuMusic.js 用の設定を既に使っているプロジェクト向けです。
+ *
  * HiME_MenuMusic.jsの追加パッチプラグインです。
  * プラグインリストで HiME_MenuMusic.js よりも下に読み込んでください。
  *
