@@ -4,6 +4,7 @@
 // http://opensource.org/licenses/mit-license.php
 
 /**
+ * 2020/03/26 1.0.1 敵を攻撃した際にエラーが発生する不具合を修正
  * 2020/03/24 1.0.0 機能を大幅追加した正式版を公開
  * 2020/03/23 0.0.1 公開
  */
@@ -278,7 +279,7 @@
     const damageCapSetting = settings.actorDamageCap.find(cap => cap.id === this.actorId());
     return this.actor().unlimitedDamageCap ||
       (settings.unlimitedDamageCapSwitch > 0 && $gameSwitches.value(settings.unlimitedDamageCapSwitch)) ||
-      (damageCapSetting.unlimitedDamageCapSwitch > 0 && $gameSwitches.value(settings.unlimitedDamageCapSwitch)) ||
+      (damageCapSetting && damageCapSetting.unlimitedDamageCapSwitch > 0 && $gameSwitches.value(damageCapSetting.unlimitedDamageCapSwitch)) ||
       this.isUnlimitedDamageCapStateAffected() ||
       this.hasUnlimitedDamageCapEquip();
   };
