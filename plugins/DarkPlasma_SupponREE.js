@@ -12,6 +12,8 @@
  * プラグイン説明:
  * http://supponweblog.blog88.fc2.com/blog-category-13.html
  * 
+ * 2020/03/28 2.2.1 サイドビューの敵座標計算方式を変更
+ *                  リファクタ
  * 2020/02/19 2.2.0 確定枠を種類で指定するプラグインコマンドを追加
  * 2020/02/17 2.1.0 確定出現枠を指定するプラグインコマンドを追加
  * 2019/07/29 2.0.0 タッチ（クリック）操作でエネミーが選択できるよう修正
@@ -115,6 +117,8 @@
 
   /**
    * 表示位置の設定
+   * @param {number} X
+   * @param {number} y
    */
   Game_Enemy.prototype.setScreenPosition = function (x, y) {
     this._screenX = x;
@@ -159,7 +163,7 @@
       const ratio = commandArgs[0];
       const times = commandArgs[1];
       const enemyIds = commandArgs.slice(2);
-      for (var i = 0; i < times; i++) {
+      for (let i = 0; i < times; i++) {
         if (ratio > Math.randomInt(100) || enemyNumber === 0) {
           const enemyId = enemyIds[Math.randomInt(enemyIds.length)];
           this._enemies.push(new Game_Enemy(enemyId, 0, 0));  // 暫定で0, 0にセット
@@ -173,62 +177,115 @@
     _Game_Troop_setup.call(this, troopId);
   };
 
+  /**
+   * 敵画像を配置する
+   */
   Spriteset_Battle.prototype.supponReLinedUpEnemy = function () {
     const depth = Math.round(Graphics.boxHeight * 0.15);      // エネミーのいる列によって生じる奥行き表現をするためのY補正用数値
     const base_y = Math.round(Graphics.boxHeight * 0.7);
     this._enemySprites.reverse();
     // 全スプライトの表示横幅合計
     const whole_x = this._enemySprites
-      .map(sprite => Math.ceil(sprite.width * sprite.scale.x))
+      .map(sprite => Math.ceil(sprite.bitmap.width * sprite.scale.x))
       .reduce((accumlator, current) => accumlator + current, 0);
     const line = Math.floor(whole_x / Graphics.boxWidth) + 1;    // 横列数
-    var maxx = null;
-    var minx = null;
+    let maxx = null;
+    let minx = null;
     const enemyCount = this._enemySprites.length;   // エネミーの数
     const enemyPerLine = Math.ceil(enemyCount / line); // 列あたりのエネミーの数
-    this._enemySprites.forEach(function (sprite, index) {
-      sprite._homeY = base_y;
-      var currentEnemyLine = Math.ceil((index + 1) / enemyPerLine);   // 注目しているエネミーの列
-      sprite._homeX = Graphics.boxWidth * (index % enemyPerLine) / (enemyPerLine * 1.2);
-      sprite._homeX += Graphics.boxWidth * currentEnemyLine / (enemyPerLine * 1.2 * line);
-      sprite._homeY -= depth - (Math.ceil(depth * Math.pow(0.7, currentEnemyLine)));
-      if (maxx === null) { maxx = sprite._homeX; minx = sprite._homeX };
-      if (maxx < sprite._homeX) { maxx = sprite._homeX };
-      if (minx > sprite._homeX) { minx = sprite._homeY };
+    this._enemySprites.forEach((sprite, index) => {
+      const currentEnemyLine = Math.ceil((index + 1) / enemyPerLine);   // 注目しているエネミーの列
+      let x =  Graphics.boxWidth * (index % enemyPerLine) / (enemyPerLine * 1.2)
+        + Graphics.boxWidth * currentEnemyLine / (enemyPerLine * 1.2 * line);
+      let y = base_y - depth - (Math.ceil(depth * Math.pow(0.7, currentEnemyLine)));
+      sprite.setHome(x, y);
+      if (maxx === null) { maxx = x; minx = x; };
+      if (maxx < x) { maxx = x; };
+      if (minx > x) { minx = x; };
     });
 
-    const enemies = $gameTroop.members();
-    var shiftx = (maxx + minx) / 2 - Graphics.boxWidth / 2;
-    this._enemySprites.forEach(function (sprite, index) {
-      sprite._homeX -= shiftx;
+    const shiftx = (maxx + minx) / 2 - Graphics.boxWidth / 2;
+    this._enemySprites.forEach(sprite => {
+      sprite.shiftXLeft(shiftx);
       // 計算した座標をセットする
-      enemies[index].setScreenPosition(sprite._homeX, sprite._homeY);
+      sprite.feedbackPositionToEnemy();
     });
   };
 
+  /**
+   * 敵画像を配置する
+   */
   Spriteset_Battle.prototype.supponReLinedUpEnemySV = function () {
-    const base_y = Math.round(Graphics.height * 0.5);
-
-    const whole_x = this._enemySprites.map(sprite => Math.ceil(sprite.width * sprite.scale.x))
-      .reduce((accumlator, current) => accumlator + current, 0);
-
+    // 全座標同一なので、スプライトIDが大きい順にならんでいる。逆順のほうが直感的であるため、reverse
     this._enemySprites.reverse();
-    const line = Math.floor(whole_x / Graphics.width * 2) + 1;    // 列数
+    // 画面分割数
     const enemyCount = this._enemySprites.length;
-    this._enemySprites.forEach(function (sprite, index) {
-      const l = Math.floor(line * index / enemyCount);
-      sprite._homeX = (Graphics.width / (1 + enemyCount) * 0.6) * (1 + line * index % (enemyCount));
-      sprite._homeY = base_y;
-      sprite._homeY += (Graphics.height / line * 3) * (line - l * 2) / 15
-        - (Graphics.height / line * 3) / 30;
+    let partitionCount = 1; // 画面分割数
+    let line = 1;           // 行・列数
+    while (partitionCount < enemyCount) {
+      line++;
+      partitionCount = Math.pow(line, 2);
+    };
+    // どのセルに配置するか決める
+    let positionCells = [];
+    if (enemyCount === 2) { // 2匹の場合、右上と左下
+      positionCells = [1, 2];
+    } else if (enemyCount === 5) {  // 5匹の場合、鳳天舞の陣
+      positionCells = [0, 2, 4, 6, 8];
+    } else if (enemyCount === 6) {  // 6匹の場合、ホーリーウォール
+      positionCells = [0, 2, 3, 5, 6, 8];
+    } else {  // それ以外の場合は左上から順に詰める
+      positionCells = [...Array(enemyCount).keys()];
+    }
+    this._enemySprites.forEach((sprite, index) => {
+      sprite.calcHomePositionForSideView(line, positionCells[index]);
+      sprite.feedbackPositionToEnemy();
     });
   };
 
-  _Scene_Battle_start = Scene_Battle.prototype.start;
+  /**
+   * サイドビューにおける敵画像の位置を計算する
+   * @param {number} lineCount 配置する行・列数
+   * @param {number} positionCellIndex 位置ID
+   */
+  Sprite_Enemy.prototype.calcHomePositionForSideView = function (lineCount, positionCellIndex) {
+    const cellSizeX = 580 / lineCount;
+    const cellSizeY = Graphics.boxHeight * 2 / 3 / lineCount;
+    const partitionCellX = positionCellIndex % lineCount;
+    const partitionCellY = Math.floor(positionCellIndex / lineCount);
+
+    // 縦並びの場合、若干横軸をずらす
+    // ただし、枠をはみ出ないようにする
+    const offsetX = Math.min(Math.ceil(this.bitmap.height * this.scale.y / 2) * (partitionCellY/lineCount), cellSizeX/2);
+
+    // Y軸は画像縦サイズの半分だけ下げる
+    // 横並びの場合、若干縦軸をずらす
+    // ただし、枠をはみ出ないようにする
+    const offsetY = Math.min(Math.ceil(this.bitmap.height * this.scale.y / 2) * (1+(partitionCellX/lineCount)), cellSizeY/2);
+
+    this._homeX = cellSizeX * partitionCellX + cellSizeX/2 + offsetX;
+    this._homeY = cellSizeY * partitionCellY + cellSizeY/2 + offsetY;
+  };
+
+  /**
+   * 画像のX座標を左にずらす
+   * @param {number} shift
+   */
+  Sprite_Enemy.prototype.shiftXLeft = function (shiftX) {
+    this._homeX -= shiftX;
+  };
+
+  Sprite_Enemy.prototype.feedbackPositionToEnemy = function () {
+    if (this._enemy) {
+      this._enemy.setScreenPosition(this._homeX, this._homeY);
+    }
+  };
+
+  const _Scene_Battle_start = Scene_Battle.prototype.start;
   Scene_Battle.prototype.start = function () {
     _Scene_Battle_start.call(this)
     if ($gameTroop.supponReUsed) {
-      if ($dataSystem.optSideView) {
+      if ($gameSystem.isSideView()) {
         this._spriteset.supponReLinedUpEnemySV();
       } else {
         this._spriteset.supponReLinedUpEnemy();
