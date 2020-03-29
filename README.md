@@ -113,6 +113,12 @@ Trb_TextColor.js を採用している場合は色番号ではなくカラーコ
 
 全滅時に強制的に後衛と入れ替えるプラグイン
 
+## DarkPlasma_FTKR_ExEscapeCharactersPatch.js
+
+FTKR_ExEscapeCharactersPatch.js のパッチプラグイン
+
+画像先読みをloadではなくreserveで行います。
+
 ## DarkPlasma_HelpItem.js
 
 救済アイテム配布用プラグイン
