@@ -4,7 +4,8 @@
 // http://opensource.org/licenses/mit-license.php
 
 /**
- * 2020/03/30 1.0.0 公開
+ * 2020/03/30 1.1.0 基本売却価格に対して倍率を設定できる機能を追加
+ *            1.0.0 公開
  */
 
 /*:
@@ -68,10 +69,22 @@
  * @default 0
  *
  * @param Selling Price
- * @desc 売却価格
- * @text 売却価格
+ * @desc 基本売却価格（基本売却価格変更がONのときに有効）
+ * @text 基本売却価格
  * @type number
  * @default 0
+ *
+ * @param Change Base Selling Price
+ * @desc 基本売却価格を変更する（変更しない場合、基本売却価格はデータベースで設定した価格の半分）
+ * @text 基本売却価格変更
+ * @type boolean
+ * @default true
+ *
+ * @param Selling Price Rate
+ * @desc 売却価格倍率（％） 基本売却価格にこの倍率をかけたものが最終的な売却価格
+ * @text 売却価格倍率（％）
+ * @type number
+ * @default 100
  */
 /*~struct~WeaponPrice:
  * 
@@ -82,10 +95,22 @@
  * @default 0
  *
  * @param Selling Price
- * @desc 売却価格
- * @text 売却価格
+ * @desc 基本売却価格（基本売却価格変更がONのときに有効）
+ * @text 基本売却価格
  * @type number
  * @default 0
+ *
+ * @param Change Base Selling Price
+ * @desc 基本売却価格を変更する
+ * @text 基本売却価格変更
+ * @type boolean
+ * @default true
+ *
+ * @param Selling Price Rate
+ * @desc 売却価格倍率（％） 基本売却価格にこの倍率をかけたものが最終的な売却価格
+ * @text 売却価格倍率（％）
+ * @type number
+ * @default 100
  */
 /*~struct~ArmorPrice:
  * 
@@ -96,10 +121,22 @@
  * @default 0
  *
  * @param Selling Price
- * @desc 売却価格
- * @text 売却価格
+ * @desc 基本売却価格（基本売却価格変更がONのときに有効）
+ * @text 基本売却価格
  * @type number
  * @default 0
+ *
+ * @param Change Base Selling Price
+ * @desc 基本売却価格を変更する
+ * @text 基本売却価格変更
+ * @type boolean
+ * @default true
+ *
+ * @param Selling Price Rate
+ * @desc 売却価格倍率（％） 基本売却価格にこの倍率をかけたものが最終的な売却価格
+ * @text 売却価格倍率（％）
+ * @type number
+ * @default 100
  */
 /*~struct~Condition:
  *
@@ -219,7 +256,7 @@
         default:
           break;
       }
-      return priceSetting ? priceSetting.price : null;
+      return priceSetting ? priceSetting.calcPrice(category) : null;
     }
   }
 
@@ -229,11 +266,15 @@
   class SellingPrice {
     /**
      * @param {number} id アイテムID
-     * @param {number} price 売却価格
+     * @param {number} price 基本売却価格
+     * @param {boolean} changeBasePrice 基本売却価格を変更するかどうか
+     * @param {number} priceRate 売却価格倍率
      */
-    constructor(id, price) {
+    constructor(id, price, changeBasePrice, priceRate) {
       this._id = id;
       this._price = price;
+      this._changeBasePrice = changeBasePrice;
+      this._priceRate = priceRate;
     }
 
     /**
@@ -244,10 +285,15 @@
       const parsed = JsonEx.parse(json);
       return new SellingPrice(
         Number(parsed['Id'] || 0),
-        Number(parsed['Selling Price'] || 0)
+        Number(parsed['Selling Price'] || 0),
+        String(parsed['Change Base Selling Price'] || 'true') === 'true',
+        Number(parsed['Selling Price Rate'] || 100)
       );
     }
 
+    /**
+     * @return {number}
+     */
     get id() {
       return this._id;
     }
@@ -257,6 +303,42 @@
      */
     get price() {
       return this._price;
+    }
+
+    /**
+     * 基本売却価格を返す
+     * @param {string} category アイテムカテゴリ
+     * @return {number}
+     */
+    basePrice(category) {
+      let data;
+      switch(category) {
+        case ITEM_CATEGORIES.ITEM:
+          data = $dataItems[this._id];
+          break;
+        case ITEM_CATEGORIES.WEAPON:
+          data = $dataWeapons[this._id];
+          break;
+        case ITEM_CATEGORIES.ARMOR:
+          data = $dataArmors[this._id];
+          break;
+        default:
+          data = null;
+          break;
+      }
+      if (!data) {
+        return this._price;
+      }
+      return this._changeBasePrice ? this._price : Math.floor(data.price / 2);
+    }
+
+    /**
+     * 最終売却価格を計算して返す
+     * @param {string} category アイテムカテゴリ
+     * @return {number}
+     */
+    calcPrice(category) {
+      return this.basePrice(category) * this._priceRate / 100;
     }
   }
 
