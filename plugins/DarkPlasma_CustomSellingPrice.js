@@ -158,126 +158,6 @@
   };
 
   /**
-   * 変数限界値
-   */
-  class VariableLimit {
-    /**
-     * @param {boolean} enabled 有効な限界値かどうか
-     * @param {number} limit 限界値
-     */
-    constructor(enabled, limit) {
-      this._enabled = enabled;
-      this._limit = limit;
-    }
-
-    /**
-     * @param {string} json 
-     * @return {VariableLimit}
-     */
-    static fromJson(json) {
-      const parsed = JsonEx.parse(json);
-      return new VariableLimit(
-        String(parsed['Enabled'] || 'true') === 'true',
-        Number(parsed['Variable Limit'] || 0)
-      );
-    }
-
-    /**
-     * @return {boolean}
-     */
-    get isEnabled() {
-      return this._enabled;
-    }
-
-    /**
-     * @return {number}
-     */
-    get limit() {
-      return this._limit;
-    }
-  }
-
-  /**
-   * 売却価格の有効条件
-   */
-  class SellingPriceCondition {
-    /**
-     * @param {number} switch_ スイッチID
-     * @param {number} variable 変数ID
-     * @param {VariableLimit} upperLimit 変数上限
-     * @param {VariableLimit} lowerLimit 変数下限
-     */
-    constructor(switch_, variable, upperLimit, lowerLimit) {
-      this._switch = switch_;
-      this._variable = variable;
-      this._upperLimit = upperLimit;
-      this._lowerLimit = lowerLimit;
-    }
-
-    /**
-     * @param {string} json 
-     * @return {SellingPriceCondition}
-     */
-    static fromJson(json) {
-      const parsed = JsonEx.parse(json);
-      return new SellingPriceCondition(
-        Number(parsed['Switch'] || 0),
-        Number(parsed['Variable'] || 0),
-        VariableLimit.fromJson(parsed['Variable Upper Limit'] || '{"Enabled": "true", "Variable Limit": "0"}'),
-        VariableLimit.fromJson(parsed['Variable Lower Limit'] || '{"Enabled": "true", "Variable Limit": "0"}')
-      );
-    }
-
-    /**
-     * 有効条件を満たしているかどうか
-     * @return {boolean}
-     */
-    isConditionOk() {
-      return (this._switch <= 0 || $gameSwitches.value(this._switch)) &&
-        (this._variable <= 0 ||
-          (!this._upperLimit.isEnabled || $gameVariables.value(this._variable) <= this._upperLimit.limit) &&
-          (!this._lowerLimit.isEnabled || $gameVariables.value(this._variable) >= this._lowerLimit.limit));
-    }
-  }
-
-  /**
-   * 売却価格
-   */
-  class SellingPrice {
-    /**
-     * @param {number} id アイテムID
-     * @param {number} price 売却価格
-     */
-    constructor(id, price) {
-      this._id = id;
-      this._price = price;
-    }
-
-    /**
-     * @param {string} json 
-     * @return {SellingPrice}
-     */
-    static fromJson(json) {
-      const parsed = JsonEx.parse(json);
-      return new SellingPrice(
-        Number(parsed['Id'] || 0),
-        Number(parsed['Selling Price'] || 0)
-      );
-    }
-
-    get id() {
-      return this._id;
-    }
-
-    /**
-     * @return {number}
-     */
-    get price() {
-      return this._price;
-    }
-  }
-
-  /**
    * 売却価格セット
    */
   class CustomPriceSetting {
@@ -340,6 +220,126 @@
           break;
       }
       return priceSetting ? priceSetting.price : null;
+    }
+  }
+
+  /**
+   * 売却価格
+   */
+  class SellingPrice {
+    /**
+     * @param {number} id アイテムID
+     * @param {number} price 売却価格
+     */
+    constructor(id, price) {
+      this._id = id;
+      this._price = price;
+    }
+
+    /**
+     * @param {string} json 
+     * @return {SellingPrice}
+     */
+    static fromJson(json) {
+      const parsed = JsonEx.parse(json);
+      return new SellingPrice(
+        Number(parsed['Id'] || 0),
+        Number(parsed['Selling Price'] || 0)
+      );
+    }
+
+    get id() {
+      return this._id;
+    }
+
+    /**
+     * @return {number}
+     */
+    get price() {
+      return this._price;
+    }
+  }
+
+  /**
+   * 売却価格の有効条件
+   */
+  class SellingPriceCondition {
+    /**
+     * @param {number} switch_ スイッチID
+     * @param {number} variable 変数ID
+     * @param {VariableLimit} upperLimit 変数上限
+     * @param {VariableLimit} lowerLimit 変数下限
+     */
+    constructor(switch_, variable, upperLimit, lowerLimit) {
+      this._switch = switch_;
+      this._variable = variable;
+      this._upperLimit = upperLimit;
+      this._lowerLimit = lowerLimit;
+    }
+
+    /**
+     * @param {string} json 
+     * @return {SellingPriceCondition}
+     */
+    static fromJson(json) {
+      const parsed = JsonEx.parse(json);
+      return new SellingPriceCondition(
+        Number(parsed['Switch'] || 0),
+        Number(parsed['Variable'] || 0),
+        VariableLimit.fromJson(parsed['Variable Upper Limit'] || '{"Enabled": "true", "Variable Limit": "0"}'),
+        VariableLimit.fromJson(parsed['Variable Lower Limit'] || '{"Enabled": "true", "Variable Limit": "0"}')
+      );
+    }
+
+    /**
+     * 有効条件を満たしているかどうか
+     * @return {boolean}
+     */
+    isConditionOk() {
+      return (this._switch <= 0 || $gameSwitches.value(this._switch)) &&
+        (this._variable <= 0 ||
+          (!this._upperLimit.isEnabled || $gameVariables.value(this._variable) <= this._upperLimit.limit) &&
+          (!this._lowerLimit.isEnabled || $gameVariables.value(this._variable) >= this._lowerLimit.limit));
+    }
+  }
+
+  /**
+   * 変数限界値
+   */
+  class VariableLimit {
+    /**
+     * @param {boolean} enabled 有効な限界値かどうか
+     * @param {number} limit 限界値
+     */
+    constructor(enabled, limit) {
+      this._enabled = enabled;
+      this._limit = limit;
+    }
+
+    /**
+     * @param {string} json 
+     * @return {VariableLimit}
+     */
+    static fromJson(json) {
+      const parsed = JsonEx.parse(json);
+      return new VariableLimit(
+        String(parsed['Enabled'] || 'true') === 'true',
+        Number(parsed['Variable Limit'] || 0)
+      );
+    }
+
+    /**
+     * @return {boolean}
+     */
+    get isEnabled() {
+      return this._enabled;
+    }
+
+    /**
+     * @return {number}
+     */
+    get limit() {
+      return this._limit;
     }
   }
 
