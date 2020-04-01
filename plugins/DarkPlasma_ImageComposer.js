@@ -63,10 +63,6 @@
       this._bitmaps[key] = [];
     }
 
-    get bitmaps() {
-      return this._bitmaps;
-    }
-
     /**
      * @param {string} key ベース画像の名前
      * @param {Bitmap} bitmap ビットマップ
