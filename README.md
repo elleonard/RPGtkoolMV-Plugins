@@ -141,14 +141,20 @@ FTKR_ExEscapeCharactersPatch.js のパッチプラグイン
 HiME_MenuMusic.js のパッチプラグイン
 
 ロード後に再生するBGM/BGSを、セーブ時にメニューを開く前に再生していたBGM/BGSにすることができます
-※HiME_MenuMusic.js は潜在的なバグがあるため、利用を推奨しません。
-可能であれば DarkPlasma_MenuMusic.js をご利用ください。
+※HiME_MenuMusic.js は潜在的なバグがあるため、利用を推奨しません
+可能であれば DarkPlasma_MenuMusic.js をご利用ください
 
 ## DarkPlasma_IgnoreDisableDashMap.js
 
 マップのダッシュ禁止フラグを無視するプラグイン
 
 自分で作るゲーム用というよりは、誰かが作ったゲームのダッシュ禁止が煩わしい人向け
+
+## DarkPlasma_ImageComposer.js
+
+画像を合成するプラグイン
+
+CBR_imgFusion.js の機能をほぼ維持してリファクタしたものです
 
 ## DarkPlasma_IsBuffAffected.js
 
