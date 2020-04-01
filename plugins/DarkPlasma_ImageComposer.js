@@ -49,95 +49,6 @@
   };
 
   /**
-   * 合成画像メタ情報リスト
-   */
-  class ComposedImageList {
-    constructor() {
-      /**
-       * @type {ComposedImage[]}
-       */
-      this._images = [];
-    }
-
-    /**
-     * 合成画像を追加・更新する
-     * @param {number} imageId 合成画像ID
-     * @param {string} baseImageName ベース画像の名前
-     * @param {string[]} additionalImageNameList 差分画像の名前リスト
-     */
-    setImage(imageId, baseImageName, additionalImageNameList) {
-      this._images[imageId] = new ComposedImage(baseImageName, additionalImageNameList);
-    }
-
-    /**
-     * 合成画像を追加・更新する
-     * @param {string} baseImageName ベース画像の名前
-     * @param {string[]} additionalImageNameList 差分画像の名前リスト
-     */
-    composeImage(baseImageName, additionalImageNameList) {
-      const imageId = this.imageIdOf(baseImageName);
-      this.setImage(
-        imageId === null ? this._images.length : imageId,
-        baseImageName,
-        additionalImageNameList
-      );
-    }
-
-    /**
-     * ベース画像の名前から、合成画像IDを返す。
-     * 合成画像リスト内に存在しない場合、nullを返す。
-     * @param {string} name ベース画像の名前
-     * @return {number|null}
-     */
-    imageIdOf(name) {
-      const result = this._images.findIndex(image => image.baseImageName === name);
-      return result < 0 ? null : result;
-    }
-
-    /**
-     * ベース画像の名前から差分画像の名前一覧を取得する
-     * @param {string} name ベース画像の名前
-     * @return {ComposedImage|null}
-     */
-    additionalImageNames(name) {
-      const image = this._images.find(image => image.baseImageName === name);
-      return image ? image.additionalImageNameList : null;
-    }
-  }
-
-  window[ComposedImageList.name] = ComposedImageList;
-
-  /**
-   * 合成画像メタ情報
-   */
-  class ComposedImage {
-    /**
-     * @param {string} baseImageName ベース画像の名前
-     * @param {string[]} additionalImageNameList 差分画像の名前一覧
-     */
-    constructor(baseImageName, additionalImageNameList) {
-      this._baseImageName = baseImageName;
-      this._additionalImageNameList = additionalImageNameList;
-    }
-
-    /**
-     * @return {string}
-     */
-    get baseImageName() {
-      return this._baseImageName;
-    }
-
-    /**
-     * @return {string[]}
-     */
-    get additionalImageNameList() {
-      return this._additionalImageNameList;
-    }
-  }
-
-  window[ComposedImage.name] = ComposedImage;
-
-  /**
    * 合成Bitmap
    */
   class ComposedBitmaps {
@@ -257,20 +168,11 @@
   const _Game_System_initialize = Game_System.prototype.initialize;
   Game_System.prototype.initialize = function () {
     _Game_System_initialize.call(this);
-
-    /**
-     * @type {ComposedImageList}
-     */
-    this._composedImageList = new ComposedImageList();
   };
 
   const _Game_System_onAfterLoad = Game_System.prototype.onAfterLoad;
   Game_System.prototype.onAfterLoad = function () {
     _Game_System_onAfterLoad.call(this);
-    // プラグイン導入前のセーブデータをロードした場合、ここで初期化する
-    if (!this._composedImageList) {
-      this._composedImageList = new ComposedImageList();
-    }
   };
 
   /**
@@ -283,7 +185,6 @@
       .map(imageName => imageName.replace(/\\V\[(\d+)\]/g, (_, variableId) => $gameVariables.value(variableId)));
 
     const baseImageName = imageNameList.shift().slice(1, -1);
-    this._composedImageList.composeImage(baseImageName, imageNameList);
 
     // composedBitmapsにpush
     const bitmap = ImageManager.loadBitmap('img/pictures/', baseImageName.slice(0, -4), 0, true);
