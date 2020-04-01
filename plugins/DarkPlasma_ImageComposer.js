@@ -133,49 +133,6 @@
   }
 
   /**
-   * @return {Game_Picture[]}
-   */
-  Game_Screen.prototype.allValidPictures = function () {
-    return [...Array(this.maxPictures()).keys()].map(i => this.picture(i + 1)).filter(picture => picture);
-  };
-
-  /**
-  * 画像の名前からピクチャIDを取得する。
-  * 存在しない場合-1を返す。
-  * @return {number}
-  */
-  Game_Screen.prototype.findPictureIdByName = function (name) {
-    const realPictureId = this._pictures.findIndex(picture => picture && picture.name() === name);
-    if ($gameParty.inBattle()) {
-      return realPictureId - this.maxPictures();
-    }
-    return realPictureId > this.maxPictures() ? -1 : realPictureId;
-  };
-
-  /**
-   * 画像の名前からピクチャを取得する。
-   * 存在しない場合nullを返す。
-   * @return {Game_Picture|null}
-   */
-  Game_Screen.prototype.findPictureByName = function (name) {
-    const realPictureId = this._pictures.findIndex(picture => picture && picture.name() === name);
-    if ($gameParty.inBattle()) {
-      return this.picture(realPictureId - this.maxPictures());
-    }
-    return realPictureId > this.maxPictures() ? null : this.picture(realPictureId);
-  };
-
-  const _Game_System_initialize = Game_System.prototype.initialize;
-  Game_System.prototype.initialize = function () {
-    _Game_System_initialize.call(this);
-  };
-
-  const _Game_System_onAfterLoad = Game_System.prototype.onAfterLoad;
-  Game_System.prototype.onAfterLoad = function () {
-    _Game_System_onAfterLoad.call(this);
-  };
-
-  /**
    * 画像を合成する
    * @param {string[]} imageNameList
    */
