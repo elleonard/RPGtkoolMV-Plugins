@@ -9,6 +9,12 @@ RPGツクールMVのプラグイン管理から読み込んでください
 
 # プラグインの説明
 
+## DarkPlasma_ActorCannotOpenIndividualMenu.js
+
+特定の個別メニューを開けないアクターやステートを設定するプラグイン
+
+スキルの概念がない特殊アクターや、装備画面を開けなくするステートなどを実現できます
+
 ## DarkPlasma_AdditionalAttackAnimation.js
 
 特定条件で攻撃アニメーションを追加するプラグイン
