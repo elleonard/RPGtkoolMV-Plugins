@@ -4,6 +4,7 @@
 // http://opensource.org/licenses/mit-license.php
 
 /**
+ * 2020/04/04 1.1.4 戦闘結果の改ページが二重になる不具合を修正
  * 2020/03/09 1.1.3 下記不具合が修正しきれていなかったので再修正
  *            1.1.2 Yanfly系プラグインが読まれていないとエラーが発生する不具合を修正
  * 2020/01/27 1.1.1 メモリリークを修正
@@ -103,13 +104,23 @@
     return text.replace(/<(?:BR|line break|WordWrap|wrap)>/gi, '');
   };
 
-  const _Window_Base_processCharacter = Window_Base.prototype.processCharacter;
+  const _Window_Message_processCharacter = Window_Message.prototype.processCharacter;
   Window_Message.prototype.processCharacter = function (textState) {
     if (textState.text[textState.index] === '\n') {
       $gameMessage.newLine();
     }
-    _Window_Base_processCharacter.call(this, textState);
+    _Window_Message_processCharacter.call(this, textState);
   }
+
+  const _Window_Message_processNewPage = Window_Message.prototype.processNewPage;
+  Window_Message.prototype.processNewPage = function (textState) {
+    // チェックモードでは副作用を起こさない
+    if (this._checkWordWrapMode) {
+      Window_Base.prototype.processNewPage.call(this, textState);
+      return;
+    }
+    _Window_Message_processNewPage.call(this, textState);
+  };
 
   const _Window_Base_processNormalCharacter = Window_Base.prototype.processNormalCharacter;
   Window_Base.prototype.processNormalCharacter = function (textState) {
@@ -217,6 +228,14 @@
   Game_Message.prototype.newLine = function () {
     this._currentLine++;
   };
+
+  /*const _Game_Message_newPage = Game_Message.prototype.newPage;
+  Game_Message.prototype.newPage = function () {
+    _Game_Message_newPage.call(this);
+    if (this._texts.length > 0) {
+      this._currentLine = 0;
+    }
+  };*/
 
   Game_Message.prototype.wordWrap = function () {
     this._wordWrapCount[this._currentLine]++;
