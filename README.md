@@ -296,6 +296,10 @@ HPを消費する, HPを割合で消費する, MPを割合で消費する, ア�
 pageupキー（L2ボタン）でログを表示し、上下キーでスクロール、キャンセルキーで戻ります
 YEP_MessageCore.jsに対応しています（v1.18で動作確認済み）
 
+## DarkPlasma_TinyMedal.js
+
+ちいさなメダルシステムを実現するプラグイン
+
 ## DarkPlasma_WordWrapForJapanese.js
 
 日本語テキスト自動折り返しプラグイン
