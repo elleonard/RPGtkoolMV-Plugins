@@ -170,6 +170,12 @@ CBR_imgFusion.js の機能をほぼ維持してリファクタしたものです
 
 戦闘中、強化状態や弱体状態で条件分岐するためのメソッドを追加するプラグイン
 
+## DarkPlasma_Leeryonto_StandPictureManagerPatch.js
+
+Leeryontoさんの StandPictureManager.js のパッチプラグイン
+
+特定条件で立ち絵の明るさ自動制御が働かなくなる不具合を修正します
+
 ## DarkPlasma_LicenseManager.js
 
 使用しているプラグインの一覧を読み取り、著者名/コピーライト/ライセンスを表示するプラグイン
