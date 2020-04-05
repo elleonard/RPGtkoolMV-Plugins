@@ -4,7 +4,8 @@
 // http://opensource.org/licenses/mit-license.php
 
 /**
- * 2020/04/05 1.0.3 下記不具合が完全に修正できていなかったので修正
+ * 2020/04/05 1.0.4 明るさ調整が1メッセージ分遅れる不具合を修正
+ *            1.0.3 下記不具合が完全に修正できていなかったので修正
  *            1.0.2 エラーになる不具合を修正
  *            1.0.1 プラグインパラメータが読み込めていない不具合を修正
  *            1.0.0 公開
@@ -32,8 +33,8 @@
 
   const _Window_Message_startMessage = Window_Message.prototype.startMessage;
   Window_Message.prototype.startMessage = function () {
-    _Window_Message_startMessage.call(this, arguments);
     this._speechActorNameAlreadySet = false;
+    _Window_Message_startMessage.call(this, arguments);
   };
 
   Window_Message.prototype.setCurrentSpeechingActorName = function(name) {
