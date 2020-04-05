@@ -4,7 +4,8 @@
 // http://opensource.org/licenses/mit-license.php
 
 /**
- * 2020/04/05 1.0.1 プラグインパラメータが読み込めていない不具合を修正
+ * 2020/04/05 1.0.2 エラーになる不具合を修正
+ *            1.0.1 プラグインパラメータが読み込めていない不具合を修正
  *            1.0.0 公開
  */
 
@@ -45,7 +46,7 @@
       this.setCurrentSpeechingActorName("");
     }
     if (!displayNamePlate) this._nameWindow.hide();
-    text = text.replace(/\x1bN\<(.*)\>/gi, function () {
+    text = text.replace(/\x1bN\<(.*)\>/gi,  function() {
       //数値だけの場合、それをアクターのIDだと判断して対応するIDのネームを入れる
       if (text.search(/\x1bN\<([0-9]\d*|0)\>/gi) == 0) {
         if (useNamePlate){
@@ -58,7 +59,7 @@
         }
         return Yanfly.nameWindow.refresh(arguments[1], 1);
       }
-    }, this);
+    }.bind(this));
     text = text.replace(/\x1bN1\<(.*)\>/gi, function () {
       return Yanfly.nameWindow.refresh(arguments[1], 1);
     }, this);
