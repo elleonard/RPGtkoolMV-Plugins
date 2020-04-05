@@ -4,7 +4,8 @@
 // http://opensource.org/licenses/mit-license.php
 
 /**
- * 2020/04/05 1.0.2 エラーになる不具合を修正
+ * 2020/04/05 1.0.3 下記不具合が完全に修正できていなかったので修正
+ *            1.0.2 エラーになる不具合を修正
  *            1.0.1 プラグインパラメータが読み込めていない不具合を修正
  *            1.0.0 公開
  */
@@ -62,31 +63,31 @@
     }.bind(this));
     text = text.replace(/\x1bN1\<(.*)\>/gi, function () {
       return Yanfly.nameWindow.refresh(arguments[1], 1);
-    }, this);
+    }.bind(this));
     text = text.replace(/\x1bN2\<(.*)\>/gi, function () {
       return Yanfly.nameWindow.refresh(arguments[1], 2);
-    }, this);
+    }.bind(this));
     text = text.replace(/\x1bN3\<(.*)\>/gi, function () {
       return Yanfly.nameWindow.refresh(arguments[1], 3);
-    }, this);
+    }.bind(this));
     text = text.replace(/\x1bNC\<(.*)\>/gi, function () {
       if (useNamePlate) {
         this.setCurrentSpeechingActorName(arguments[1]);
       }
       return Yanfly.nameWindow.refresh(arguments[1], 3);
-    }, this);
+    }.bind(this));
     text = text.replace(/\x1bN4\<(.*)\>/gi, function () {
       return Yanfly.nameWindow.refresh(arguments[1], 4);
-    }, this);
+    }.bind(this));
     text = text.replace(/\x1bN5\<(.*)\>/gi, function () {
       return Yanfly.nameWindow.refresh(arguments[1], 5);
-    }, this);
+    }.bind(this));
     text = text.replace(/\x1bNR\<(.*)\>/gi, function () {
       if (useNamePlate){ 
         this.setCurrentSpeechingActorName(arguments[1]);
       }
       return Yanfly.nameWindow.refresh(arguments[1], 5);
-    }, this);
+    }.bind(this));
     return text;
   };
 })();
