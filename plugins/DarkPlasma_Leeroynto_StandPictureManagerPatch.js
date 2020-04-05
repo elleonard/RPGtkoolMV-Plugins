@@ -4,7 +4,8 @@
 // http://opensource.org/licenses/mit-license.php
 
 /**
- * 2020/04/05 1.0.0 公開
+ * 2020/04/05 1.0.1 プラグインパラメータが読み込めていない不具合を修正
+ *            1.0.0 公開
  */
 
 /*:
@@ -23,10 +24,9 @@
 
 (function () {
   'use strict';
-  const pluginName = document.currentScript.src.replace(/^.*\/(.*).js$/, function () {
-    return arguments[1];
-  });
-  const pluginParameters = PluginManager.parameters(pluginName);
+  const parameters = PluginManager.parameters('StandPictureManager');
+  const useNamePlate = String(parameters['UseNamePlate'] || 'false') === 'true';
+  const displayNamePlate = String(parameters['DisplayNamePlate'] || 'true') === 'true';
 
   const _Window_Message_startMessage = Window_Message.prototype.startMessage;
   Window_Message.prototype.startMessage = function () {
