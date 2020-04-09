@@ -230,6 +230,10 @@ sample/Memories.json にサンプル用のデータが載せてあります
 
 PromptlyPopup.js における連続攻撃や全体攻撃のダメージ/回避SEの再生をそれぞれ1回に抑えるプラグイン
 
+## DarkPlasma_ReturnFromOptions.js
+
+オプションから戻るメニューを追加するプラグイン
+
 ## DarkPlasma_ShopStock.js
 
 在庫つきショップを実現するプラグイン
