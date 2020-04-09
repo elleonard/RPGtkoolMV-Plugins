@@ -4,6 +4,7 @@
 // http://opensource.org/licenses/mit-license.php
 
 /**
+ * 2020/04/XX 1.1.0 Torigoya_TextRuby.jsに対応
  * 2018/01/07 1.0.1 他の語句を含む語句がハイライトされない不具合の修正
  * 2018/01/01 1.0.0 公開
  */
@@ -36,33 +37,56 @@
  * @default 0
  */
 
-(function () {
+(function (global) {
   // パラメータ読み込み
-  var pluginName = 'DarkPlasma_AutoHighlight';
-  var pluginParameters = PluginManager.parameters(pluginName);
+  const pluginName = 'DarkPlasma_AutoHighlight';
+  const pluginParameters = PluginManager.parameters(pluginName);
 
-  var highlightSettings = JSON.parse(pluginParameters['Highlight Words'])
-    .map(function (e) { return JSON.parse(e); }, this);
+  const highlightSettings = JSON.parse(pluginParameters['Highlight Words'])
+    .map(e => JSON.parse(e));
 
   // ハイライト語句と色の対応
-  var highlightColors = {};
-  highlightSettings.forEach(function (highlight) {
-    highlightColors[highlight.word] = highlight.color;
-  }, this);
+  const highlightColors = {};
+  highlightSettings.forEach(highlight => {
+    highlightColors[highlight.word] = Number(highlight.color);
+  });
   // 語句検索用正規表現
-  var highlightRegexp = new RegExp(
-    "(" + highlightSettings.map(function (highlight) { return highlight.word; }, this).join("|") + ")",
+  const highlightRegexp = new RegExp(
+    `(${highlightSettings.map(highlight => highlight.word).join("|")})`,
     "gi"
   );
 
-  var _Window_Message_convertEscapeCharacters = Window_Message.prototype.convertEscapeCharacters;
+  const _Window_Message_convertEscapeCharacters = Window_Message.prototype.convertEscapeCharacters;
   Window_Message.prototype.convertEscapeCharacters = function (text) {
     text = _Window_Message_convertEscapeCharacters.call(this, text);
 
     // オートハイライト
-    text = text.replace(highlightRegexp, function (match) {
+    text = text.replace(highlightRegexp, match => {
       return "\x1bC[" + highlightColors[match] + "]" + match + "\x1bC[0]";
     });
     return text;
   };
-})();
+
+  PluginManager.isLoadedTorigoyaTextRuby = function () {
+    return !!global.Torigoya && !!global.Torigoya.TextRuby;
+  };
+
+  if (PluginManager.isLoadedTorigoyaTextRuby()) {
+    const rubyHighlightRegexp = new RegExp(
+      `(^${highlightSettings.map(highlight => highlight.word).join("$|")})`,
+      "i"
+    );
+    let TextRuby = global.Torigoya.TextRuby;
+
+    const _TextRuby_processDrawRuby = TextRuby.processDrawRuby;
+    TextRuby.processDrawRuby = function (mainText, subText, textState) {
+      if (rubyHighlightRegexp.test(mainText)){
+        TextRuby.setMainTextColor(highlightColors[mainText]);
+      }
+      if (rubyHighlightRegexp.test(subText)) {
+        TextRuby.setSubTextColor(highlightColors[subText]);
+      }
+      _TextRuby_processDrawRuby.call(this, mainText, subText, textState);
+    };
+  }
+})(window);
