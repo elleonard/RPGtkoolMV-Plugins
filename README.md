@@ -21,6 +21,12 @@ RPGツクールMVのプラグイン管理から読み込んでください
 
 特定のステートにかかっている敵や、特定の種類の敵に攻撃したとき、アニメーションを追加表示します
 
+## DarkPlasma_AltWindowFramePatch.js
+
+MADO付属の AltWindowFrame.js のパッチプラグイン
+
+ショップや、他プラグインで作成したウィンドウにスキンが適用されない不具合を修正します
+
 ## DarkPlasma_AutoHighlight.js
 
 メッセージ内の指定した文字列を自動でハイライトするプラグイン
