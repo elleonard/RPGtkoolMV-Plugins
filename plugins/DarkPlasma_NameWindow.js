@@ -4,6 +4,8 @@
 // http://opensource.org/licenses/mit-license.php
 
 /**
+ * 2020/04/12 1.1.1 convertEscapeCharactersを呼び出すようなプラグインとの競合を修正
+ *                  リファクタ
  * 2020/01/26 1.1.0 パディング幅の設定項目追加
  *            1.0.1 メッセージウィンドウの位置によって名前ウィンドウの位置がズレる不具合を修正
  * 2019/11/01 1.0.0 公開
@@ -102,13 +104,19 @@
 
   const settings = {
     isClearNameWindow: String(pluginParameters['Is Clear Name Window'] || 'false') === 'true',
-    nameWindowPaddingStaandard: Number(pluginParameters['Name Window Padding Standard'] || 18),
+    nameWindowPaddingStandard: Number(pluginParameters['Name Window Padding Standard'] || 18),
     nameWindowPaddingHorizontal: Number(pluginParameters['Name Window Padding Horizontal'] || 72),
     defaultTextColor: Number(pluginParameters['Default Text Color'] || 6),
     windowOffsetX: Number(pluginParameters['Window Offset X'] || -28),
     windowOffsetY: Number(pluginParameters['Window Offset Y'] || 0),
     closeDelayFrame: Number(pluginParameters['Close Delay Frame'] || 4),
-    actorColors: JSON.parse(pluginParameters['Actor Colors']).map(function (e) { return JSON.parse(e); }, this),
+    actorColors: JsonEx.parse(pluginParameters['Actor Colors'] || '[]').map(actorColors => {
+      const parsed = JsonEx.parse(actorColors);
+      return {
+        actor: Number(parsed['actor']),
+        color: String(parsed['color']).startsWith("#") ? String(parsed['color']) : Number(parsed['color'])
+      };
+    }, this),
     autoNameWindow: String(pluginParameters['Auto Name Window'] || 'false') === 'true'
   };
 
@@ -121,132 +129,223 @@
     RIGHT_EDGE: 5
   };
 
-  function Window_SpeakerName() {
-    this.initialize.apply(this, arguments);
+  class Window_SpeakerName extends Window_Base {
+    /**
+     * @param {Window_Message} parentWindow メッセージウィンドウ
+     */
+    constructor(parentWindow) {
+      super();
+      this.initialize(parentWindow);
+    }
+
+    initialize(parentWindow) {
+      this._parentWindow = parentWindow;
+      super.initialize(0, 0, 240, this.windowHeight());
+      this._text = '';
+      this._openness = 0;
+      this.stopClose();
+      this.deactivate();
+      if (settings.isClearNameWindow) {
+        this.backOpacity = 0;
+        this.opacity = 0;
+      }
+      this.hide();
+    }
+
+    /**
+     * @return {number}
+     */
+    standardPadding() {
+      return settings.nameWindowPaddingStandard;
+    }
+
+    /**
+     * DarkPlasma_WordwrapForJapanese.js への対応
+     * @return {boolean}
+     */
+    wordWrapEnabled() {
+      return false;
+    }
+
+    /**
+     * @param {boolean} enableEscapeCharacter エスケープ文字が有効であるか
+     * @return {number}
+     */
+    windowWidth(enableEscapeCharacter) {
+      this.resetFontSettings();
+      const textWidth = enableEscapeCharacter ? this.textWidthEx(this._text) : this.textWidth(this._text);
+      const width = textWidth + this.padding * 2 + settings.nameWindowPaddingHorizontal;
+      return Math.ceil(width);
+    }
+
+    /**
+     * @return {number}
+     */
+    windowHeight() {
+      return this.fittingHeight(1);
+    }
+
+    /**
+     * @param {string} text テキスト
+     * @return {number}
+     */
+    textWidthEx(text) {
+      return this.drawTextEx(text, 0, this.contents.height);
+    }
+
+    /**
+     * @return {number}
+     */
+    contentsHeight() {
+      return this.lineHeight();
+    }
+
+    /**
+     * 名前ウィンドウを閉じる
+     */
+    startClose() {
+      this._startClose = this.isOpen();
+    }
+
+    /**
+     * 名前ウィンドウクローズ用変数の初期化
+     */
+    stopClose() {
+      this._startClose = false;
+      this._closeDelayCounter = settings.closeDelayFrame;
+    }
+
+    update() {
+      super.update();
+      if (this.doesContinue()) {
+        this.stopClose();
+        return;
+      }
+      if (!this._startClose) return;
+      if (this._closeDelayCounter-- > 0) return;
+      this.close();
+      this._startClose = false;
+      this._closeDelayCounter = settings.closeDelayFrame;
+    }
+
+    /**
+     * @param {string} text 名前
+     * @param {number} position 表示場所
+     * @param {number} color 色
+     * @param {boolean} enableEscapeCharacter エスケープ文字を有効にするか
+     */
+    show(text, position, color, enableEscapeCharacter) {
+      super.show();
+      this.stopClose();
+      this._text = text;
+      this._position = position;
+      this.width = this.windowWidth(enableEscapeCharacter);
+      this.createContents();
+      this.contents.clear();
+      this.resetFontSettings();
+      let padding = settings.nameWindowPaddingHorizontal / 2;
+      if (enableEscapeCharacter) {
+        this.drawTextEx(this._text, padding, 0);
+      } else {
+        this.changeTextColor(this.textColor(color));
+        this.drawText(this._text, padding, 0);
+      }
+      this.adjustPositionX();
+      this.adjustPositionY();
+      this.open();
+      this.activate();
+    }
+
+    adjustPositionX() {
+      switch (this._position) {
+        case NAME_WINDOW_POSITION.LEFT_EDGE:
+          this.x = this._parentWindow.x;
+          this.x += settings.windowOffsetX;
+          break;
+        case NAME_WINDOW_POSITION.LEFT:
+          this.x = this._parentWindow.x;
+          this.x += this._parentWindow.width * 3 / 10;
+          this.x -= this.width / 2;
+          break;
+        case NAME_WINDOW_POSITION.CENTER:
+          this.x = this._parentWindow.x;
+          this.x += this._parentWindow.width / 2;
+          this.x -= this.width / 2;
+          break;
+        case NAME_WINDOW_POSITION.RIGHT:
+          this.x = this._parentWindow.x;
+          this.x += this._parentWindow.width * 7 / 10;
+          this.x -= this.width / 2;
+          break;
+        case NAME_WINDOW_POSITION.RIGHT_EDGE:
+          this.x = this._parentWindow.x + this._parentWindow.width;
+          this.x -= this.width;
+          this.x -= settings.windowOffsetX;
+          break;
+      }
+      this.x = this.x.clamp(0, Graphics.boxWidth - this.width);
+    }
+
+    adjustPositionY() {
+      const parentWindowY = $gameMessage.positionType() * (Graphics.boxHeight - this._parentWindow.windowHeight()) / 2;
+      if ($gameMessage.positionType() === 0) {
+        this.y = parentWindowY + this._parentWindow.height;
+        this.y -= settings.windowOffsetY;
+      } else {
+        this.y = parentWindowY;
+        this.y -= this.height;
+        this.y += settings.windowOffsetY;
+      }
+      if (this.y < 0) {
+        this.y = parentWindowY + this._parentWindow.height;
+        this.y -= settings.windowOffsetY;
+      }
+    }
+
+    /**
+     * @return {boolean} 表示し続ける必要があるかどうか
+     */
+    doesContinue() {
+      return this._parentWindow.doesContinue() &&
+        this._parentWindow.findNameWindowTextInfo($gameMessage.nextText());
+    }
   }
 
-  Window_SpeakerName.prototype = Object.create(Window_Base.prototype);
-  Window_SpeakerName.prototype.constructor = Window_SpeakerName;
+  Game_Message.prototype.nextText = function () {
+    return this._texts[0];
+  };
 
-  Window_SpeakerName.prototype.initialize = function (parentWindow) {
-    this._parentWindow = parentWindow;
-    Window_Base.prototype.initialize.call(this, 0, 0, 240, this.windowHeight());
-    this._text = '';
-    this._openness = 0;
-    this._closeDelayCounter = 0;
-    this.deactivate();
-    if (settings.isClearNameWindow) {
-      this.backOpacity = 0;
-      this.opacity = 0;
+  /**
+   * @param {string} name
+   * @param {number} position
+   * @param {number} color
+   * @param {boolean} enableEscapeCharacter
+   */
+  Window_Message.prototype.showNameWindow = function (name, position, color, enableEscapeCharacter) {
+    if (!this._isAlreadyShownNameWindow) {
+      this._nameWindow.show(name, position, color, enableEscapeCharacter);
+      this._isAlreadyShownNameWindow = true;
     }
-    this.hide();
   };
 
-  Window_SpeakerName.prototype.standardPadding = function () {
-    return settings.nameWindowPaddingStaandard;
-  };
-
-  Window_SpeakerName.prototype.wordWrapEnabled = function () {
-    return false;
-  }
-
-  Window_SpeakerName.prototype.windowWidth = function (enableEscapeCharacter) {
-    this.resetFontSettings();
-    let textWidth = enableEscapeCharacter ? this.textWidthEx(this._text) : this.textWidth(this._text);
-    let width = textWidth + this.padding * 2 + settings.nameWindowPaddingHorizontal;
-    return Math.ceil(width);
-  };
-
-  Window_SpeakerName.prototype.textWidthEx = function (text) {
-    return this.drawTextEx(text, 0, this.contents.height);
-  };
-
-  Window_SpeakerName.prototype.windowHeight = function () {
-    return this.fittingHeight(1);
-  };
-
-  Window_SpeakerName.prototype.contentsHeight = function () {
-    return this.lineHeight();
-  };
-
-  Window_SpeakerName.prototype.update = function () {
-    Window_Base.prototype.update.call(this);
-    if (this.active || this.isClosed() || this.isClosing()) return;
-    if (this._closeDelayCounter-- > 0) return;
-    this.close();
-  };
-
-  Window_SpeakerName.prototype.show = function (text, position, color, enableEscapeCharacter) {
-    Window_Base.prototype.show.call(this);
-    this._text = text;
-    this._position = position;
-    this.width = this.windowWidth(enableEscapeCharacter);
-    this.createContents();
-    this.contents.clear();
-    this.resetFontSettings();
-    let padding = settings.nameWindowPaddingHorizontal / 2;
-    if (enableEscapeCharacter) {
-      this.drawTextEx(this._text, padding, 0);
-    } else {
-      this.changeTextColor(this.textColor(color));
-      this.drawText(this._text, padding, 0);
-    }
-    this.adjustPositionX();
-    this.adjustPositionY();
-    this.open();
-    this.activate();
-    this._closeDelayCounter = settings.closeDelayFrame;
-  };
-
-  Window_SpeakerName.prototype.adjustPositionX = function () {
-    switch (this._position) {
-      case NAME_WINDOW_POSITION.LEFT_EDGE:
-        this.x = this._parentWindow.x;
-        this.x += settings.windowOffsetX;
-        break;
-      case NAME_WINDOW_POSITION.LEFT:
-        this.x = this._parentWindow.x;
-        this.x += this._parentWindow.width * 3 / 10;
-        this.x -= this.width / 2;
-        break;
-      case NAME_WINDOW_POSITION.CENTER:
-        this.x = this._parentWindow.x;
-        this.x += this._parentWindow.width / 2;
-        this.x -= this.width / 2;
-        break;
-      case NAME_WINDOW_POSITION.RIGHT:
-        this.x = this._parentWindow.x;
-        this.x += this._parentWindow.width * 7 / 10;
-        this.x -= this.width / 2;
-        break;
-      case NAME_WINDOW_POSITION.RIGHT_EDGE:
-        this.x = this._parentWindow.x + this._parentWindow.width;
-        this.x -= this.width;
-        this.x -= settings.windowOffsetX;
-        break;
-    }
-    this.x = this.x.clamp(0, Graphics.boxWidth - this.width);
-  };
-
-  Window_SpeakerName.prototype.adjustPositionY = function () {
-    const parentWindowY = $gameMessage.positionType() * (Graphics.boxHeight - this._parentWindow.windowHeight()) / 2;
-    if ($gameMessage.positionType() === 0) {
-      this.y = parentWindowY + this._parentWindow.height;
-      this.y -= settings.windowOffsetY;
-    } else {
-      this.y = parentWindowY;
-      this.y -= this.height;
-      this.y += settings.windowOffsetY;
-    }
-    if (this.y < 0) {
-      this.y = parentWindowY + this._parentWindow.height;
-      this.y -= settings.windowOffsetY;
+  const _Window_Message_startMessage = Window_Message.prototype.startMessage;
+  Window_Message.prototype.startMessage = function () {
+    this._nameWindowTextInfo = null;
+    _Window_Message_startMessage.call(this);
+    this._isAlreadyShownNameWindow = false;
+    if (this._nameWindowTextInfo) {
+      this.showNameWindow(
+        this._nameWindowTextInfo.name,
+        this._nameWindowTextInfo.position,
+        this._nameWindowTextInfo.color,
+        this._nameWindowTextInfo.enableEscapeCharacter
+      );
     }
   };
 
   const _WindowMessage_terminateMessage = Window_Message.prototype.terminateMessage;
   Window_Message.prototype.terminateMessage = function () {
-    this._nameWindow.deactivate();
+    this._nameWindow.startClose();
     _WindowMessage_terminateMessage.call(this);
   };
 
@@ -254,7 +353,11 @@
   Window_Message.prototype.createSubWindows = function () {
     _WindowMessage_createSubWindows.call(this);
     this._nameWindow = new Window_SpeakerName(this);
-    SceneManager._scene.addChild(this._nameWindow);
+  };
+
+  const _Window_Message_subWindows = Window_Message.prototype.subWindows;
+  Window_Message.prototype.subWindows = function () {
+    return _Window_Message_subWindows.call(this).concat([this._nameWindow]);
   };
 
   Window_Message.prototype.convertEscapeCharacters = function (text) {
@@ -262,7 +365,10 @@
     return this.convertNameWindow(text);
   };
 
-  Window_Message.prototype.convertNameWindow = function (text) {
+  /**
+   * 指定したテキストの中から名前ウィンドウにすべき箇所を探す
+   */
+  Window_Message.prototype.findNameWindowTextInfo = function (text) {
     const regExpAndPositions = [
       {
         regExp: /\x1bN\<(.*?)\>/gi,
@@ -312,16 +418,21 @@
     })
       .find(hit => hit.idOrName && hit.idOrName[1]);
     if (hit) {
-      text = text.replace(hit.regExp, '');
       name = hit.isActorId ? this.actorName(hit.idOrName[1]) : hit.idOrName[1];
-      this._nameWindow.show(name, hit.position, this.colorByName(name), false);
+      return {
+        name: name,
+        position: hit.position,
+        color: this.colorByName(name),
+        enableEscapeCharacter: false,
+        eraseTarget: hit.regExp
+      };
     }
 
     if (settings.autoNameWindow) {
       // 名前＋開きカッコを見つけ次第、名前ウィンドウを設定する
       const speakerReg = new RegExp("^(.+)(「|（)", "gi");
       const speaker = speakerReg.exec(text);
-      if (speaker != null) {
+      if (speaker !== null) {
         const target = speaker[1].replace("\x1b\}", "");
         const speakerNames = target.split("＆");
         const speakerNameString = speakerNames.map(speakerName => {
@@ -331,10 +442,24 @@
         }, this).join('\\C[0]＆');
 
         if (target.length > 0) {
-          text = text.replace(target, '');
-          this._nameWindow.show(speakerNameString, NAME_WINDOW_POSITION.LEFT_EDGE, 0, true);
+          return {
+            name: speakerNameString,
+            position: NAME_WINDOW_POSITION.LEFT_EDGE,
+            colorByName: 0,
+            enableEscapeCharacter: true,
+            eraseTarget: target
+          };
         }
       }
+    }
+    return null;
+  };
+
+  Window_Message.prototype.convertNameWindow = function (text) {
+    const nameWindowTextInfo = this.findNameWindowTextInfo(text);
+    if (nameWindowTextInfo) {
+      text = text.replace(nameWindowTextInfo.eraseTarget, '');
+      this._nameWindowTextInfo = nameWindowTextInfo;
     }
     return text;
   };
@@ -348,23 +473,35 @@
     return settings.defaultTextColor;
   };
 
+  Window_Message.prototype.hideNameWindow = function () {
+    this._nameWindow.hide();
+  }
+
+  Window_Message.prototype.hasNameWindow = function () {
+    return !!this._nameWindow;
+  }
+
+  Window_Message.prototype.isNameWindowVisible = function () {
+    return this._nameWindow && this._nameWindow.visible;
+  };
+
   /**
    * 名前ウィンドウ表示中に戦闘に入った場合、名前ウィンドウを消す
    */
   const _SceneMap_snapForBattleBackground = Scene_Map.prototype.snapForBattleBackground;
   Scene_Map.prototype.snapForBattleBackground = function () {
     if (this.isNameWindowVisible()) {
-      this._messageWindow._nameWindow.hide();
+      this._messageWindow.hideNameWindow();
     }
     _SceneMap_snapForBattleBackground.call(this);
   };
 
   Scene_Map.prototype.hasNameWindow = function () {
-    return this._messageWindow && this._messageWindow._nameWindow;
+    return this._messageWindow && this._messageWindow.hasNameWindow();
   };
 
   Scene_Map.prototype.isNameWindowVisible = function () {
-    return this.hasNameWindow() && this._messageWindow._nameWindow.visible;
+    return this.hasNameWindow() && this._messageWindow.isNameWindowVisible();
   };
 
   Game_Actors.prototype.byName = function (name) {
