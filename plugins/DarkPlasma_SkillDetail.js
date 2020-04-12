@@ -4,7 +4,8 @@
 // http://opensource.org/licenses/mit-license.php
 
 /**
- * 2020/04/13 1.0.0 公開
+ * 2020/04/13 1.0.1 詳細説明ウィンドウを表示しながら決定/キャンセルを押した際にウィンドウを閉じるように修正
+ *            1.0.0 公開
  */
 
 /*:
@@ -129,6 +130,18 @@
   Window_SkillList.prototype.setDescriptionWindow = function (detailWindow) {
     this._detailWindow = detailWindow;
     this.callUpdateHelp();
+  };
+
+  const _Window_SkillList_processOk = Window_SkillList.prototype.processOk;
+  Window_SkillList.prototype.processOk = function () {
+    this._detailWindow.hide();
+    _Window_SkillList_processOk.call(this);
+  };
+
+  const _Window_SkillList_processCancel = Window_SkillList.prototype.processCancel;
+  Window_SkillList.prototype.processCancel = function () {
+    this._detailWindow.hide();
+    _Window_SkillList_processCancel.call(this);
   };
 
   const _Window_SkillList_setHelpWindowItem = Window_SkillList.prototype.setHelpWindowItem;
