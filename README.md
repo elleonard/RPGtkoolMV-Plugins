@@ -261,6 +261,10 @@ HPを消費する, HPを割合で消費する, MPを割合で消費する, ア�
 
 アクターやエネミーにダメージ限界突破率を設定することもできます
 
+## DarkPlasma_SkillDetail.js
+
+スキルの詳細を表示するプラグイン
+
 ## DarkPlasma_SkipCommandPersonal.js
 
 メニュー画面でキャラクター選択をスキップするプラグイン
