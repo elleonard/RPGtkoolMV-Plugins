@@ -4,6 +4,7 @@
 // http://opensource.org/licenses/mit-license.php
 
 /**
+ * 2020/04/13 2.0.1 セーブデータをロードした時にエラーになる不具合を修正
  * 2020/04/11 2.0.0 大規模リファクタ/機能追加。1.0.0からのセーブデータ互換性なし
  *                  戦闘回数や経過時間による在庫補充機能追加
  * 2019/09/23 1.0.0 公開
@@ -376,7 +377,7 @@
       stockSaveData.forEach(saveData => {
         const shopStock = this._shopStock.find(stock => saveData.id === stock.id);
         if (shopStock) {
-          shopStock.updateCountBySaveData(saveData);
+          shopStock.updateCountBySaveData(saveData.stockItems);
         }
       });
     }
@@ -738,7 +739,7 @@
   const _Game_System_onAfterLoad = Game_System.prototype.onAfterLoad;
   Game_System.prototype.onAfterLoad = function () {
     _Game_System_onAfterLoad.call(this);
-    if (this._shopStock) {
+    if (this._shopStock && Array.isArray(this._shopStock)) {
       shopStockManager.updateCountBySaveData(this._shopStock);
     }
   };
