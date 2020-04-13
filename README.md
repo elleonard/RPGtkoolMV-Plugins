@@ -94,6 +94,10 @@ Trb_TextColor.js を採用している場合は色番号ではなくカラーコ
 
 素手による通常攻撃時のデフォルト属性を設定するプラグイン
 
+## DarkPlasma_DontReloadMapFromMenu.js
+
+メニュー開閉時にマップのリロードを行わなくするプラグイン
+
 ## DarkPlasma_EnemyBook.js
 
 拡張エネミー図鑑プラグイン
