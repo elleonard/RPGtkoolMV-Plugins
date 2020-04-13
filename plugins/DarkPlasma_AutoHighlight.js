@@ -4,7 +4,8 @@
 // http://opensource.org/licenses/mit-license.php
 
 /**
- * 2020/04/XX 1.1.0 Torigoya_TextRuby.jsに対応
+ * 2020/04/14 1.2.0 自動ハイライトを有効にするウィンドウを指定できるよう修正
+ * 2020/04/09 1.1.0 Torigoya_TextRuby.jsに対応
  * 2018/01/07 1.0.1 他の語句を含む語句がハイライトされない不具合の修正
  * 2018/01/01 1.0.0 公開
  */
@@ -13,11 +14,17 @@
  * @plugindesc 指定した単語に自動でハイライトをつける
  * @author DarkPlasma
  * @license MIT
- * 
+ *
  * @param Highlight Words
  * @desc ハイライトする語とその色
  * @type struct<HighlightWord>[]
- * 
+ *
+ * @param Auto highlight Windows
+ * @desc 自動ハイライトを有効にするウィンドウクラス一覧
+ * @text 自動ハイライトウィンドウ
+ * @type string[]
+ * @default ["Window_Message"]
+ *
  * @help
  * 指定した単語を指定した色でハイライトします。
  * 色指定には、 Trb_TextColor.js を採用している場合に限り、
@@ -44,6 +51,8 @@
 
   const highlightSettings = JSON.parse(pluginParameters['Highlight Words'])
     .map(e => JSON.parse(e));
+  const autoHighlightWindows = JsonEx.parse(pluginParameters['Auto highlight Windows'] || '["Window_Message"]')
+    .map(parsed => String(parsed));
 
   // ハイライト語句と色の対応
   const highlightColors = {};
@@ -56,14 +65,16 @@
     "gi"
   );
 
-  const _Window_Message_convertEscapeCharacters = Window_Message.prototype.convertEscapeCharacters;
-  Window_Message.prototype.convertEscapeCharacters = function (text) {
-    text = _Window_Message_convertEscapeCharacters.call(this, text);
+  const _Window_Base_convertEscapeCharacters = Window_Base.prototype.convertEscapeCharacters;
+  Window_Base.prototype.convertEscapeCharacters = function (text) {
+    text = _Window_Base_convertEscapeCharacters.call(this, text);
 
-    // オートハイライト
-    text = text.replace(highlightRegexp, match => {
-      return "\x1bC[" + highlightColors[match] + "]" + match + "\x1bC[0]";
-    });
+    if (autoHighlightWindows.some(autoHighlightWindow => this instanceof window[autoHighlightWindow])) {
+      // オートハイライト
+      text = text.replace(highlightRegexp, match => {
+        return "\x1bC[" + highlightColors[match] + "]" + match + "\x1bC[0]";
+      });
+    }
     return text;
   };
 
