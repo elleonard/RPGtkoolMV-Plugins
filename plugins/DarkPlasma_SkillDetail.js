@@ -4,7 +4,8 @@
 // http://opensource.org/licenses/mit-license.php
 
 /**
- * 2020/04/13 1.0.1 詳細説明ウィンドウを表示しながら決定/キャンセルを押した際にウィンドウを閉じるように修正
+ * 2020/04/13 1.1.0 Window_SkillDetail を他プラグインから拡張できるように修正
+ *            1.0.1 詳細説明ウィンドウを表示しながら決定/キャンセルを押した際にウィンドウを閉じるように修正
  *            1.0.0 公開
  */
 
@@ -228,4 +229,6 @@
       }
     }
   };
+
+  window[Window_SkillDetail.name] = Window_SkillDetail;
 })();
