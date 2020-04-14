@@ -4,7 +4,8 @@
 // http://opensource.org/licenses/mit-license.php
 
 /**
- * 2020/04/14 1.1.1 戦闘中にスキル画面でフリーズする不具合を修正
+ * 2020/04/14 1.2.0 説明表示中にカーソル移動の有効無効を切り替える設定を追加
+ *            1.1.1 戦闘中にスキル画面でフリーズする不具合を修正
  * 2020/04/13 1.1.0 Window_SkillDetail を他プラグインから拡張できるように修正
  *            1.0.1 詳細説明ウィンドウを表示しながら決定/キャンセルを押した際にウィンドウを閉じるように修正
  *            1.0.0 公開
@@ -56,6 +57,13 @@
  * @default Graphics.boxHeight - 100
  * @parent Detail Window Setting
  *
+ * @param Enable Cursor In Detail Window
+ * @desc 詳細説明ウィンドウを開いているときにカーソル移動を有効にするかどうか
+ * @text カーソル有効
+ * @type boolean
+ * @default true
+ * @parent Detail Window Setting
+ *
  * @help
  * スキル画面のスキルにカーソルを合わせて特定のボタンを押すと
  * スキル詳細説明画面を開きます。
@@ -75,7 +83,8 @@
       y: Number(pluginParameters['Detail Window Y'] || 100),
       width: String(pluginParameters['Detail Window Width'] || 'Graphics.boxWidth - 100'),
       height: String(pluginParameters['Detail Window Height'] || 'Graphics.boxHeight - 100'),
-    }
+    },
+    enableCursor: String(pluginParameters['Enable Cursor In Detail Window'] || 'true') === 'true',
   };
 
   const _DataManager_extractMetadata = DataManager.extractMetadata;
@@ -132,6 +141,14 @@
   Window_SkillList.prototype.setDescriptionWindow = function (detailWindow) {
     this._detailWindow = detailWindow;
     this.callUpdateHelp();
+  };
+
+  const _Window_SkillList_isCursorMovable = Window_SkillList.prototype.isCursorMovable;
+  Window_SkillList.prototype.isCursorMovable = function () {
+    if (this._detailWindow) {
+      return _Window_SkillList_isCursorMovable.call(this) && (!this._detailWindow.visible || settings.enableCursor);
+    }
+    return _Window_SkillList_isCursorMovable.call(this);
   };
 
   const _Window_SkillList_processOk = Window_SkillList.prototype.processOk;
