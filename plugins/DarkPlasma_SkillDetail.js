@@ -4,6 +4,7 @@
 // http://opensource.org/licenses/mit-license.php
 
 /**
+ * 2020/04/14 1.1.1 戦闘中にスキル画面でフリーズする不具合を修正
  * 2020/04/13 1.1.0 Window_SkillDetail を他プラグインから拡張できるように修正
  *            1.0.1 詳細説明ウィンドウを表示しながら決定/キャンセルを押した際にウィンドウを閉じるように修正
  *            1.0.0 公開
@@ -135,13 +136,17 @@
 
   const _Window_SkillList_processOk = Window_SkillList.prototype.processOk;
   Window_SkillList.prototype.processOk = function () {
-    this._detailWindow.hide();
+    if (this._detailWindow) {
+      this._detailWindow.hide();
+    }
     _Window_SkillList_processOk.call(this);
   };
 
   const _Window_SkillList_processCancel = Window_SkillList.prototype.processCancel;
   Window_SkillList.prototype.processCancel = function () {
-    this._detailWindow.hide();
+    if (this._detailWindow) {
+      this._detailWindow.hide();
+    }
     _Window_SkillList_processCancel.call(this);
   };
 
