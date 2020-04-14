@@ -4,7 +4,8 @@
 // http://opensource.org/licenses/mit-license.php
 
 /**
- * 2020/04/14 1.3.0 指定スキルの自動ハイライト機能追加
+ * 2020/04/14 1.3.1 指定したウィンドウが存在しない場合にエラーになる不具合を修正
+ *            1.3.0 指定スキルの自動ハイライト機能追加
  *            1.2.0 自動ハイライトを有効にするウィンドウを指定できるよう修正
  * 2020/04/09 1.1.0 Torigoya_TextRuby.jsに対応
  * 2018/01/07 1.0.1 他の語句を含む語句がハイライトされない不具合の修正
@@ -108,7 +109,7 @@
   Window_Base.prototype.convertEscapeCharacters = function (text) {
     text = _Window_Base_convertEscapeCharacters.call(this, text);
 
-    if (autoHighlightWindows.some(autoHighlightWindow => this instanceof window[autoHighlightWindow])) {
+    if (autoHighlightWindows.some(autoHighlightWindow => typeof window[autoHighlightWindow] === "function" && this instanceof window[autoHighlightWindow])) {
       // オートハイライト
       text = text.replace(highlightRegexp, match => {
         return `\x1bC[${highlightColors[match]}]${match}\x1bC[0]`;
