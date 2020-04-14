@@ -4,6 +4,7 @@
 // http://opensource.org/licenses/mit-license.php
 
 /**
+ * 2020/04/15 1.3.0 詳細説明テキストのスクロールに対応
  * 2020/04/14 1.2.0 説明表示中にカーソル移動の有効無効を切り替える設定を追加
  *            1.1.1 戦闘中にスキル画面でフリーズする不具合を修正
  * 2020/04/13 1.1.0 Window_SkillDetail を他プラグインから拡張できるように修正
@@ -32,14 +33,14 @@
  * @param Detail Window X
  * @desc 詳細説明ウィンドウの左上X座標
  * @text 左上X座標
- * @type number
+ * @type string
  * @default 100
  * @parent Detail Window Setting
  *
  * @param Detail Window Y
  * @desc 詳細説明ウィンドウの左上Y座標
  * @text 左上Y座標
- * @type number
+ * @type string
  * @default 100
  * @parent Detail Window Setting
  *
@@ -64,6 +65,13 @@
  * @default true
  * @parent Detail Window Setting
  *
+ * @param Hide Skill List Window
+ * @desc 詳細説明ウィンドウを開いているときにスキルリストウィンドウを隠すかどうか
+ * @text リストウィンドウを隠す
+ * @type boolean
+ * @default false
+ * @parent Detail Window Setting
+ *
  * @help
  * スキル画面のスキルにカーソルを合わせて特定のボタンを押すと
  * スキル詳細説明画面を開きます。
@@ -79,12 +87,13 @@
   const settings = {
     openDetailKey: String(pluginParameters['Open Detail Key'] || 'pagedown'),
     detailWindow: {
-      x: Number(pluginParameters['Detail Window X'] || 100),
-      y: Number(pluginParameters['Detail Window Y'] || 100),
+      x: String(pluginParameters['Detail Window X'] || '100'),
+      y: String(pluginParameters['Detail Window Y'] || '100'),
       width: String(pluginParameters['Detail Window Width'] || 'Graphics.boxWidth - 100'),
       height: String(pluginParameters['Detail Window Height'] || 'Graphics.boxHeight - 100'),
     },
     enableCursor: String(pluginParameters['Enable Cursor In Detail Window'] || 'true') === 'true',
+    hideListWindow: String(pluginParameters['Hide Skill List Window'] || 'false') === 'true',
   };
 
   const _DataManager_extractMetadata = DataManager.extractMetadata;
@@ -118,9 +127,16 @@
     this._itemWindow.activate();
     if (!this._detailWindow.visible) {
       this._detailWindow.show();
+      if (settings.hideListWindow) {
+        this._itemWindow.hide();
+      }
       this._detailWindow.refresh();
     } else {
       this._detailWindow.hide();
+      this._detailWindow.resetCursor();
+      if (settings.hideListWindow) {
+        this._itemWindow.show();
+      }
     }
   };
 
@@ -129,9 +145,9 @@
     this._detailWindowLayer.move(0, 0, Graphics.boxWidth, Graphics.boxHeight);
     this.addChild(this._detailWindowLayer);
     this._detailWindow = new Window_SkillDetail(
-      settings.detailWindow.x, 
-      settings.detailWindow.y, 
-      eval(settings.detailWindow.width), 
+      eval(settings.detailWindow.x),
+      eval(settings.detailWindow.y),
+      eval(settings.detailWindow.width),
       eval(settings.detailWindow.height)
     );
     this._detailWindowLayer.addChild(this._detailWindow);
@@ -155,6 +171,10 @@
   Window_SkillList.prototype.processOk = function () {
     if (this._detailWindow) {
       this._detailWindow.hide();
+      this._detailWindow.resetCursor();
+      if (settings.hideListWindow) {
+        this.show();
+      }
     }
     _Window_SkillList_processOk.call(this);
   };
@@ -163,6 +183,10 @@
   Window_SkillList.prototype.processCancel = function () {
     if (this._detailWindow) {
       this._detailWindow.hide();
+      this._detailWindow.resetCursor();
+      if (settings.hideListWindow) {
+        this.show();
+      }
     }
     _Window_SkillList_processCancel.call(this);
   };
@@ -191,6 +215,8 @@
       super.initialize(x, y, width, height);
       this._text = '';
       this._handlers = {};
+      this.opacity = 255;
+      this._cursor = 0;
       this.hide();
     }
 
@@ -198,7 +224,15 @@
      * @param {string} detail 詳細説明
      */
     drawDetail(detail) {
-      this.drawTextEx(detail, this.textPadding(), 0);
+      this.drawTextEx(detail, this.textPadding(), this.baseLineHeight());
+    }
+
+    /**
+     * 1行目の描画位置
+     * @return {number}
+     */
+    baseLineHeight() {
+      return - this._cursor * this.lineHeight();
     }
 
     refresh() {
@@ -219,8 +253,34 @@
     setText(text) {
       if (this._text !== text) {
         this._text = text;
+        this._textHeight = this.calcHeight();
+        this._lineCount = Math.floor(this._textHeight / this.lineHeight());
         this.refresh();
       }
+    }
+
+    /**
+     * @return {number} 詳細説明テキストの表示高さ
+     */
+    calcHeight() {
+      if (this._text) {
+        let textState = {index: 0, x: this.textPadding(), y: 0, left: this.textPadding()};
+        textState.text = this.convertEscapeCharacters(this._text);
+        textState.height = this.calcTextHeight(textState, false);
+        this.resetFontSettings();
+        while (textState.index < textState.text.length) {
+          this.processCharacter(textState);
+        }
+        return textState.y;
+      }
+      return 0;
+    }
+
+    /**
+     * 1画面で表示する最大行数
+     */
+    maxLine() {
+      return Math.floor(this.height / this.lineHeight());
     }
 
     clear() {
@@ -249,6 +309,60 @@
       if (this.isHandled(symbol)) {
         this._handlers[symbol]();
       }
+    }
+
+    update() {
+      super.update();
+      this.updateArrows();
+      this.processCursorMove();
+    }
+
+    updateArrows() {
+      this.upArrowVisible = this._cursor > 0;
+      this.downArrowVisible = !this.isCursorMax();
+    }
+
+    processCursorMove() {
+      if (this.isCursorMovable()) {
+        if (Input.isRepeated('down')) {
+            this.cursorDown();
+        }
+        if (Input.isRepeated('up')) {
+            this.cursorUp();
+        }
+      }
+    }
+
+    /**
+     * @return {boolean}
+     */
+    isCursorMovable() {
+      return this.visible;
+    }
+
+    cursorUp() {
+      if (this._cursor > 0) {
+        this._cursor--;
+        this.refresh();
+      }
+    }
+
+    cursorDown() {
+      if (!this.isCursorMax()) {
+        this._cursor++;
+      }
+      this.refresh();
+    }
+
+    /**
+     * @return {boolean}
+     */
+    isCursorMax() {
+      return this.maxLine() + this._cursor > this._lineCount;
+    }
+
+    resetCursor() {
+      this._cursor = 0;
     }
   };
 
