@@ -4,6 +4,7 @@
 // http://opensource.org/licenses/mit-license.php
 
 /**
+ * 2020/04/16 1.1.1 リファクタ
  * version 1.1.0
  *  - 回想モードのウィンドウカラーを設定項目に追加
  * version 1.0.3
@@ -107,264 +108,245 @@ var $dataMemories = null;
 
 (function () {
   'use strict';
-  var pluginName = 'DarkPlasma_Memories';
-  var pluginParameters = PluginManager.parameters(pluginName);
+  const pluginName = document.currentScript.src.replace(/^.*\/(.*).js$/, function () {
+    return arguments[1];
+  });
+  const pluginParameters = PluginManager.parameters(pluginName);
 
   /* タグ選択時のハンドラ */
-  var DEFAULT_TAG = 'all';
-  var BACK_TAG = 'back';
+  const DEFAULT_TAG = 'all';
+  const BACK_TAG = 'back';
 
   /* 回想モードかどうか */
-  var isMemories = false;
+  let isMemories = false;
 
-  var settings = {
-    "bgm": {
-      "name": String(pluginParameters['Mode BGM File']),
-      "pan": Number(pluginParameters['Mode BGM Pan']),
-      "pitch": Number(pluginParameters['Mode BGM Pitch']),
-      "volume": Number(pluginParameters['Mode BGM Volume'])
+  const settings = {
+    bgm: {
+      name: String(pluginParameters['Mode BGM File']),
+      pan: Number(pluginParameters['Mode BGM Pan'] || 0),
+      pitch: Number(pluginParameters['Mode BGM Pitch'] || 100),
+      volume: Number(pluginParameters['Mode BGM Volume'] || 90)
     },
-    "adultIcon": Number(pluginParameters['Adult Icon']),
-    "blankThumbnail": String(pluginParameters['Blank Thumbnail']),
-    "sandboxMap": Number(pluginParameters['Sandbox Map']),
-    "terminateLabel": String(pluginParameters['Terminate Label']),
-    "waitAfterMemory": Number(pluginParameters['Wait After Memory'])
+    adultIcon: Number(pluginParameters['Adult Icon'] || 84),
+    blankThumbnail: String(pluginParameters['Blank Thumbnail'] || 'blank_thumbnail'),
+    sandboxMap: Number(pluginParameters['Sandbox Map'] || 1),
+    terminateLabel: String(pluginParameters['Terminate Label'] || 'END_SCENE'),
+    waitAfterMemory: Number(pluginParameters['Wait After Memory'] || 500)
   };
 
-  var windowTone = JSON.parse(pluginParameters['Window Tone']).map(function(tone){ return Number(tone); });
+  const windowTone = JSON.parse(pluginParameters['Window Tone'] || '["0","0","100"]').map(tone => Number(tone));
 
   /**
    * 回想から戻った時用のカーソル記憶
    */
-  var cursorIndexes = {
-    "returned": false,
-    "mode": true,
-    "tag": -1,
-    "list": -1
+  let cursorIndexes = {
+    returned: false,
+    mode: true,
+    tag: -1,
+    list: -1
   };
 
-  /**
-   * 回想リストシーン
-   */
-  function Scene_Memories() {
-    this.initialize.apply(this, arguments);
+  class Scene_Memories extends Scene_Base {
+
+    constructor() {
+      super();
+      this.initialize.apply(this, arguments);
+    }
+
+
+    initialize() {
+      super.initialize();
+    }
+
+
+    create() {
+      super.create();
+      this.createWindowLayer();
+      this.createMemoryWindows();
+    }
+
+    createMemoryWindows() {
+      // モードウィンドウ
+      this._modeWindow = new Window_MemoriesMode();
+      this.addWindow(this._modeWindow);
+
+      // タグ選択ウィンドウ
+      this._commandWindow = new Window_MemoriesCommand();
+      this._commandWindow.setHandler(DEFAULT_TAG, this.commandTag.bind(this));
+      $dataMemories.tags.forEach(tag => {
+        this._commandWindow.setHandler(tag.symbol, this.commandTag.bind(this));
+      });
+      this._commandWindow.setHandler('cancel', this.goBackToTitle.bind(this));
+      this._commandWindow.setHandler(BACK_TAG, this.goBackToTitle.bind(this));
+      this._commandWindow.setHandler('toggle_mode', this.commandMode.bind(this));
+      this.addWindow(this._commandWindow);
+
+      // タイトルウィンドウ
+      this._titleWindow = new Window_MemoryTitle();
+      this.addWindow(this._titleWindow);
+
+      // 回収率ウィンドウ
+      this._progressWindow = new Window_MemoriesProgress();
+      this.addWindow(this._progressWindow);
+
+      // リストウィンドウ
+      this._listWindow = new Window_MemoryList();
+      this._listWindow.setProgressWindow(this._progressWindow);
+      this._listWindow.setHelpWindow(this._titleWindow);
+      this._listWindow.setHandler('ok', this.commandMemory.bind(this));
+      this._listWindow.setHandler('cancel', this.commandBack.bind(this));
+      this.addWindow(this._listWindow);
+
+      // CG表示ウィンドウ
+      this._cgWindow = new Window_Command(0, 0);
+      this._cgWindow.deactivate();
+      this._cgWindow.hide();
+      this._cgWindow.playOkSound = function () { };
+      this._cgWindow.setHandler('ok', this.commandCGOk.bind(this));
+      this._cgWindow.setHandler('cancel', this.commandCGCancel.bind(this));
+      this._cgWindow.addCommand('next', 'ok');
+      this.addWindow(this._cgWindow);
+
+      this._modeWindow.setListWindow(this._listWindow);
+      this._commandWindow.setListWindow(this._listWindow);
+      this._titleWindow.setListWindow(this._listWindow);
+
+      this._commandWindow.activate();
+    }
+
+    start() {
+      super.start();
+      this._modeWindow.refresh();
+      this._commandWindow.refresh();
+      this._titleWindow.refresh();
+      this._progressWindow.refresh();
+      this._listWindow.refresh();
+      AudioManager.playBgm(settings.bgm);
+      isMemories = true;
+
+      /**
+       * 回想から戻ってきた場合、カーソルを復元する
+       */
+      if (cursorIndexes.returned) {
+        this._modeWindow.setMode(cursorIndexes.mode);
+        this._commandWindow.select(cursorIndexes.tag);
+        this._listWindow.setMode(cursorIndexes.mode);
+        this._listWindow.setTag(cursorIndexes.tag);
+        this._listWindow.select(cursorIndexes.list);
+        this.commandTag();
+
+        /* 回想から戻った直後はウェイトして 意図しない回想の再スタートを防止する */
+        this._listWindow.toggleWait();
+        setTimeout(() => {
+          this._listWindow.toggleWait();
+        }, settings.waitAfterMemory);
+      }
+    }
+
+    goBackToTitle() {
+      this.resetCursor();
+      isMemories = false;
+      SceneManager.goto(Scene_Title);
+    }
+
+    resetCursor() {
+      cursorIndexes = {
+        returned: false,
+        mode: true,
+        tag: -1,
+        list: -1
+      };
+    }
+
+    setCursor() {
+      cursorIndexes = {
+        returned: true,
+        mode: this._modeWindow.isCGMode(),
+        tag: this._commandWindow.index(),
+        list: this._listWindow.index()
+      };
+    }
+
+    commandTag() {
+      this._commandWindow.deactivate();
+      this._listWindow.activate();
+    }
+
+    commandMode() {
+      this._modeWindow.toggleMode();
+    }
+
+    commandBack() {
+      this._listWindow.select(0);
+      this._listWindow.deactivate();
+      this._commandWindow.activate();
+    }
+
+    commandMemory() {
+      if (this._modeWindow.isCGMode()) {
+        this._cgSprites = [];
+        this._cgSpritesIndex = 0;
+
+        const cg = this._listWindow.currentMemory();
+        const pictures = cg.pictures.indexes.map(idx => {
+          return cg.pictures.prefix + idx + cg.pictures.suffix;
+        });
+        pictures.forEach(picture => {
+          var button = new Sprite_Button();
+          button.setClickHandler(this.commandCGOk.bind(this));
+          button.bitmap = ImageManager.loadPicture(picture);
+          if (this._cgSprites.length > 0) {
+            button.visible = false;
+          }
+
+          this._cgSprites.push(button);
+          this.addChild(button);
+        });
+
+        this._listWindow.deactivate();
+        this._cgWindow.activate();
+      } else {
+        var scene = this._listWindow.currentMemory();
+        DataManager.setupNewGame();
+        $gamePlayer.setTransparent(true);
+        this.fadeOutAll();
+
+        this.setCursor();
+        $gameTemp.reserveCommonEvent(scene.commonEvent);
+        $gamePlayer.reserveTransfer(settings.sandboxMap, 0, 0, 0);
+
+        // Scene_Mapではシーンスタックがクリアされるのでgotoでもpushでも同じ
+        SceneManager.goto(Scene_Map);
+      }
+    }
+
+    commandCGOk() {
+      if (this._cgSpritesIndex < this._cgSprites.length - 1) {
+        this._cgSprites[this._cgSpritesIndex].visible = false;
+        this._cgSpritesIndex++;
+        this._cgSprites[this._cgSpritesIndex].visible = true;
+
+        this._cgWindow.activate();
+      } else {
+        this.commandCGCancel();
+      }
+    }
+
+    commandCGCancel() {
+      this._cgSprites.forEach(function (obj) {
+        obj.visible = false;
+        obj = null;
+      }, this);
+      this._cgWindow.deactivate();
+      this._listWindow.activate();
+    }
   }
 
-  Scene_Memories.prototype = Object.create(Scene_Base.prototype);
-  Scene_Memories.prototype.constructor = Scene_Memories;
-
-  Scene_Memories.prototype.initialize = function () {
-    Scene_Base.prototype.initialize.call(this);
-  };
-
-  Scene_Memories.prototype.create = function () {
-    Scene_Base.prototype.create.call(this);
-    this.createWindowLayer();
-    this.createMemoryWindows();
-  };
-
-  /**
-   * ウィンドウ生成
-   */
-  Scene_Memories.prototype.createMemoryWindows = function () {
-    // モードウィンドウ
-    this._modeWindow = new Window_MemoriesMode();
-    this.addWindow(this._modeWindow);
-
-    // タグ選択ウィンドウ
-    this._commandWindow = new Window_MemoriesCommand();
-    this._commandWindow.setHandler(DEFAULT_TAG, this.commandTag.bind(this));
-    $dataMemories.tags.forEach(function (tag) {
-      this._commandWindow.setHandler(tag.symbol, this.commandTag.bind(this));
-    }, this);
-    this._commandWindow.setHandler('cancel', this.goBackToTitle.bind(this));
-    this._commandWindow.setHandler(BACK_TAG, this.goBackToTitle.bind(this));
-    this._commandWindow.setHandler('toggle_mode', this.commandMode.bind(this));
-    this.addWindow(this._commandWindow);
-
-    // タイトルウィンドウ
-    this._titleWindow = new Window_MemoryTitle();
-    this.addWindow(this._titleWindow);
-
-    // 回収率ウィンドウ
-    this._progressWindow = new Window_MemoriesProgress();
-    this.addWindow(this._progressWindow);
-
-    // リストウィンドウ
-    this._listWindow = new Window_MemoryList();
-    this._listWindow.setProgressWindow(this._progressWindow);
-    this._listWindow.setHelpWindow(this._titleWindow);
-    this._listWindow.setHandler('ok', this.commandMemory.bind(this));
-    this._listWindow.setHandler('cancel', this.commandBack.bind(this));
-    this.addWindow(this._listWindow);
-
-    // CG表示ウィンドウ
-    this._cgWindow = new Window_Command(0, 0);
-    this._cgWindow.deactivate();
-    this._cgWindow.hide();
-    this._cgWindow.playOkSound = function () { };
-    this._cgWindow.setHandler('ok', this.commandCGOk.bind(this));
-    this._cgWindow.setHandler('cancel', this.commandCGCancel.bind(this));
-    this._cgWindow.addCommand('next', 'ok');
-    this.addWindow(this._cgWindow);
-
-    this._modeWindow.setListWindow(this._listWindow);
-    this._commandWindow.setListWindow(this._listWindow);
-    this._titleWindow.setListWindow(this._listWindow);
-
-    this._commandWindow.activate();
-  };
-
-  Scene_Memories.prototype.start = function () {
-    Scene_Base.prototype.start.call(this);
-    this._modeWindow.refresh();
-    this._commandWindow.refresh();
-    this._titleWindow.refresh();
-    this._progressWindow.refresh();
-    this._listWindow.refresh();
-    AudioManager.playBgm(settings.bgm);
-    isMemories = true;
-
-    /**
-     * 回想から戻ってきた場合、カーソルを復元する
-     */
-    if (cursorIndexes.returned) {
-      this._modeWindow.setMode(cursorIndexes.mode);
-      this._commandWindow.select(cursorIndexes.tag);
-      this._listWindow.setMode(cursorIndexes.mode);
-      this._listWindow.setTag(cursorIndexes.tag);
-      this._listWindow.select(cursorIndexes.list);
-      this.commandTag();
-
-      /* 回想から戻った直後はウェイトして 意図しない回想の再スタートを防止する */
-      this._listWindow.toggleWait();
-      setTimeout(function () {
-        this._listWindow.toggleWait();
-      }.bind(this), settings.waitAfterMemory);
-    }
-  };
-
-  Scene_Memories.prototype.goBackToTitle = function () {
-    this.resetCursor();
-    isMemories = false;
-    SceneManager.goto(Scene_Title);
-  };
-
-  /**
-   * 復元用カーソル情報のリセット
-   */
-  Scene_Memories.prototype.resetCursor = function () {
-    cursorIndexes = {
-      "returned": false,
-      "mode": true,
-      "tag": -1,
-      "list": -1
-    };
-  };
-
-  /**
-   * 復元用カーソルのセット
-   * 回想開始時に呼ぶ
-   */
-  Scene_Memories.prototype.setCursor = function () {
-    cursorIndexes = {
-      "returned": true,
-      "mode": this._modeWindow.isCGMode(),
-      "tag": this._commandWindow.index(),
-      "list": this._listWindow.index()
-    };
-  };
-
-  /**
-   * タグを選択した時の処理
-   */
-  Scene_Memories.prototype.commandTag = function () {
-    this._commandWindow.deactivate();
-    this._listWindow.activate();
-  };
-
-  /**
-   * モード変更操作時の処理
-   */
-  Scene_Memories.prototype.commandMode = function () {
-    this._modeWindow.toggleMode();
-  };
-
-  /**
-   * リストから戻る時の処理
-   */
-  Scene_Memories.prototype.commandBack = function () {
-    this._listWindow.select(0);
-    this._listWindow.deactivate();
-    this._commandWindow.activate();
-  };
-
-  /**
-   * CG/シーンを選択した時の挙動
-   */
-  Scene_Memories.prototype.commandMemory = function () {
-    if (this._modeWindow.isCGMode()) {
-      this._cgSprites = [];
-      this._cgSpritesIndex = 0;
-
-      var cg = this._listWindow.currentMemory();
-      var pictures = cg.pictures.indexes.map(function (idx) {
-        return cg.pictures.prefix + idx + cg.pictures.suffix;
-      }, this);
-      pictures.forEach(function (picture) {
-        var button = new Sprite_Button();
-        button.setClickHandler(this.commandCGOk.bind(this));
-        button.bitmap = ImageManager.loadPicture(picture);
-        if (this._cgSprites.length > 0) {
-          button.visible = false;
-        }
-
-        this._cgSprites.push(button);
-        this.addChild(button);
-      }, this);
-
-      this._listWindow.deactivate();
-      this._cgWindow.activate();
-    } else {
-      var scene = this._listWindow.currentMemory();
-      DataManager.setupNewGame();
-      $gamePlayer.setTransparent(true);
-      this.fadeOutAll();
-
-      this.setCursor();
-      $gameTemp.reserveCommonEvent(scene.commonEvent);
-      $gamePlayer.reserveTransfer(settings.sandboxMap, 0, 0, 0);
-
-      // Scene_Mapではシーンスタックがクリアされるのでgotoでもpushでも同じ
-      SceneManager.goto(Scene_Map);
-    }
-  };
-
-  Scene_Memories.prototype.commandCGOk = function () {
-    if (this._cgSpritesIndex < this._cgSprites.length - 1) {
-      this._cgSprites[this._cgSpritesIndex].visible = false;
-      this._cgSpritesIndex++;
-      this._cgSprites[this._cgSpritesIndex].visible = true;
-
-      this._cgWindow.activate();
-    } else {
-      this.commandCGCancel();
-    }
-  };
-
-  Scene_Memories.prototype.commandCGCancel = function () {
-    this._cgSprites.forEach(function (obj) {
-      obj.visible = false;
-      obj = null;
-    }, this);
-    this._cgWindow.deactivate();
-    this._listWindow.activate();
-  };
 
   /**
    * ラベルを貼った際に終了時であれば回想リストに戻る
    */
-  var _Game_Interpreter_command118 = Game_Interpreter.prototype.command118;
+  const _Game_Interpreter_command118 = Game_Interpreter.prototype.command118;
   Game_Interpreter.prototype.command118 = function () {
     if (this._params[0] === settings.terminateLabel && isMemories) {
       SceneManager.goto(Scene_Memories);
@@ -372,428 +354,357 @@ var $dataMemories = null;
     return _Game_Interpreter_command118.call(this);
   };
 
-  /**
-   * タグ選択ウィンドウ
-   */
-  function Window_MemoriesCommand() {
-    this.initialize.apply(this, arguments);
+  class Window_MemoriesCommand extends Window_Command {
+    constructor() {
+      super();
+      this.initialize.apply(this, arguments);
+    }
+
+    initialize() {
+      super.initialize(0, this.fittingHeight(1));
+    }
+
+    makeCommandList() {
+      this.addCommand('すべて', DEFAULT_TAG);
+      $dataMemories.tags.forEach(function (tag) {
+        this.addCommand(tag.text, tag.symbol);
+      }, this);
+      this.addCommand('戻る', BACK_TAG);
+    }
+
+    setListWindow(listWindow) {
+      this._listWindow = listWindow;
+      this.update();
+    }
+
+    cursorRight() {
+      this.callHandler('toggle_mode');
+    }
+
+    cursorLeft() {
+      this.callHandler('toggle_mode');
+    }
+
+    cursorPagedown() {
+      this.callHandler('toggle_mode');
+    }
+
+    cursorPageup() {
+      this.callHandler('toggle_mode');
+    }
+
+    update() {
+      super.update();
+      if (this._listWindow) {
+        this._listWindow.setTag(this.currentSymbol());
+      }
+    }
+
+    updateTone() {
+      this.setTone(windowTone[0], windowTone[1], windowTone[2]);
+    }
   }
 
-  Window_MemoriesCommand.prototype = Object.create(Window_Command.prototype);
-  Window_MemoriesCommand.prototype.constructor = Window_MemoriesCommand;
-
-  Window_MemoriesCommand.prototype.initialize = function () {
-    var x = 0;
-    var y = this.fittingHeight(1);
-    Window_Command.prototype.initialize.call(this, x, y);
-  };
-
-  Window_MemoriesCommand.prototype.makeCommandList = function () {
-    this.addCommand('すべて', DEFAULT_TAG);
-    $dataMemories.tags.forEach(function (tag) {
-      this.addCommand(tag.text, tag.symbol);
-    }, this);
-    this.addCommand('戻る', BACK_TAG);
-  };
-
-  Window_MemoriesCommand.prototype.setListWindow = function (listWindow) {
-    this._listWindow = listWindow;
-    this.update();
-  };
-
-  Window_MemoriesCommand.prototype.cursorRight = function (wrap) {
-    this.callHandler('toggle_mode');
-  };
-
-  Window_MemoriesCommand.prototype.cursorLeft = function (wrap) {
-    this.callHandler('toggle_mode');
-  };
-
-  Window_MemoriesCommand.prototype.cursorPagedown = function () {
-    this.callHandler('toggle_mode');
-  };
-
-  Window_MemoriesCommand.prototype.cursorPageup = function () {
-    this.callHandler('toggle_mode');
-  };
-
-  Window_MemoriesCommand.prototype.update = function () {
-    Window_Command.prototype.update.call(this);
-    if (this._listWindow) {
-      this._listWindow.setTag(this.currentSymbol());
+  class Window_MemoriesMode extends Window_Base {
+    constructor() {
+      super();
+      this.initialize.apply(this, arguments);
     }
-  };
 
-  Window_MemoriesCommand.prototype.updateTone = function () {
-    this.setTone(windowTone[0], windowTone[1], windowTone[2]);
-  };
+    initialize() {
+      super.initialize(0, 0, 240, this.fittingHeight(1));
+      this._isCGMode = true;
+      this._listWindow = null;
+    }
 
-  /**
-   * モード選択ウィンドウ
-   */
-  function Window_MemoriesMode() {
-    this.initialize.apply(this, arguments);
+    drawModeText() {
+      const width = 190;
+      this.changePaintOpacity(this._isCGMode);
+      this.drawText('CG', this.textPadding(), 0, width, 'left');
+      this.changePaintOpacity(!this._isCGMode);
+      this.drawText('シーン', this.textPadding(), 0, width, 'right');
+      this.changePaintOpacity(true);
+    }
+
+    isCGMode() {
+      return this._isCGMode;
+    }
+
+    toggleMode() {
+      this._isCGMode = !this._isCGMode;
+      SoundManager.playCursor();
+      if (this._listWindow) {
+        this._listWindow.setMode(this._isCGMode);
+      }
+      this.refresh();
+    }
+
+    setMode(isCGMode) {
+      this._isCGMode = isCGMode;
+      this.refresh();
+    }
+
+    setListWindow(listWindow) {
+      this._listWindow = listWindow;
+    }
+
+    refresh() {
+      if (this.contents) {
+        this.contents.clear();
+        this.drawModeText();
+      }
+    }
+
+    updateTone() {
+      this.setTone(windowTone[0], windowTone[1], windowTone[2]);
+    }
   }
 
-  Window_MemoriesMode.prototype = Object.create(Window_Base.prototype);
-  Window_MemoriesMode.prototype.constructor = Window_MemoriesMode;
-
-  Window_MemoriesMode.prototype.initialize = function () {
-    var x = 0;
-    var y = 0;
-    var width = 240;
-    var height = this.fittingHeight(1);
-    Window_Base.prototype.initialize.call(this, x, y, width, height);
-    this._isCGMode = true;
-    this._listWindow = null;
-  };
-
-  Window_MemoriesMode.prototype.drawModeText = function () {
-    var width = 190;
-    this.changePaintOpacity(this._isCGMode);
-    this.drawText('CG', this.textPadding(), 0, width, 'left');
-    this.changePaintOpacity(!this._isCGMode);
-    this.drawText('シーン', this.textPadding(), 0, width, 'right');
-    this.changePaintOpacity(true);
-  };
-
-  Window_MemoriesMode.prototype.isCGMode = function () {
-    return this._isCGMode;
-  };
-
-  /**
-   * モードを切り替える
-   */
-  Window_MemoriesMode.prototype.toggleMode = function () {
-    this._isCGMode = !this._isCGMode;
-    SoundManager.playCursor();
-    if (this._listWindow) {
-      this._listWindow.setMode(this._isCGMode);
+  class Window_MemoryTitle extends Window_Help {
+    constructor() {
+      super();
+      this.initialize.apply(this, arguments);
     }
-    this.refresh();
-  };
 
-  /**
-   * モードをセットする
-   * 回想から戻った際に使用する
-   */
-  Window_MemoriesMode.prototype.setMode = function (isCGMode) {
-    this._isCGMode = isCGMode;
-    this.refresh();
-  };
-
-  Window_MemoriesMode.prototype.setListWindow = function (listWindow) {
-    this._listWindow = listWindow;
-  };
-
-  Window_MemoriesMode.prototype.refresh = function () {
-    if (this.contents) {
-      this.contents.clear();
-      this.drawModeText();
+    initialize() {
+      Window_Base.prototype.initialize.call(this, 240, 0, Graphics.width - 240, this.fittingHeight(1));
+      this._text = '';
+      this._memory = null;
+      this._listWindow = null;
     }
-  };
 
-  Window_MemoriesMode.prototype.updateTone = function () {
-    this.setTone(windowTone[0], windowTone[1], windowTone[2]);
-  };
-
-  /**
-   * タイトル表示ウィンドウ
-   */
-  function Window_MemoryTitle() {
-    this.initialize.apply(this, arguments);
-  }
-
-  Window_MemoryTitle.prototype = Object.create(Window_Help.prototype);
-  Window_MemoryTitle.prototype.constructor = Window_Help;
-
-  Window_MemoryTitle.prototype.initialize = function () {
-    var x = 240;
-    var y = 0;
-    var width = Graphics.width - x;
-    var height = this.fittingHeight(1);
-    Window_Base.prototype.initialize.call(this, x, y, width, height);
-    this._text = '';
-    this._memory = null;
-    this._listWindow = null;
-  };
-
-  /**
+    /**
    * 回想データをセットする
-   * @param memory 回想データオブジェクト
+   * @param {object} memory 回想データオブジェクト
    */
-  Window_MemoryTitle.prototype.setItem = function (memory) {
-    var text = '';
-    if (memory && this._listWindow && this._listWindow.isEnabled(memory)) {
-      text = memory.title;
+    setItem(memory) {
+      var text = '';
+      if (memory && this._listWindow && this._listWindow.isEnabled(memory)) {
+        text = memory.title;
+      }
+      this.setText(text);
+      this._memory = memory;
+      this.refresh();
     }
-    this.setText(text);
-    this._memory = memory;
-    this.refresh();
-  };
 
-  Window_MemoryTitle.prototype.setListWindow = function (listWindow) {
-    this._listWindow = listWindow;
-  };
-
-  Window_MemoryTitle.prototype.refresh = function () {
-    Window_Help.prototype.refresh.call(this);
-    if (this._memory && this._memory.isAdult) {
-      var iconIndex = settings.adultIcon;
-      this.drawIcon(iconIndex, 500, 5);
+    setListWindow(listWindow) {
+      this._listWindow = listWindow;
     }
-  };
 
-  Window_MemoryTitle.prototype.updateTone = function () {
-    this.setTone(windowTone[0], windowTone[1], windowTone[2]);
-  };
+    refresh() {
+      super.refresh(this);
+      if (this._memory && this._memory.isAdult) {
+        this.drawIcon(settings.adultIcon, 500, 5);
+      }
+    }
 
-  /**
-   * 回収率表示ウィンドウ
-   */
-  function Window_MemoriesProgress() {
-    this.initialize.apply(this, arguments);
+    updateTone() {
+      this.setTone(windowTone[0], windowTone[1], windowTone[2]);
+    }
   }
 
-  Window_MemoriesProgress.prototype = Object.create(Window_Base.prototype);
-  Window_MemoriesProgress.prototype.constructor = Window_MemoriesProgress;
-
-  Window_MemoriesProgress.prototype.initialize = function () {
-    var x = 0;
-    var y = Graphics.height - this.fittingHeight(1);
-    var width = 240;
-    var height = this.fittingHeight(1);
-    Window_Base.prototype.initialize.call(this, x, y, width, height);
-    this._progress = 0;
-    this._max = 0;
-    this.refresh();
-  };
-
-  /**
-   * 表示している回想の回収率を表示する
-   */
-  Window_MemoriesProgress.prototype.drawProgress = function () {
-    var width = 190;
-    this.drawText('' + this._progress + ' / ' + this._max, this.textPadding(), 0, width, 'right');
-  };
-
-  Window_MemoriesProgress.prototype.setProgressAndMax = function (progress, max) {
-    this._progress = progress;
-    this._max = max;
-    this.refresh();
-  };
-
-  Window_MemoriesProgress.prototype.refresh = function () {
-    if (this.contents) {
-      this.contents.clear();
-      this.drawProgress();
+  class Window_MemoriesProgress extends Window_Base {
+    constructor() {
+      super();
+      this.initialize.apply(this, arguments);
     }
-  };
 
-  Window_MemoriesProgress.prototype.updateTone = function () {
-    this.setTone(windowTone[0], windowTone[1], windowTone[2]);
-  };
+    initialize() {
+      super.initialize(0, Graphics.height - this.fittingHeight(1), 240, this.fittingHeight(1));
+      this._progress = 0;
+      this._max = 0;
+      this.refresh();
+    }
 
-  /**
-   * リスト表示ウィンドウ
-   */
-  function Window_MemoryList() {
-    this.initialize.apply(this, arguments);
+    drawProgress() {
+      const width = 190;
+      this.drawText('' + this._progress + ' / ' + this._max, this.textPadding(), 0, width, 'right');
+    }
+
+    setProgressAndMax(progress, max) {
+      this._progress = progress;
+      this._max = max;
+      this.refresh();
+    }
+
+    refresh() {
+      if (this.contents) {
+        this.contents.clear();
+        this.drawProgress();
+      }
+    }
+
+    updateTone() {
+      this.setTone(windowTone[0], windowTone[1], windowTone[2]);
+    }
   }
 
-  Window_MemoryList.prototype = Object.create(Window_Selectable.prototype);
-  Window_MemoryList.prototype.constructor = Window_MemoryList;
+  class Window_MemoryList extends Window_Selectable {
+    constructor() {
+      super();
+      this.initialize.apply(this, arguments);
+    }
 
-  Window_MemoryList.prototype.initialize = function () {
-    var x = 240;
-    var y = this.fittingHeight(1);
-    this._windowWidth = Graphics.width - x;
-    this._windowHeight = Graphics.height - y;
-    Window_Selectable.prototype.initialize.call(this, x, y, this._windowWidth, this._windowHeight);
+    initialize() {
+      this._windowWidth = Graphics.width - 240;
+      this._windowHeight = Graphics.height - this.fittingHeight(1);
+      super.initialize(240, this.fittingHeight(1), this._windowWidth, this._windowHeight);
 
-    this._tag = DEFAULT_TAG;
-    this._isCGMode = true;
-    this._data = [];
-    this._progressWindow = null;
-    this._waiting = false;
-    this.getSwitches();
+      this._tag = DEFAULT_TAG;
+      this._isCGMode = true;
+      this._data = [];
+      this._progressWindow = null;
+      this._waiting = false;
+      this.getSwitches();
 
-    this.createContents();
-    this.refresh();
-    this.select(0);
-  };
+      this.createContents();
+      this.refresh();
+      this.select(0);
+    }
 
-  /**
-   * スイッチ一覧の取得
-   */
-  Window_MemoryList.prototype.getSwitches = function () {
-    this._switches = [];
+    getSwitches() {
+      this._switches = [];
 
-    var maxSaveFiles = DataManager.maxSavefiles();
-    for (var i = 1; i < maxSaveFiles; i++) {
-      if (DataManager.loadGameSwitches(i)) {
-        for (var j = 1; j < $dataSystem.switches.length; j++) {
-          this._switches[j] |= $gameSwitches.value(j);
+      const maxSaveFiles = DataManager.maxSavefiles();
+      for (var i = 1; i < maxSaveFiles; i++) {
+        if (DataManager.loadGameSwitches(i)) {
+          $dataSystem.switches.forEach((_, index) => {
+            this._switches[index] |= $gameSwitches.value(index);
+          });
         }
       }
     }
-  };
 
-  /**
-   * モード設定
-   * @param isCGMode boolean CGモード化どうか
-   */
-  Window_MemoryList.prototype.setMode = function (isCGMode) {
-    this._isCGMode = isCGMode;
-    this.refresh();
-  };
-
-  /**
-   * タグ設定
-   * @param tag string タグ文字列
-   */
-  Window_MemoryList.prototype.setTag = function (tag) {
-    this._tag = tag;
-    this.refresh();
-  };
-
-  Window_MemoryList.prototype.toggleWait = function () {
-    this._waiting = !this._waiting;
-  };
-
-  /**
-   * アイテムの縦の大きさ
-   */
-  Window_MemoryList.prototype.itemHeight = function () {
-    return (this._windowHeight - this.standardPadding() * this.numVisibleRows() + 48) / this.numVisibleRows();
-  };
-
-  /**
-   * アイテムの横の大きさ
-   */
-  Window_MemoryList.prototype.itemWidth = function () {
-    return (this._windowWidth - this.standardPadding() * this.maxCols()) / this.maxCols();
-  };
-
-  Window_MemoryList.prototype.maxCols = function () {
-    return 4;
-  };
-
-  Window_MemoryList.prototype.maxPageItems = function () {
-    return 16;
-  };
-
-  Window_MemoryList.prototype.numVisibleRows = function () {
-    return Math.ceil(this.maxPageItems() / this.maxCols());
-  };
-
-  /**
-   * 回想の数
-   */
-  Window_MemoryList.prototype.maxItems = function () {
-    return this._data ? this._data.length : 1;
-  };
-
-  /**
-   * 選択可能なアイテムの数
-   * isEnabledであるようなものをカウントする
-   */
-  Window_MemoryList.prototype.enabledItems = function () {
-    return this._data ? this._data.filter(function (memory) {
-      return this.isEnabled(memory);
-    }, this).length : 0;
-  };
-
-  Window_MemoryList.prototype.isCurrentItemEnabled = function () {
-    return this.isEnabled(this._data[this.index()]);
-  };
-
-  Window_MemoryList.prototype.isEnabled = function (memory) {
-    // セーブデータから、解放済みの回想のみ真にする
-    return this._switches.length > memory.switch && this._switches[memory.switch];
-  };
-
-  Window_MemoryList.prototype.includes = function (memory) {
-    if (this._tag === DEFAULT_TAG || this._tag === BACK_TAG) {
-      return true;
+    setMode(isCGMode) {
+      this._isCGMode = isCGMode;
+      this.refresh();
     }
-    // 選択しているタグのみに絞る
-    return memory.tags.filter(function (tag) {
-      return tag === this._tag;
-    }, this).length > 0;
-  };
 
-  /**
-   * 現在カーソルを合わせている回想
-   */
-  Window_MemoryList.prototype.currentMemory = function () {
-    var index = this.index();
-    return this._data && index >= 0 ? this._data[index] : null;
-  };
-
-  /**
-   * 表示用回想リストを生成する
-   */
-  Window_MemoryList.prototype.makeItemList = function () {
-    // モードと選択しているタグによって表示内容を変える
-    var modeKey = this._isCGMode ? "cgs" : "scenes";
-    this._data = $dataMemories[modeKey].filter(function (memory) {
-      return this.includes(memory);
-    }, this);
-    if (this._progressWindow) {
-      this._progressWindow.setProgressAndMax(
-        this.enabledItems(),
-        this.maxItems()
-      );
+    setTag(tag) {
+      this._tag = tag;
+      this.refresh();
     }
-  };
 
-  Window_MemoryList.prototype.drawItem = function (index) {
-    if (this._data) {
-      var memory = this._data[index];
-      var thumbnailFile = this.isEnabled(memory) ?
-        memory.thumbnail : settings.blankThumbnail;
-      var bmp = ImageManager.loadPicture(thumbnailFile);
-      var rect = this.itemRect(index);
-
-      this.contents.blt(bmp, 0, 0, this.itemWidth() - 8, this.itemHeight() - 8, rect.x + 4, rect.y + 4);
+    toggleWait() {
+      this._waiting = !this._waiting;
     }
-  };
 
-  Window_MemoryList.prototype.setProgressWindow = function (progressWindow) {
-    this._progressWindow = progressWindow;
-  };
-
-  Window_MemoryList.prototype.processOk = function () {
-    // ウェイト中は無効にする
-    if (!this._waiting) {
-      Window_Selectable.prototype.processOk.call(this);
+    itemHeight() {
+      return (this._windowHeight - this.standardPadding() * this.numVisibleRows() + 48) / this.numVisibleRows();
     }
-  };
 
-  Window_MemoryList.prototype.updateHelp = function () {
-    this.setHelpWindowItem(this.currentMemory());
-  };
+    itemWidth() {
 
-  Window_MemoryList.prototype.refresh = function () {
-    this.makeItemList();
-    if(this.contents) {
-      this.contents.clear();
+      return (this._windowWidth - this.standardPadding() * this.maxCols()) / this.maxCols();
     }
-    this.drawAllItems();
-    if (this._progressWindow) {
-      this._progressWindow.refresh();
-    }
-  };
 
-  Window_MemoryList.prototype.updateTone = function () {
-    this.setTone(windowTone[0], windowTone[1], windowTone[2]);
-  };
+    maxCols() {
+      return 4;
+    }
+
+    maxPageItems() {
+      return 16;
+    }
+
+    numVisibleRows() {
+      return Math.ceil(this.maxPageItems() / this.maxCols());
+    }
+
+    maxItems() {
+      return this._data ? this._data.length : 1;
+    }
+
+    enabledItems() {
+      return this._data ? this._data.filter(function (memory) {
+        return this.isEnabled(memory);
+      }, this).length : 0;
+    }
+
+    isCurrentItemEnabled() {
+      return this.isEnabled(this._data[this.index()]);
+    }
+
+    isEnabled(memory) {
+      // セーブデータから、解放済みの回想のみ真にする
+      return this._switches.length > memory.switch && this._switches[memory.switch];
+    }
+
+    includes(memory) {
+      if (this._tag === DEFAULT_TAG || this._tag === BACK_TAG) {
+        return true;
+      }
+      // 選択しているタグのみに絞る
+      return memory.tags.filter(tag => {
+        return tag === this._tag;
+      }, this).length > 0;
+    }
+
+    currentMemory() {
+      var index = this.index();
+      return this._data && index >= 0 ? this._data[index] : null;
+    }
+
+    makeItemList() {
+      // モードと選択しているタグによって表示内容を変える
+      var modeKey = this._isCGMode ? "cgs" : "scenes";
+      this._data = $dataMemories[modeKey].filter(function (memory) {
+        return this.includes(memory);
+      }, this);
+      if (this._progressWindow) {
+        this._progressWindow.setProgressAndMax(
+          this.enabledItems(),
+          this.maxItems()
+        );
+      }
+    }
+
+    drawItem(index) {
+      if (this._data) {
+        var memory = this._data[index];
+        var thumbnailFile = this.isEnabled(memory) ?
+          memory.thumbnail : settings.blankThumbnail;
+        var bmp = ImageManager.loadPicture(thumbnailFile);
+        var rect = this.itemRect(index);
+
+        this.contents.blt(bmp, 0, 0, this.itemWidth() - 8, this.itemHeight() - 8, rect.x + 4, rect.y + 4);
+      }
+    }
+
+    setProgressWindow(progressWindow) {
+      this._progressWindow = progressWindow;
+    }
+
+    processOk() {
+      // ウェイト中は無効にする
+      if (!this._waiting) {
+        super.processOk();
+      }
+    }
+
+    updateHelp() {
+      this.setHelpWindowItem(this.currentMemory());
+    }
+
+    refresh() {
+      this.makeItemList();
+      if (this.contents) {
+        this.contents.clear();
+      }
+      this.drawAllItems();
+      if (this._progressWindow) {
+        this._progressWindow.refresh();
+      }
+    }
+
+    updateTone() {
+      this.setTone(windowTone[0], windowTone[1], windowTone[2]);
+    }
+  }
 
   /**
    * タイトルコマンドに追加
    */
-  var _Window_TitleCommand_makeCommandList = Window_TitleCommand.prototype.makeCommandList;
+  const _Window_TitleCommand_makeCommandList = Window_TitleCommand.prototype.makeCommandList;
   Window_TitleCommand.prototype.makeCommandList = function () {
     _Window_TitleCommand_makeCommandList.call(this);
     this.addCommand('回想モード', 'memory');
@@ -803,7 +714,7 @@ var $dataMemories = null;
     SceneManager.push(Scene_Memories);
   };
 
-  var _Scene_Title_createCommandWindow = Scene_Title.prototype.createCommandWindow;
+  const _Scene_Title_createCommandWindow = Scene_Title.prototype.createCommandWindow;
   Scene_Title.prototype.createCommandWindow = function () {
     _Scene_Title_createCommandWindow.call(this);
     this._commandWindow.setHandler('memory', this.commandMemory.bind(this));
@@ -814,10 +725,10 @@ var $dataMemories = null;
     src: 'Memories.json'
   };
 
-  var _DataManager_loadDatabase = DataManager.loadDatabase;
+  const _DataManager_loadDatabase = DataManager.loadDatabase;
   DataManager.loadDatabase = function () {
     _DataManager_loadDatabase.apply(this, arguments);
-    var errorMessage = this._databaseMemories.src + 'が見つかりませんでした。';
+    const errorMessage = this._databaseMemories.src + 'が見つかりませんでした。';
     this.loadDataFileAllowError(this._databaseMemories.name, this._databaseMemories.src, errorMessage);
   };
 
@@ -846,14 +757,14 @@ var $dataMemories = null;
     console.warn(errorMessage);
   };
 
-  var _DataManager_isDatabaseLoaded = DataManager.isDatabaseLoaded;
+  const _DataManager_isDatabaseLoaded = DataManager.isDatabaseLoaded;
   DataManager.isDatabaseLoaded = function () {
     return _DataManager_isDatabaseLoaded.apply(this, arguments) && window[this._databaseMemories.name];
   };
 
   /**
    * セーブデータからスイッチのみロードする
-   * @param savefileId integer
+   * @param {number} savefileId セーブデータID
    */
   DataManager.loadGameSwitches = function (savefileId) {
     try {
@@ -866,7 +777,7 @@ var $dataMemories = null;
 
   /**
    * セーブデータからスイッチのみロードする
-   * @param savefileId integer
+   * @param {number} savefileId セーブデータID
    */
   DataManager.loadGameSwitchesWithoutRescue = function (savefileId) {
     if (this.isThisGameFile(savefileId)) {
