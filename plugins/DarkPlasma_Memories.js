@@ -4,7 +4,8 @@
 // http://opensource.org/licenses/mit-license.php
 
 /**
- * 2020/04/16 1.1.1 リファクタ
+ * 2020/04/16 1.2.0 DarkPlasma_ImageComposer.js に対応
+ *            1.1.1 リファクタ
  * version 1.1.0
  *  - 回想モードのウィンドウカラーを設定項目に追加
  * version 1.0.3
@@ -146,6 +147,312 @@ var $dataMemories = null;
     list: -1
   };
 
+  /**
+   * @type {MemoriesManager}
+   */
+  let memoriesManager = null;
+
+  class MemoriesManager {
+    /**
+     * @param {MemoryTag[]} tags タグ一覧
+     * @param {MemoryScene[]} scenes シーン一覧
+     * @param {MemoryCG[]} cgs CG一覧
+     */
+    constructor(tags, scenes, cgs) {
+      this._tags = tags;
+      this._scenes = scenes;
+      this._cgs = cgs;
+    }
+
+    /**
+     * @return {MemoriesManager}
+     */
+    static fromDataMemories() {
+      // セーブデータからswitch情報を取得
+      const switches = [];
+
+      const maxSaveFiles = DataManager.maxSavefiles();
+      for (var i = 1; i < maxSaveFiles; i++) {
+        if (DataManager.loadGameSwitches(i)) {
+          $dataSystem.switches.forEach((_, index) => {
+            switches[index] |= $gameSwitches.value(index);
+          });
+        }
+      }
+
+      return new MemoriesManager(
+        $dataMemories.tags.map(tag => new MemoryTag(tag.text, tag.symbol)),
+        $dataMemories.scenes.map(scene => new MemoryScene(
+          scene.title,
+          scene.thumbnail,
+          scene.switch,
+          scene.commonEvent,
+          scene.isAdult,
+          scene.tags,
+          switches[scene.switch]
+        )),
+        $dataMemories.cgs.map(cg => new MemoryCG(
+          cg.title,
+          cg.thumbnail,
+          MemoryPicture.fromDataObject(cg.pictures),
+          cg.switch,
+          cg.isAdult,
+          cg.tags,
+          switches[cg.switch]
+        ))
+      );
+    }
+
+    get tags() {
+      return this._tags;
+    }
+
+    /**
+     * モードに応じた回想一覧を返す
+     * @param {boolean} isCGMode CGモードかどうか
+     * @return {MemoryCG[]|MemoryScene[]}
+     */
+    getAllMemories(isCGMode) {
+      return isCGMode ? this._cgs : this._scenes;
+    }
+  }
+
+  class MemoryTag {
+    /**
+     * @param {string} text タグ文字列
+     * @param {string} symbol シンボル
+     */
+    constructor(text, symbol) {
+      this._text = text;
+      this._symbol = symbol;
+    }
+
+    get text() {
+      return this._text;
+    }
+
+    get symbol() {
+      return this._symbol;
+    }
+  }
+
+  class MemoryScene {
+    /**
+     * @param {string} title シーンタイトル
+     * @param {string} thumbnail サムネイルファイル名
+     * @param {number} switch_ シーン解放スイッチ
+     * @param {number} commonEvent シーンコモンイベント
+     * @param {boolean} isAdult アダルトシーンかどうか
+     * @param {string[]} tagSymbols タグシンボル一覧
+     * @param {boolean} isEnabled 解放済みかどうか
+     */
+    constructor(title, thumbnail, switch_, commonEvent, isAdult, tagSymbols, isEnabled) {
+      this._title = title;
+      this._thumbnail = thumbnail;
+      this._switch = switch_;
+      this._commonEvent = commonEvent;
+      this._isAdult = isAdult;
+      this._tagSymbols = tagSymbols;
+      this._isEnabled = isEnabled;
+    }
+
+    /**
+     * @param {string} tagSymbol タグシンボル
+     * @return {boolean} 指定したタグシンボルを含むシーンかどうか
+     */
+    includeTagSymbol(tagSymbol) {
+      return this._tagSymbols.includes(tagSymbol);
+    }
+
+    get isEnabled() {
+      return this._isEnabled;
+    }
+
+    get title() {
+      return this._title;
+    }
+
+    get thumbnail() {
+      return this._thumbnail;
+    }
+
+    get isAdult() {
+      return this._isAdult;
+    }
+
+    get commonEvent() {
+      return this._commonEvent;
+    }
+  }
+
+  class MemoryCG {
+    /**
+     * @param {string} title CGタイトル
+     * @param {string} thumbnail サムネイルファイル名
+     * @param {MemoryPicture} pictures 画像情報
+     * @param {number} switch_ 解放スイッチ
+     * @param {boolean} isAdult アダルトCGかどうか
+     * @param {string[]} tagSymbols タグシンボル一覧
+     * @param {boolean} isEnabled 解放済みかどうか
+     */
+    constructor(title, thumbnail, pictures, switch_, isAdult, tagSymbols, isEnabled) {
+      this._title = title;
+      this._thumbnail = thumbnail;
+      this._pictures = pictures;
+      this._switch = switch_;
+      this._isAdult = isAdult;
+      this._tagSymbols = tagSymbols;
+      this._isEnabled = isEnabled;
+    }
+
+    /**
+     * @param {string} tagSymbol タグシンボル
+     * @return {boolean} 指定したタグシンボルを含むシーンかどうか
+     */
+    includeTagSymbol(tagSymbol) {
+      return this._tagSymbols.includes(tagSymbol);
+    }
+
+    get isEnabled() {
+      return this._isEnabled;
+    }
+
+    get title() {
+      return this._title;
+    }
+
+    get thumbnail() {
+      return this._thumbnail;
+    }
+
+    get isAdult() {
+      return this._isAdult;
+    }
+
+    /**
+     * @param {number} index インデックス
+     * @return {string|null} ファイル名
+     */
+    getPictureName(index) {
+      return this._pictures.getFileName(index);
+    }
+
+    /**
+     * 予め画像をロードする
+     */
+    preloadAll() {
+      this._pictures.preloadAllBitmap();
+    }
+
+    /**
+     * @return {boolean} 合成画像かどうか
+     */
+    isComposedImage() {
+      return this._pictures.isComposedImage();
+    }
+
+    /**
+     * 画像合成する
+     * @param {number} index インデックス
+     */
+    composeImage(index) {
+      this._pictures.pushComposedBitmap(index);
+    }
+  }
+
+  class MemoryPicture {
+    /**
+     * @param {string} prefix CGファイル名のセット宇治
+     * @param {string[]} indexes CGファイル名のインデックス一覧
+     * @param {string} suffix CGファイル名の接尾辞
+     * @param {string} base ベースCGファイル名
+     * @param {string[][]} additionals 差分CGファイル名一覧
+     */
+    constructor(prefix, indexes, suffix, base, additionals) {
+      this._prefix = prefix;
+      this._indexes = indexes;
+      this._suffix = suffix;
+      this._base = base;
+      this._additionals = additionals;
+    }
+
+    static fromDataObject(dataObject) {
+      return new MemoryPicture(
+        dataObject.prefix,
+        dataObject.indexes,
+        dataObject.suffix,
+        dataObject.base,
+        dataObject.additionals
+      );
+    }
+
+    /**
+     * @return {boolean} ImageComposerを利用した合成画像かどうか
+     */
+    isComposedImage() {
+      return !!this._base;
+    }
+
+    /**
+     * 予めロードしておく
+     */
+    preloadAllBitmap() {
+      if (this.isComposedImage()) {
+        return;
+      };
+      [...Array(this._indexes.length).keys()]
+        .map(index => this.getFileName(index))
+        .forEach(fileName => ImageManager.loadPicture(fileName));
+    }
+
+    /**
+     * 指定したindexで表示する画像ファイル名を取得する
+     * @param {number} index インデックス
+     * @return {string|null}
+     */
+    getFileName(index) {
+      if (this.isComposedImage()) {
+        if (this._additionals.length <= index) {
+          return null;
+        }
+        return `${this._prefix}${this._base}${this._suffix}`;
+      }
+      if (this._indexes.length <= index) {
+        return null;
+      }
+      return `${this._prefix}${this._indexes[index]}${this._suffix}`;
+    }
+
+    /**
+     * 画像合成情報を登録/更新する
+     * @param {number} index 何番目の差分か
+     */
+    pushComposedBitmap(index) {
+      if (this._additionals.length <= index || !PluginManager.isLoadedPlugin("DarkPlasma_ImageComposer")) {
+        return null;
+      }
+      if (!$gameSystem) {
+        $gameSystem = new Game_System();
+      }
+      $gameSystem.composeImage(this.imageNameList(index));
+    }
+
+    /**
+     * 指定したindexのImageComposer用ファイル名リストを返す
+     * @param {number} index 何番目の差分か
+     * @return {string[]}
+     */
+    imageNameList(index) {
+      if (!this._base || this._additionals.length <= index) {
+        return [];
+      }
+      const additionalImageNames = this._additionals[index].map(imageName => `${this._prefix}${imageName}${this._suffix}.png`);
+      return [
+        `<${this.getFileName(index)}.png>`
+      ].concat(additionalImageNames);
+    }
+  }
+
   class Scene_Memories extends Scene_Base {
 
     constructor() {
@@ -156,13 +463,20 @@ var $dataMemories = null;
 
     initialize() {
       super.initialize();
+      memoriesManager = MemoriesManager.fromDataMemories();
     }
-
 
     create() {
       super.create();
       this.createWindowLayer();
       this.createMemoryWindows();
+      this.createSprite();
+    }
+
+    createSprite() {
+      this._sprite = new Sprite_Memories();
+      this._sprite.setClickHandler(this.commandCGOk.bind(this));
+      this.addChild(this._sprite);
     }
 
     createMemoryWindows() {
@@ -173,7 +487,7 @@ var $dataMemories = null;
       // タグ選択ウィンドウ
       this._commandWindow = new Window_MemoriesCommand();
       this._commandWindow.setHandler(DEFAULT_TAG, this.commandTag.bind(this));
-      $dataMemories.tags.forEach(tag => {
+      memoriesManager.tags.forEach(tag => {
         this._commandWindow.setHandler(tag.symbol, this.commandTag.bind(this));
       });
       this._commandWindow.setHandler('cancel', this.goBackToTitle.bind(this));
@@ -288,25 +602,15 @@ var $dataMemories = null;
         this._cgSpritesIndex = 0;
 
         const cg = this._listWindow.currentMemory();
-        const pictures = cg.pictures.indexes.map(idx => {
-          return cg.pictures.prefix + idx + cg.pictures.suffix;
-        });
-        pictures.forEach(picture => {
-          var button = new Sprite_Button();
-          button.setClickHandler(this.commandCGOk.bind(this));
-          button.bitmap = ImageManager.loadPicture(picture);
-          if (this._cgSprites.length > 0) {
-            button.visible = false;
-          }
-
-          this._cgSprites.push(button);
-          this.addChild(button);
-        });
+        this._sprite.show(cg.getPictureName(0));
+        if (cg.isComposedImage()) {
+          cg.composeImage(0);
+        }
 
         this._listWindow.deactivate();
         this._cgWindow.activate();
       } else {
-        var scene = this._listWindow.currentMemory();
+        const scene = this._listWindow.currentMemory();
         DataManager.setupNewGame();
         $gamePlayer.setTransparent(true);
         this.fadeOutAll();
@@ -321,11 +625,15 @@ var $dataMemories = null;
     }
 
     commandCGOk() {
-      if (this._cgSpritesIndex < this._cgSprites.length - 1) {
-        this._cgSprites[this._cgSpritesIndex].visible = false;
-        this._cgSpritesIndex++;
-        this._cgSprites[this._cgSpritesIndex].visible = true;
-
+      const cg = this._listWindow.currentMemory();
+      this._cgSpritesIndex++;
+      const nextPictureName = cg.getPictureName(this._cgSpritesIndex);
+      cg.preloadAll();
+      if (nextPictureName) {
+        if (cg.isComposedImage()) {
+          cg.composeImage(this._cgSpritesIndex);
+        }
+        this._sprite.show(nextPictureName);
         this._cgWindow.activate();
       } else {
         this.commandCGCancel();
@@ -333,15 +641,74 @@ var $dataMemories = null;
     }
 
     commandCGCancel() {
-      this._cgSprites.forEach(function (obj) {
-        obj.visible = false;
-        obj = null;
-      }, this);
+      this._sprite.hide();
       this._cgWindow.deactivate();
       this._listWindow.activate();
     }
   }
 
+  class Sprite_Memories extends Sprite_Button {
+    constructor() {
+      super();
+      this.initialize.apply(this, arguments);
+    }
+
+    initialize() {
+      super.initialize();
+      this._pictureName = '';
+      this._isPicture = true;
+      this._picture = new Game_Picture();
+      this.update();
+    }
+
+    /**
+     * @return {Game_Picture}
+     */
+    picture() {
+      return this._picture;
+    }
+
+    /**
+     * 画像を表示する
+     * @param {string} pictureName 画像ファイル名
+     */
+    show(pictureName) {
+      // 指定した画像のロードが終わっていない場合はウェイトする
+      if (!ImageManager.loadPicture(pictureName).isReady()) {
+        setTimeout(() => {
+          this.show(pictureName);
+        }, 100);
+      } else {
+        this.picture().show(
+          pictureName,
+          0,
+          0,
+          0,
+          100,
+          100,
+          255,
+          0
+        );
+      }
+    }
+
+    hide() {
+      this.picture().erase();
+    }
+
+    loadBitmap() {
+      Sprite_Picture.prototype.loadBitmap.call(this);
+    }
+
+    update() {
+      super.update();
+      this.updateBitmap();
+    }
+
+    updateBitmap() {
+      Sprite_Picture.prototype.updateBitmap.call(this);
+    }
+  }
 
   /**
    * ラベルを貼った際に終了時であれば回想リストに戻る
@@ -366,9 +733,9 @@ var $dataMemories = null;
 
     makeCommandList() {
       this.addCommand('すべて', DEFAULT_TAG);
-      $dataMemories.tags.forEach(function (tag) {
+      memoriesManager.tags.forEach(tag => {
         this.addCommand(tag.text, tag.symbol);
-      }, this);
+      });
       this.addCommand('戻る', BACK_TAG);
     }
 
@@ -475,10 +842,10 @@ var $dataMemories = null;
 
     /**
    * 回想データをセットする
-   * @param {object} memory 回想データオブジェクト
+   * @param {MemoryCG|MemoryScene} memory 回想データオブジェクト
    */
     setItem(memory) {
-      var text = '';
+      let text = '';
       if (memory && this._listWindow && this._listWindow.isEnabled(memory)) {
         text = memory.title;
       }
@@ -555,31 +922,23 @@ var $dataMemories = null;
       this._data = [];
       this._progressWindow = null;
       this._waiting = false;
-      this.getSwitches();
 
       this.createContents();
       this.refresh();
       this.select(0);
     }
 
-    getSwitches() {
-      this._switches = [];
-
-      const maxSaveFiles = DataManager.maxSavefiles();
-      for (var i = 1; i < maxSaveFiles; i++) {
-        if (DataManager.loadGameSwitches(i)) {
-          $dataSystem.switches.forEach((_, index) => {
-            this._switches[index] |= $gameSwitches.value(index);
-          });
-        }
-      }
-    }
-
+    /**
+     * @param {boolean} isCGMode CGモードかどうか
+     */
     setMode(isCGMode) {
       this._isCGMode = isCGMode;
       this.refresh();
     }
 
+    /**
+     * @param {string} tag タグシンボル
+     */
     setTag(tag) {
       this._tag = tag;
       this.refresh();
@@ -594,7 +953,6 @@ var $dataMemories = null;
     }
 
     itemWidth() {
-
       return (this._windowWidth - this.standardPadding() * this.maxCols()) / this.maxCols();
     }
 
@@ -610,33 +968,50 @@ var $dataMemories = null;
       return Math.ceil(this.maxPageItems() / this.maxCols());
     }
 
+    /**
+     * @return {number} 全回想の数
+     */
     maxItems() {
       return this._data ? this._data.length : 1;
     }
 
-    enabledItems() {
+    /**
+     * @return {number} 解放済み回想の数
+     */
+    enabledItemsCount() {
       return this._data ? this._data.filter(function (memory) {
         return this.isEnabled(memory);
       }, this).length : 0;
     }
 
+    /**
+     * @return {boolean} 現在カーソルを合わせている回想が解放済みかどうか
+     */
     isCurrentItemEnabled() {
       return this.isEnabled(this._data[this.index()]);
     }
 
+    /**
+     * @param {MemoryCG|MemoryScene} memory 回想データ
+     * @return {boolean} 解放済みかどうか
+     */
     isEnabled(memory) {
-      // セーブデータから、解放済みの回想のみ真にする
-      return this._switches.length > memory.switch && this._switches[memory.switch];
+      return memory.isEnabled;
     }
 
+    /**
+     * @param {MemoryScene|MemoryCG} memory シーンまたはCG
+     * @return {boolean}
+     */
     includes(memory) {
       if (this._tag === DEFAULT_TAG || this._tag === BACK_TAG) {
         return true;
       }
       // 選択しているタグのみに絞る
-      return memory.tags.filter(tag => {
+      /*return memory.tags.filter(tag => {
         return tag === this._tag;
-      }, this).length > 0;
+      }, this).length > 0;*/
+      return memory.includeTagSymbol(this._tag);
     }
 
     currentMemory() {
@@ -646,13 +1021,12 @@ var $dataMemories = null;
 
     makeItemList() {
       // モードと選択しているタグによって表示内容を変える
-      var modeKey = this._isCGMode ? "cgs" : "scenes";
-      this._data = $dataMemories[modeKey].filter(function (memory) {
+      this._data = memoriesManager.getAllMemories(this._isCGMode).filter(memory => {
         return this.includes(memory);
-      }, this);
+      });
       if (this._progressWindow) {
         this._progressWindow.setProgressAndMax(
-          this.enabledItems(),
+          this.enabledItemsCount(),
           this.maxItems()
         );
       }
@@ -660,11 +1034,11 @@ var $dataMemories = null;
 
     drawItem(index) {
       if (this._data) {
-        var memory = this._data[index];
-        var thumbnailFile = this.isEnabled(memory) ?
+        const memory = this._data[index];
+        const thumbnailFile = this.isEnabled(memory) ?
           memory.thumbnail : settings.blankThumbnail;
-        var bmp = ImageManager.loadPicture(thumbnailFile);
-        var rect = this.itemRect(index);
+        const bmp = ImageManager.loadPicture(thumbnailFile);
+        const rect = this.itemRect(index);
 
         this.contents.blt(bmp, 0, 0, this.itemWidth() - 8, this.itemHeight() - 8, rect.x + 4, rect.y + 4);
       }
@@ -795,5 +1169,9 @@ var $dataMemories = null;
 
   DataManager.extractSaveSwitches = function (contents) {
     $gameSwitches = contents.switches;
+  };
+
+  PluginManager.isLoadedPlugin = function (name) {
+    return $plugins.some(plugin => plugin.name === name && plugin.status);
   };
 })();

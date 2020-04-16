@@ -16,17 +16,19 @@
 | -thumbnail|string|リストに表示するサムネイル画像のファイル名|
 | -switch|number|リストに表示する条件のスイッチ番号|
 | -commonEvent|number|シーンのコモンイベント|
-| -tags|array[string]|シーンのタグ一覧|
+| -tags|string[]|シーンのタグ一覧|
 |cgs|array|CG一覧|
 | -title|string|CGのタイトル|
 | -thumbnail|string|リストに表示するサムネイル画像のファイル名|
 | -pictures|object|CGファイル名を表すオブジェクト|
 | --prefix|string|CGファイル名の接頭語|
-| --indexes|array[string]|CGファイル名のインデックス一覧|
+| --indexes|string[]|CGファイル名のインデックス一覧|
 | --suffix|string|CGファイル名の接尾語|
+| --base|string|画像合成プラグインを使う場合のベース画像名|
+| --additionals|string[][]|画像合成プラグインを使う場合の差分画像名|
 | -switch|number|リストに表示する条件のスイッチ番号|
 | -isAdult|boolean|R18イベントかどうか|
-| -tags|array[string]|CGのタグ一覧|
+| -tags|string[]|CGのタグ一覧|
 
 ## タグについて
 
@@ -98,8 +100,12 @@
       "thumbnail": "コミカル1サムネ",
       "pictures": {
         "prefix": "コミカル1",
-        "indexes": ["_1", "_2"],
-        "suffix": "_R"
+        "suffix": "_R",
+        "base": "-ベース",
+        "additionals": [
+          ["-差分1頭", "差分1身体"],
+          ["-差分2頭", "差分2身体"]
+        ]
       },
       "switch": 1,
       "isAdult": false,
@@ -148,8 +154,11 @@
 * この記述からそれぞれのイベントCGのファイル名を読み解くとこのようになる
 
 * コミカル1
-  * コミカル1_1_R.png
-  * コミカル1_2_R.png
+  * コミカル1-ベース_R.png
+  * コミカル1_差分1頭_R.png
+  * コミカル1_差分1身体_R.png
+  * コミカル1_差分2頭_R.png
+  * コミカル1_差分2身体_R.png
 * コミカル2
   * コミカル2-1_1_R.png
   * コミカル2-1_2_R.png
@@ -165,3 +174,5 @@
 * 同じ基本CGのファイルについて、ファイル名の先頭や末尾が共通していれば、それをprefix, suffixに書き、差分で異なる部分のみをindexesに書けば良い
 * もちろん、同じ基本CGでありながら全く違う規則で名前をつけても良い
   * その場合、prefixやsuffixには空文字列を入力し、indexesに全てのファイル名を列挙することになる
+
+* 上記の例で、コミカル1は[画像合成プラグイン](https://github.com/elleonard/RPGtkoolMV-Plugins/blob/master/plugins/DarkPlasma_ImageComposer.js)を利用している

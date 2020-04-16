@@ -85,8 +85,12 @@
       "thumbnail": "still_オープニング1-1_R_thumbnail",
       "pictures": {
         "prefix": "still_オープニング",
-        "indexes": ["1-1", "1-2"],
-        "suffix": "_R"
+        "suffix": "_R",
+        "base": "-ベース",
+        "additionals": [
+          ["-食いしばり"],
+          ["-小さい食いしばり"]
+        ]
       },
       "switch": 43,
       "isAdult": true,
