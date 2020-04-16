@@ -4,6 +4,7 @@
 // http://opensource.org/licenses/mit-license.php
 
 /**
+ * 2020/04/17 1.2.0 アイテム売却数による有効条件設定を追加
  * 2020/03/30 1.1.0 基本売却価格に対して倍率を設定できる機能を追加
  *            1.0.0 公開
  */
@@ -25,7 +26,7 @@
  * 売却価格セットは複数指定することができ、
  * それぞれに対して有効条件をスイッチや変数の値について決めることができます。
  *
- * 有効条件はスイッチと変数の組を1単位とし、1単位の中ですべての条件を満たす場合に、
+ * 有効条件はスイッチ,変数,売却数の組を1単位とし、1単位の中ですべての条件を満たす場合に、
  * その単位の有効条件が満たされたものとみなします。
  *
  * 有効条件を複数設定することができますが、そのいずれか1単位さえ満たされていれば
@@ -163,9 +164,86 @@
  * @text 下限値
  * @type struct<VariableLimit>
  * @default {"Enabled": "true", "Variable Limit": "0"}
+ *
+ * @param Sell Count Item Condition
+ * @desc アイテム売却数による条件
+ * @text アイテム売却数条件
+ * @type struct<SellCountConditionItem>
+ * @default {}
+ *
+ * @param Sell Count Weapon Condition
+ * @desc 武器売却数による条件
+ * @text 武器売却数条件
+ * @type struct<SellCountConditionWeapon>
+ * @default {}
+ *
+ * @param Sell Count Armor Condition
+ * @desc 防具売却数による条件
+ * @text 防具売却数条件
+ * @type struct<SellCountConditionArmor>
+ * @default {}
+ */
+/*~struct~SellCountConditionItem:
+ *
+ * @param Id
+ * @desc このアイテムの売却数が指定された値の範囲にあれば有効
+ * @text アイテム
+ * @type item
+ * @default 0
+ *
+ * @param Sell Count Upper Limit
+ * @desc アイテムの売却数がこの値以下であれば有効
+ * @text 上限値
+ * @type struct<VariableLimit>
+ * @default {"Enabled": "true", "Variable Limit": "0"}
+ *
+ * @param Sell Count Lower Limit
+ * @desc アイテムの売却数がこの値以上であれば有効
+ * @text 下限値
+ * @type struct<VariableLimit>
+ * @default {"Enabled": "true", "Variable Limit": "0"}
+ */
+/*~struct~SellCountConditionWeapon:
+ *
+ * @param Id
+ * @desc この武器の売却数が指定された値の範囲にあれば有効
+ * @text 武器
+ * @type weapon
+ * @default 0
+ *
+ * @param Sell Count Upper Limit
+ * @desc 武器の売却数がこの値以下であれば有効
+ * @text 上限値
+ * @type struct<VariableLimit>
+ * @default {"Enabled": "true", "Variable Limit": "0"}
+ *
+ * @param Sell Count Lower Limit
+ * @desc 武器の売却数がこの値以上であれば有効
+ * @text 下限値
+ * @type struct<VariableLimit>
+ * @default {"Enabled": "true", "Variable Limit": "0"}
+ */
+/*~struct~SellCountConditionArmor:
+ *
+ * @param Id
+ * @desc この防具の売却数が指定された値の範囲にあれば有効
+ * @text 防具
+ * @type armor
+ * @default 0
+ *
+ * @param Sell Count Upper Limit
+ * @desc 防具の売却数がこの値以下であれば有効
+ * @text 上限値
+ * @type struct<VariableLimit>
+ * @default {"Enabled": "true", "Variable Limit": "0"}
+ *
+ * @param Sell Count Lower Limit
+ * @desc 防具の売却数がこの値以上であれば有効
+ * @text 下限値
+ * @type struct<VariableLimit>
+ * @default {"Enabled": "true", "Variable Limit": "0"}
  */
 /*~struct~VariableLimit:
- *
  *
  * @param Enabled
  * @desc この限界値を有効にするかどうか
@@ -199,7 +277,6 @@
    */
   class CustomPriceSetting {
     /**
-     * 
      * @param {Array.<SellingPrice>} itemPrices 
      * @param {Array.<SellingPrice>} weaponPrices 
      * @param {Array.<SellingPrice>} armorPrices 
@@ -351,12 +428,18 @@
      * @param {number} variable 変数ID
      * @param {VariableLimit} upperLimit 変数上限
      * @param {VariableLimit} lowerLimit 変数下限
+     * @param {SellCountCondition} sellCountItem アイテム売却数
+     * @param {SellCountCondition} sellCountWeapon 武器売却数
+     * @param {SellCountCondition} sellCountArmor 防具売却数
      */
-    constructor(switch_, variable, upperLimit, lowerLimit) {
+    constructor(switch_, variable, upperLimit, lowerLimit, sellCountItem, sellCountWeapon, sellCountArmor) {
       this._switch = switch_;
       this._variable = variable;
       this._upperLimit = upperLimit;
       this._lowerLimit = lowerLimit;
+      this._sellCountConditionItem = sellCountItem;
+      this._sellCountConditionWeapon = sellCountWeapon;
+      this._sellCountConditionArmor = sellCountArmor;
     }
 
     /**
@@ -369,7 +452,10 @@
         Number(parsed['Switch'] || 0),
         Number(parsed['Variable'] || 0),
         VariableLimit.fromJson(parsed['Variable Upper Limit'] || '{"Enabled": "true", "Variable Limit": "0"}'),
-        VariableLimit.fromJson(parsed['Variable Lower Limit'] || '{"Enabled": "true", "Variable Limit": "0"}')
+        VariableLimit.fromJson(parsed['Variable Lower Limit'] || '{"Enabled": "true", "Variable Limit": "0"}'),
+        SellCountCondition.fromJson(ITEM_CATEGORIES.ITEM, parsed['Sell Count Item Condition'] || '{}'),
+        SellCountCondition.fromJson(ITEM_CATEGORIES.WEAPON, parsed['Sell Count Weapon Condition'] || '{}'),
+        SellCountCondition.fromJson(ITEM_CATEGORIES.ARMOR, parsed['Sell Count Armor Condition'] || '{}')
       );
     }
 
@@ -381,7 +467,10 @@
       return (this._switch <= 0 || $gameSwitches.value(this._switch)) &&
         (this._variable <= 0 ||
           (!this._upperLimit.isEnabled || $gameVariables.value(this._variable) <= this._upperLimit.limit) &&
-          (!this._lowerLimit.isEnabled || $gameVariables.value(this._variable) >= this._lowerLimit.limit));
+          (!this._lowerLimit.isEnabled || $gameVariables.value(this._variable) >= this._lowerLimit.limit)) &&
+          this._sellCountConditionItem.isConditionOk() &&
+          this._sellCountConditionWeapon.isConditionOk() &&
+          this._sellCountConditionArmor.isConditionOk();
     }
   }
 
@@ -425,7 +514,116 @@
     }
   }
 
+  /**
+   * 売却数条件
+   */
+  class SellCountCondition {
+    /**
+     * 
+     * @param {string} category アイテムカテゴリ
+     * @param {number} id アイテムID
+     * @param {VariableLimit} upperLimit 上限値
+     * @param {VariableLimit} lowerLimit 下限値
+     */
+    constructor(category, id, upperLimit, lowerLimit) {
+      this._category = category;
+      this._id = id;
+      this._upperLimit = upperLimit;
+      this._lowerLimit = lowerLimit;
+    }
+
+    /**
+     * @param {string} category アイテムカテゴリ
+     * @param {string} json JSON文字列
+     * @return {SellCountCondition}
+     */
+    static fromJson(category, json) {
+      const parsed = JsonEx.parse(json);
+      return new SellCountCondition(
+        category,
+        Number(parsed['Id'] || 0),
+        VariableLimit.fromJson(parsed['Sell Count Upper Limit'] || '{"Enabled": "true", "Variable Limit": "0"}'),
+        VariableLimit.fromJson(parsed['Sell Count Lower Limit'] || '{"Enabled": "true", "Variable Limit": "0"}')
+      );
+    }
+
+    /**
+     * 有効条件を満たしているかどうか
+     * @return {boolean}
+     */
+    isConditionOk() {
+      return (this._id <= 0 ||
+          (!this._upperLimit.isEnabled || $gameSystem.sellCount(this._category, this._id) <= this._upperLimit.limit) &&
+          (!this._lowerLimit.isEnabled || $gameSystem.sellCount(this._category, this._id) >= this._lowerLimit.limit));
+    }
+  }
+
+  /**
+   * アイテム売却数
+   */
+  class SellCount {
+    /**
+     * @param {string} category アイテム種別
+     * @param {number} id アイテムID
+     * @param {number} count 売却数
+     */
+    constructor(category, id, count) {
+      this._category = category;
+      this._id = id;
+      this._count = count;
+    }
+
+    /**
+     * @param {number} count アイテムを売却する数
+     */
+    sellItem(count) {
+      this._count += count;
+    }
+
+    get category() {
+      return this._category;
+    }
+
+    get id() {
+      return this._id;
+    }
+
+    get count() {
+      return this._count;
+    }
+  }
+
+  window[SellCount.name] = SellCount;
+
   const settings = JsonEx.parse(pluginParameters['Custom Price Setting'] || '[]').map(json => CustomPriceSetting.fromJson(json));
+
+  const _Game_System_initialize = Game_System.prototype.initialize;
+  Game_System.prototype.initialize = function () {
+    _Game_System_initialize.call(this);
+    this._sellCounts = [];
+  };
+
+  const _Game_System_onAfterLoad = Game_System.prototype.onAfterLoad;
+  Game_System.prototype.onAfterLoad = function () {
+    _Game_System_onAfterLoad.call(this);
+    if (!this._sellCounts) {
+      this._sellCounts = [];
+    }
+  };
+
+  Game_System.prototype.sellCountPlus = function (category, id, count) {
+    const sellCount = this._sellCounts.find(sellCount => sellCount.category === category && sellCount.id === id);
+    if (sellCount) {
+      sellCount.sellItem(count);
+    } else {
+      this._sellCounts.push(new SellCount(category, id, count));
+    }
+  };
+
+  Game_System.prototype.sellCount = function (category, id) {
+    const sellCount = this._sellCounts.find(sellCount => sellCount.category === category && sellCount.id === id);
+    return sellCount ? sellCount.count : 0;
+  };
 
   const _Scene_Shop_sellingPrice = Scene_Shop.prototype.sellingPrice;
   Scene_Shop.prototype.sellingPrice = function () {
@@ -433,6 +631,12 @@
       .map(setting => setting.customPriceOf(this._item.id, this._categoryWindow.currentSymbol()))
       .find(price => price);
     return customPrice ? customPrice : _Scene_Shop_sellingPrice.call(this);
+  };
+
+  const _Scene_Shop_doSell = Scene_Shop.prototype.doSell;
+  Scene_Shop.prototype.doSell = function (number) {
+    _Scene_Shop_doSell.call(this, number);
+    $gameSystem.sellCountPlus(DataManager.itemCategory(this._item), this._item.id, number);
   };
 
   const _Window_ShopSell_isEnabled = Window_ShopSell.prototype.isEnabled;
@@ -444,5 +648,22 @@
       .map(setting => setting.customPriceOf(item.id, this._category))
       .find(price => price);
     return customPrice ? customPrice > 0 : _Window_ShopSell_isEnabled.call(this, item);
+  };
+
+  /**
+   * @param {RPG.BaseItem}
+   * @return {string}
+   */
+  DataManager.itemCategory = function (item) {
+    if (this.isItem(item)) {
+      return ITEM_CATEGORIES.ITEM;
+    }
+    if (this.isWeapon(item)) {
+      return ITEM_CATEGORIES.WEAPON;
+    }
+    if (this.isArmor(item)) {
+      return ITEM_CATEGORIES.ARMOR;
+    }
+    return ITEM_CATEGORIES.KEY_ITEM;
   };
 })();
