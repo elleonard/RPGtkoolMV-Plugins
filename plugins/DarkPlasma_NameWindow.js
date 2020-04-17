@@ -4,6 +4,8 @@
 // http://opensource.org/licenses/mit-license.php
 
 /**
+ * 2020/04/18 1.2.0 MessageWindowHidden.js との競合を修正
+ *                  DarkPlasma_AutoHightlight.js よりも自動名前検出時の色設定を優先するオプションを追加
  * 2020/04/12 1.1.1 convertEscapeCharactersを呼び出すようなプラグインとの競合を修正
  *                  リファクタ
  * 2020/01/26 1.1.0 パディング幅の設定項目追加
@@ -71,6 +73,12 @@
  * @type boolean
  * @default false
  *
+ * @param Force Auto Name Color
+ * @desc 自動名前検出した名前の色をこのプラグインの設定に固定する（DarkPlasma_AutoHighlight等による変換を無視する）
+ * @text 自動名前色強制
+ * @type boolean
+ * @default true
+ *
  * @help
  *  メッセージテキストに以下のように記述すると名前ウィンドウを表示します。
  * 
@@ -117,7 +125,8 @@
         color: String(parsed['color']).startsWith("#") ? String(parsed['color']) : Number(parsed['color'])
       };
     }, this),
-    autoNameWindow: String(pluginParameters['Auto Name Window'] || 'false') === 'true'
+    autoNameWindow: String(pluginParameters['Auto Name Window'] || 'false') === 'true',
+    forceAutoNameColor: String(pluginParameters['Force Auto Name Color'] || 'true') === 'true'
   };
 
   /** 名前ウィンドウの位置 */
@@ -309,10 +318,18 @@
       return this._parentWindow.doesContinue() &&
         this._parentWindow.findNameWindowTextInfo($gameMessage.nextText());
     }
+
+    isNameWindow() {
+      return true;
+    }
   }
 
   Game_Message.prototype.nextText = function () {
     return this._texts[0];
+  };
+
+  Window_Base.prototype.isNameWindow = function () {
+    return false;
   };
 
   /**
@@ -358,6 +375,30 @@
   const _Window_Message_subWindows = Window_Message.prototype.subWindows;
   Window_Message.prototype.subWindows = function () {
     return _Window_Message_subWindows.call(this).concat([this._nameWindow]);
+  };
+
+  const _Window_Message_hideSubWindow = Window_Message.prototype.hideSubWindow;
+  Window_Message.prototype.hideSubWindow = function (subWindow) {
+    if (subWindow.isNameWindow()) {
+      this._isAlreadyShownNameWindow = false;
+    }
+    _Window_Message_hideSubWindow.call(this, subWindow);
+  };
+
+  const _Window_Message_showSubWindow = Window_Message.prototype.showSubWindow;
+  Window_Message.prototype.showSubWindow = function (subWindow) {
+    if (subWindow.isNameWindow()) {
+      if (this._nameWindowTextInfo) {
+        this.showNameWindow(
+          this._nameWindowTextInfo.name,
+          this._nameWindowTextInfo.position,
+          this._nameWindowTextInfo.color,
+          this._nameWindowTextInfo.enableEscapeCharacter
+        );
+      }
+    } else {
+      _Window_Message_showSubWindow.call(this, subWindow);
+    }
   };
 
   Window_Message.prototype.convertEscapeCharacters = function (text) {
@@ -433,7 +474,11 @@
       const speakerReg = new RegExp("^(.+)(「|（)", "gi");
       const speaker = speakerReg.exec(text);
       if (speaker !== null) {
-        const target = speaker[1].replace("\x1b\}", "");
+        let target = speaker[1].replace("\x1b\}", "");
+        const eraseTarget = target;
+        if (settings.forceAutoNameColor) {
+          target = target.replace(/\x1bC\[(#?[0-9]*)\]/gi, "");
+        }
         const speakerNames = target.split("＆");
         const speakerNameString = speakerNames.map(speakerName => {
           // 設定値の色があればそれを設定する
@@ -447,7 +492,7 @@
             position: NAME_WINDOW_POSITION.LEFT_EDGE,
             colorByName: 0,
             enableEscapeCharacter: true,
-            eraseTarget: target
+            eraseTarget: eraseTarget
           };
         }
       }
