@@ -7,7 +7,18 @@
  * 2020/04/21 1.0.0 公開
  */
 
- /*:
+/*:
+ * @plugindesc Separates shop buy window by item category.
+ * @author DarkPlasma
+ * @license MIT
+ *
+ * @help
+ * You can separate shop buy window by item category.
+ *
+ * You can use this plugin with TMItemCategoryEx.js.
+ */
+
+/*:ja
  * @plugindesc カテゴリごとのショップ購入を実現するプラグイン
  * @author DarkPlasma
  * @license MIT
