@@ -4,6 +4,7 @@
 // http://opensource.org/licenses/mit-license.php
 
 /**
+ * 2020/04/20 1.2.1 自動名前ウィンドウ以外でアクター名色付けが機能していない不具合を修正
  * 2020/04/18 1.2.0 MessageWindowHidden.js との競合を修正
  *                  DarkPlasma_AutoHightlight.js よりも自動名前検出時の色設定を優先するオプションを追加
  * 2020/04/12 1.1.1 convertEscapeCharactersを呼び出すようなプラグインとの競合を修正
@@ -512,7 +513,7 @@
   Window_Message.prototype.colorByName = function (name) {
     const actor = $gameActors.byName(name);
     if (actor) {
-      const colorSetting = settings.actorColors.find(actorColor => Number(actorColor.actor) === actor.actorId());
+      const colorSetting = settings.actorColors.find(actorColor => Number(actorColor.actor) === Number(actor.actorId()));
       return colorSetting ? colorSetting.color : settings.defaultTextColor;
     }
     return settings.defaultTextColor;
