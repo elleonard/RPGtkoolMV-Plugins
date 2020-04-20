@@ -244,6 +244,13 @@ PromptlyPopup.js における連続攻撃や全体攻撃のダメージ/回避SE
 
 オプションから戻るメニューを追加するプラグイン
 
+## DarkPlasma_ShopBuyByCategory.js
+
+カテゴリごとのショップ購入を実現するプラグイン
+
+ショップ購入画面がカテゴリごとに別になります
+TMItemCategoryEx.js に対応しています
+
 ## DarkPlasma_ShopStock.js
 
 在庫つきショップを実現するプラグイン
