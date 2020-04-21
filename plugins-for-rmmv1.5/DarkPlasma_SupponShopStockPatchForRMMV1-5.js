@@ -4,7 +4,8 @@
 // http://opensource.org/licenses/mit-license.php
 
 /**
- * 2020/04/21 1.0.0 公開
+ * 2020/04/21 1.0.1 必ず4番目のカテゴリが無効化される（カテゴリが3つ以下だとエラーになる）不具合を修正
+ *            1.0.0 公開
  */
 
 /*:
@@ -72,11 +73,15 @@
     ARMOR: 2
   };
 
+  const ITEM_CATEGORIES = {
+    KEY_ITEM: 'keyItem'
+  };
+
   const _Scene_supponSSshop_sortGoods = Scene_supponSSshop.prototype.sortGoods;
   Scene_supponSSshop.prototype.sortGoods = function () {
     if (this._sortTyep === SORT_TYPE.SEPARATE_BUY_WINDOW_BY_CATEGORY) {
       this._goods = [];
-      this._goods = this._originalGoods.filter(function(goods) {
+      this._goods = this._originalGoods.filter(function (goods) {
         let item = null;
         switch (goods[0]) {
           case ITEM_CATEGORY_IDS.ITEM:
@@ -100,12 +105,34 @@
     }
   };
 
+  Scene_supponSSshop.prototype.commandBuy = function () {
+    this._trade = 'buy';
+    if (this._sortTyep == 2) {
+      this._categoryWindow.disableKeyItem();//大事なもの選択不可
+      Window_Selectable.prototype.refresh.call(this._categoryWindow);
+      this._categoryWindow.setItemWindow(null);
+      this._categoryWindow.show();
+      this._categoryWindow.activate();
+      return;
+    }
+    this.sortGoods();
+    Scene_Shop.prototype.commandBuy.call(this);
+  };
+
   Scene_supponSSshop.prototype.isExtraItemCategoryEnabled = function () {
     return PluginManager.isLoadedPlugin('TMItemCategoryEx');
   };
 
+  Window_ItemCategory.prototype.disableKeyItem = function () {
+    this._list.filter(function (command) {
+      return command.symbol === ITEM_CATEGORIES.KEY_ITEM;
+    }).forEach(function(command) {
+      command.enabled = false;
+    });
+  };
+
   PluginManager.isLoadedPlugin = function (name) {
-    return $plugins.some(function(plugin) { 
+    return $plugins.some(function (plugin) {
       return plugin.name === name && plugin.status;
     });
   };
