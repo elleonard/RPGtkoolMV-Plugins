@@ -4,7 +4,8 @@
 // http://opensource.org/licenses/mit-license.php
 
 /**
- * 2020/04/21 2.0.2 add english help
+ * 2020/04/21 2.0.3 デフォルト在庫リストIDが有効でなかった不具合を修正
+ *            2.0.2 add english help
  * 2020/04/13 2.0.1 セーブデータをロードした時にエラーになる不具合を修正
  * 2020/04/11 2.0.0 大規模リファクタ/機能追加。1.0.0からのセーブデータ互換性なし
  *                  戦闘回数や経過時間による在庫補充機能追加
@@ -467,6 +468,8 @@
     ARMOR: 3,
   };
 
+  const DEFAULT_STOCK_ID = 1;
+
   const settings = {
     stockIdVariable: Number(pluginParameters['stockIdVariable'] || 0),
     stockNumberLabel: String(pluginParameters['stockNumberLabel'] || '在庫数'),
@@ -550,7 +553,7 @@
      * @return {ShopStock|undefined}
      */
     currentShopStock() {
-      const currentStockId = $gameVariables.value(settings.stockIdVariable);
+      const currentStockId = $gameVariables.value(settings.stockIdVariable) || DEFAULT_STOCK_ID;
       return this._shopStock.find(stock => stock.id === currentStockId);
     }
 
