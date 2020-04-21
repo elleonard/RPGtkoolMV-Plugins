@@ -16,6 +16,9 @@
  * You can separate shop buy window by item category.
  *
  * You can use this plugin with TMItemCategoryEx.js.
+ *
+ * If you want to use this plugin with DarkPlasma_ShopStock.js,
+ * please add this plugin under it.
  */
 
 /*:ja
@@ -27,6 +30,8 @@
  * カテゴリごとのショップ購入を実現します。
  *
  * TMItemCategoryEx.js に対応しています。
+ * DarkPlasma_ShopStock.js と併用する場合、
+ * このプラグインをそれよりも下に追加してください。
  */
 
 (function () {
