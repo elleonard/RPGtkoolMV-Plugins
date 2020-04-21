@@ -310,6 +310,15 @@ HPを消費する, HPを割合で消費する, MPを割合で消費する, ア�
 
 ランダムな構成の敵を出現させるプラグイン
 
+## DarkPlasma_SupponShopStockPatch.js
+
+SupponShopStock.js のパッチプラグイン
+
+TMItemCategoryEx.js との併用時、カテゴリごとに購入画面を分割できるようになります
+
+※このプラグインの利用は手順が複雑であるため、推奨しません。
+DarkPlasma_ShopStock.js 及び DarkPlasma_ShopBuyByCategory.js の利用を検討してください。
+
 ## DarkPlasma_SurpriseControl.js
 
 スイッチや敵の種類によって先制を制御します
