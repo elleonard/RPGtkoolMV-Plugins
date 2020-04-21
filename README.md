@@ -1,6 +1,8 @@
 # RPGツクールMV用プラグイン
 
-RPGツクールMVで動作するプラグインです。
+RPGツクールMV 1.6系で動作するプラグインです。
+
+There are plugins working with RMMV 1.6.x or later.
 
 ## 使い方
 
