@@ -4,6 +4,7 @@
 // http://opensource.org/licenses/mit-license.php
 
 /**
+ * 2020/04/22 1.1.0 メダル預かりコマンドとメダルシーンを分離
  * 2020/04/04 1.0.0 公開
  */
 
@@ -24,12 +25,6 @@
  * @type variable
  * @default 1
  * @min 1
- *
- * @param Auto Process Medal
- * @desc メダルシーンに入った時に自動でメダルを預かってもらう
- * @text 自動メダル預かり
- * @type boolean
- * @default false
  *
  * @param Medal Unit
  * @desc メダルカウントの単位
@@ -61,7 +56,16 @@
  * ちいさなメダル預かり数が一定値を越えた時に一度だけアイテムがもらえます。
  *
  * 以下のプラグインコマンドでちいさなメダルシーンに移行します。
+ *
  * gotoSceneMedal
+ *
+ * ちいさなメダルシーンでは、小さなメダルメニューが開き、報酬アイテム一覧が確認できます。
+ * ちいさなメダルを渡すコマンドでメダルを渡すことができます。
+ *
+ * ちいさなメダルシーンに移行せずにメダルを渡す処理だけしたい場合は、
+ * 以下のプラグインコマンドをご利用ください。
+ *
+ * processTinyMedal
  */
 /*~struct~RewardItems:
  *
@@ -198,7 +202,6 @@
     medalItem: Number(pluginParameters['Medal Item'] || 1),
     medalUnit: String(pluginParameters['Medal Unit'] || '枚'),
     medalCountVariable: Number(pluginParameters['Medal Count Variable'] || 0),
-    autoProcessMedal: String(pluginParameters['Auto Process Medal'] || 'false') === 'true',
     rewardItems: JsonEx.parse(pluginParameters['Reward Items'] || '[]')
       .map(json => RewardItem.fromJson(json, ITEM_KIND.ITEM)).concat(
         JsonEx.parse(pluginParameters['Reward Weapons'] || '[]')
@@ -222,23 +225,10 @@
 
     create() {
       Scene_Base.prototype.create.call(this);
-      if (settings.autoProcessMedal) {
-        this.processMedal();
-      }
       this.createBackground();
       if (!this._rewardsAutoGained) {
         this.createWindowLayer();
         this.createMedalWindow();
-      }
-    }
-
-    start() {
-      if (settings.autoProcessMedal) {
-        this.processMedal();
-        if (this._rewardsAutoGained) {
-          this.popScene();
-          return;
-        }
       }
     }
 
@@ -268,17 +258,7 @@
      * メダルを預かってもらう
      */
     processMedal() {
-      const beforeCount = $gameVariables.value(settings.medalCountVariable);
-      $gameVariables.setValue(settings.medalCountVariable, beforeCount + $gameParty.numMedalItems());
-      $gameParty.loseAllMedalItem();
-      const afterCount = $gameVariables.value(settings.medalCountVariable);
-      // 報酬アイテム入手
-      const gainRewards = settings.rewardItems
-        .filter(rewardItem => !rewardItem.completed() && afterCount >= rewardItem.medalCount);
-      if (settings.autoProcessMedal && gainRewards.length > 0) {
-        this._rewardsAutoGained = true;
-      }
-      gainRewards.forEach(rewardItem => rewardItem.complete());
+      $gameSystem.processTinyMedal();
     }
 
     /**
@@ -309,9 +289,7 @@
     }
 
     makeCommandList() {
-      if (!settings.autoProcessMedal) {
-        this.addCommand('メダルを預ける', 'pushMedal', $gameParty.hasMedalItem());
-      }
+      this.addCommand('メダルを預ける', 'pushMedal', $gameParty.hasMedalItem());
       this.addCommand('報酬を確認する', 'showRewards');
       this.addCommand('閉じる', 'cancel');
     }
@@ -440,10 +418,20 @@
       case 'gotoSceneMedal':
         SceneManager.push(Scene_TinyMedal);
         break;
+      case 'processTinyMedal':
+        $gameSystem.processTinyMedal();
+        break;
     }
   };
 
-  Game_Interpreter.prototype.processTinyMedal = function () {
-
+  Game_System.prototype.processTinyMedal = function () {
+    const beforeCount = $gameVariables.value(settings.medalCountVariable);
+    $gameVariables.setValue(settings.medalCountVariable, beforeCount + $gameParty.numMedalItems());
+    $gameParty.loseAllMedalItem();
+    const afterCount = $gameVariables.value(settings.medalCountVariable);
+    // 報酬アイテム入手
+    const gainRewards = settings.rewardItems
+      .filter(rewardItem => !rewardItem.completed() && afterCount >= rewardItem.medalCount);
+    gainRewards.forEach(rewardItem => rewardItem.complete());
   };
 })();
