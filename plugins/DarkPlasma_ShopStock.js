@@ -4,14 +4,233 @@
 // http://opensource.org/licenses/mit-license.php
 
 /**
+ * 2020/04/21 2.0.2 add english help
  * 2020/04/13 2.0.1 セーブデータをロードした時にエラーになる不具合を修正
  * 2020/04/11 2.0.0 大規模リファクタ/機能追加。1.0.0からのセーブデータ互換性なし
  *                  戦闘回数や経過時間による在庫補充機能追加
  * 2019/09/23 1.0.0 公開
  */
-
 /*:
- * @plugindesc 在庫ありショップを実現します
+ * @plugindesc Shop with stock plugin
+ * @author DarkPlasma
+ * @license MIT
+ *
+ * @param stockIdVariable
+ * @desc use stock with ID setting by this variable.
+ * @text Variable for stock ID
+ * @type variable
+ * @default 0
+ *
+ * @param stockNumberLabel
+ * @desc label for stock count
+ * @text stock count label
+ * @type string
+ * @default stock
+ *
+ * @param soldOutLabel
+ * @desc label for sold out
+ * @text sold out label
+ * @type string
+ * @default sold out
+ *
+ * @param shopStock
+ * @desc shop stock setting
+ * @text shop stock setting
+ * @type struct<ShopStockEn>[]
+ * @default []
+ *
+ * @help
+ * You can set shop item stock.
+ * Default stock ID is 1.
+ * If you don't set stock count of item,
+ * the item stock is infinite.
+ *
+ * With this plugin, RMMV savedata includes stock data.
+ */
+/*~struct~ShopStockEn:
+ *
+ * @param id
+ * @desc stock ID
+ * @text stock ID
+ * @default 1
+ * @type number
+ *
+ * @param stockItemList
+ * @desc list of stock item
+ * @text stock item list
+ * @default []
+ * @type struct<StockItemEn>[]
+ *
+ * @param stockWeaponList
+ * @desc list of stock weapon
+ * @text stock weapon list
+ * @default []
+ * @type struct<StockWeaponEn>[]
+ *
+ * @param stockArmorList
+ * @desc list of stock armor
+ * @text stock armor list
+ * @default []
+ * @type struct<StockArmorEn>[]
+ *
+ * @param defaultSupplyType
+ * @desc default supply method
+ * @text default supply type
+ * @type select
+ * @option no supplying
+ * @value 0
+ * @option battle count
+ * @value 1
+ * @option play time
+ * @value 2
+ * @default 0
+ *
+ * @param defaultSupplyCount
+ * @desc default supply count by one time
+ * @text default supply count
+ * @type number
+ * @default 1
+ *
+ * @param defaultSupplyFrequency
+ * @desc default supply frequency(battle count or play time(seconds))
+ * @text default supply frequency
+ * @type number
+ * @default 5
+ */
+/*~struct~StockItemEn:
+ *
+ * @param itemId
+ * @desc item
+ * @text item
+ * @default 0
+ * @type item
+ *
+ * @param stockNum
+ * @desc default stock count
+ * @text default stock count
+ * @default 1
+ * @type number
+ *
+ * @param useOwnSupplySetting
+ * @desc use own supply setting
+ * @text use own supply setting
+ * @type boolean
+ * @default false
+ *
+ * @param supplyType
+ * @desc own supply type (enable when use own supply setting is true.)
+ * @text own supply type
+ * @type select
+ * @option no supplying
+ * @value 0
+ * @option battle count
+ * @value 1
+ * @option play time
+ * @value 2
+ * @default 0
+ *
+ * @param supplyCount
+ * @desc own supply count by one time (enable when use own supply setting is true.)
+ * @text own supply count
+ * @type number
+ * @default 1
+ *
+ * @param supplyFrequency
+ * @desc own supply frequency(battle count or play time(seconds)) (enable when use own supply setting is true.)
+ * @text own supply frequency
+ * @type number
+ * @default 5
+ */
+/*~struct~StockWeaponEn:
+ *
+ * @param weaponId
+ * @desc weapon
+ * @text weapon
+ * @default 0
+ * @type weapon
+ *
+ * @param stockNum
+ * @desc default stock count
+ * @text default stock count
+ * @default 1
+ * @type number
+ *
+ * @param useOwnSupplySetting
+ * @desc use own supply setting
+ * @text use own supply setting
+ * @type boolean
+ * @default false
+ *
+ * @param supplyType
+ * @desc own supply type (enable when use own supply setting is true.)
+ * @text own supply type
+ * @type select
+ * @option no supplying
+ * @value 0
+ * @option battle count
+ * @value 1
+ * @option play time
+ * @value 2
+ * @default 0
+ *
+ * @param supplyCount
+ * @desc own supply count by one time (enable when use own supply setting is true.)
+ * @text own supply count
+ * @type number
+ * @default 1
+ *
+ * @param supplyFrequency
+ * @desc own supply frequency(battle count or play time(seconds)) (enable when use own supply setting is true.)
+ * @text own supply frequency
+ * @type number
+ * @default 5
+ */
+/*~struct~StockArmorEn:
+ *
+ * @param armorId
+ * @desc armor
+ * @text armor
+ * @default 0
+ * @type armor
+ *
+ * @param stockNum
+ * @desc default stock count
+ * @text default stock count
+ * @default 1
+ * @type number
+ *
+ * @param useOwnSupplySetting
+ * @desc use own supply setting
+ * @text use own supply setting
+ * @type boolean
+ * @default false
+ *
+ * @param supplyType
+ * @desc own supply type (enable when use own supply setting is true.)
+ * @text own supply type
+ * @type select
+ * @option no supplying
+ * @value 0
+ * @option battle count
+ * @value 1
+ * @option play time
+ * @value 2
+ * @default 0
+ *
+ * @param supplyCount
+ * @desc own supply count by one time (enable when use own supply setting is true.)
+ * @text own supply count
+ * @type number
+ * @default 1
+ *
+ * @param supplyFrequency
+ * @desc own supply frequency(battle count or play time(seconds)) (enable when use own supply setting is true.)
+ * @text own supply frequency
+ * @type number
+ * @default 5
+ */
+/*:ja
+ * @plugindesc 在庫ありショッププラグイン
  * @author DarkPlasma
  * @license MIT
  *
