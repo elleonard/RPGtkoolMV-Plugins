@@ -4,6 +4,9 @@
 // http://opensource.org/licenses/mit-license.php
 
 /**
+ * 2020/04/23 1.0.1 購入画面を開いてから売却画面を開くと売却数が表示されない不具合を修正
+ *                  購入数/売却数ウィンドウのレイアウトが崩れていた不具合を修正
+ *                  売却時にもカテゴリウィンドウを表示したままにするよう修正
  * 2020/04/21 1.0.0 公開
  */
 
@@ -70,6 +73,8 @@
     this._buyWindow.height = Graphics.boxHeight - this._buyWindow.y;
     this._statusWindow.y = this._buyWindow.y;
     this._statusWindow.height = this._buyWindow.height;
+    this._numberWindow.y = this._buyWindow.y;
+    this._numberWindow.height = this._buyWindow.height;
   };
 
   const _Scene_Shop_commandBuy = Scene_Shop.prototype.commandBuy;
@@ -90,6 +95,7 @@
     _Scene_Shop_commandSell.call(this);
     this._categoryWindow.setItemWindow(this._sellWindow);
     this._categoryWindow.select(0);
+    this._buyWindow.hide();
   };
 
   const _Scene_Shop_onCategoryOk = Scene_Shop.prototype.onCategoryOk;
@@ -120,6 +126,12 @@
     this._buyWindow.show();
     this._statusWindow.show();
     this._buyWindow.deselect();
+  };
+
+  const _Scene_Shop_onSellOk = Scene_Shop.prototype.onSellOk;
+  Scene_Shop.prototype.onSellOk = function() {
+    _Scene_Shop_onSellOk.call(this);
+    this._categoryWindow.show();
   };
 
   Scene_Shop.prototype.isBuyMode = function () {
