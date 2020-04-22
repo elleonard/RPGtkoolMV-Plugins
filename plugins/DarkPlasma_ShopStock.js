@@ -4,6 +4,8 @@
 // http://opensource.org/licenses/mit-license.php
 
 /**
+ * 2020/04/23 2.1.0 同一リスト内で同一アイテムIDに対して異なる在庫数を設定可能
+ *                  アイテム売却時に在庫に追加する設定項目を追加
  * 2020/04/21 2.0.3 デフォルト在庫リストIDが有効でなかった不具合を修正
  *            2.0.2 add english help
  * 2020/04/13 2.0.1 セーブデータをロードした時にエラーになる不具合を修正
@@ -39,6 +41,12 @@
  * @text shop stock setting
  * @type struct<ShopStockEn>[]
  * @default []
+ *
+ * @param Supply Stock When Sell Item
+ * @desc supply stock when sell the item
+ * @text supply stock when sell
+ * @type boolean
+ * @default false
  *
  * @help
  * You can set shop item stock.
@@ -259,6 +267,12 @@
  * @type struct<ShopStock>[]
  * @default []
  *
+ * @param Supply Stock When Sell Item
+ * @desc 売却時にそのアイテムの在庫を追加する
+ * @text 売却時在庫補充
+ * @type boolean
+ * @default false
+ *
  * @help
  * このプラグインはショップに初期在庫を設定できます。
  * 在庫リストID:1のリストをデフォルトの在庫リストとして扱います。
@@ -474,6 +488,7 @@
     stockIdVariable: Number(pluginParameters['stockIdVariable'] || 0),
     stockNumberLabel: String(pluginParameters['stockNumberLabel'] || '在庫数'),
     soldOutLabel: String(pluginParameters['soldOutLabel'] || '売り切れ'),
+    supplyWhenSell: String(pluginParameters['Supply Stock When Sell Item'] || 'false') === 'true',
     shopStock: JsonEx.parse(pluginParameters['shopStock'] || '[]').map(shopStock => {
       const parsed = JsonEx.parse(shopStock);
       return {
@@ -530,11 +545,12 @@
      * 現在の在庫リストIDに記録されている在庫数を返す
      * 在庫リストIDが指定されていない、または在庫リストの中にアイテムが存在しない場合nullを返す
      * @param {RPG.Item|RPG.Weapon|RPG.Armor} item アイテムデータ
+     * @param {number} index リスト中のアイテム番号
      * @return {number|null} 現在の在庫数
      */
-    stockCount(item) {
+    stockCount(item, index) {
       const currentStock = this.currentShopStock();
-      return currentStock ? currentStock.stockCount(item) : null;
+      return currentStock ? currentStock.stockCount(item, index) : null;
     }
 
     /**
@@ -570,24 +586,26 @@
     /**
      * 現在の在庫リストにおいて、指定したアイテムの在庫数を増やす
      * @param {RPG.Item|RPG.Weapon|RPG.Armor} item アイテムデータ
+     * @param {number} index リスト中のアイテム番号
      * @param {number} count 在庫を増やす数
      */
-    increaseCurrentStockCount(item, count) {
+    increaseCurrentStockCount(item, index, count) {
       const shopStock = this.currentShopStock();
       if (shopStock) {
-        shopStock.increaseStockCount(item, count);
+        shopStock.increaseStockCount(item, index, count);
       }
     }
 
     /**
      * 現在の在庫リストにおいて、指定したアイテムの在庫数を減らす
      * @param {RPG.Item|RPG.Weapon|RPG.Armor} item アイテムデータ
+     * @param {number} index リスト中のアイテム番号
      * @param {number} count 在庫を減らす数
      */
-    decreaseCurrentStockCount(item, count) {
+    decreaseCurrentStockCount(item, index, count) {
       const shopStock = this.currentShopStock();
       if (shopStock) {
-        shopStock.decreaseStockCount(item, count);
+        shopStock.decreaseStockCount(item, index, count);
       }
     }
 
@@ -686,8 +704,13 @@
      * @param {object} stockItemSaveData セーブデータから取得した在庫情報
      */
     updateCountBySaveData(stockItemSaveData) {
+      let indexes = {};
       stockItemSaveData.forEach(object => {
-        const item = this._stockItems.find(item => item.kind === object.kind && item.id === object.id);
+        const items = this._stockItems.filter(item => item.kind === object.kind && item.id === object.id);
+        if (!indexes[object.id]) {
+          indexes[object.id] = 0;
+        }
+        const item = items[indexes[object.id]++];
         if (item) {
           item.setCount(object.count);
           if (item.supplyCount !== object.supplyType) { // 補充形式設定が変更されていたらリセットする
@@ -709,36 +732,39 @@
     /**
      * 指定したアイテムの在庫情報を取得する
      * @param {RPG.Item|RPG.Weapon|RPG.Armor} item アイテムデータ
+     * @param {number} index リスト中のアイテム番号
      * @return {StockItem}
      */
-    getStockItem(item) {
-      let result = null;
+    getStockItem(item, index) {
+      let result = [];
       if (DataManager.isItem(item)) {
-        result = this._stockItems.find(stockItem => stockItem.kind === ITEM_KIND.ITEM && stockItem.id === item.id);
+        result = this._stockItems.filter(stockItem => stockItem.kind === ITEM_KIND.ITEM && stockItem.id === item.id);
       } else if (DataManager.isWeapon(item)) {
-        result = this._stockItems.find(stockItem => stockItem.kind === ITEM_KIND.WEAPON && stockItem.id === item.id);
+        result = this._stockItems.filter(stockItem => stockItem.kind === ITEM_KIND.WEAPON && stockItem.id === item.id);
       } else if (DataManager.isArmor(item)) {
-        result = this._stockItems.find(stockItem => stockItem.kind === ITEM_KIND.ARMOR && stockItem.id === item.id);
+        result = this._stockItems.filter(stockItem => stockItem.kind === ITEM_KIND.ARMOR && stockItem.id === item.id);
       }
-      return result ? result : null;
+      return result.length > index ? result[index] : null;
     }
 
     /**
      * @param {RPG.Item|RPG.Weapon|RPG.Armor} item アイテムデータ
+     * @param {number} index リスト中のアイテム番号
      * @return {number|null} 在庫数
      */
-    stockCount(item) {
-      const stockItem = this.getStockItem(item);
+    stockCount(item, index) {
+      const stockItem = this.getStockItem(item, index);
       return stockItem ? stockItem.count : null;
     }
 
     /**
      * 指定したアイテムの在庫数を増やす
      * @param {RPG.Item|RPG.Weapon|RPG.Armor} item アイテムデータ
+     * @param {number} index リスト中のアイテム番号
      * @param {number} count 在庫を増やす数
      */
-    increaseStockCount(item, count) {
-      const stockItem = this.getStockItem(item);
+    increaseStockCount(item, index, count) {
+      const stockItem = this.getStockItem(item, index);
       if (stockItem) {
         stockItem.increaseCount(count);
       }
@@ -747,10 +773,11 @@
     /**
      * 指定したアイテムの在庫数を減らす
      * @param {RPG.Item|RPG.Weapon|RPG.Armor} item アイテムデータ
+     * @param {number} index リスト中のアイテム番号
      * @param {number} count 在庫を減らす数
      */
-    decreaseStockCount(item, count) {
-      const stockItem = this.getStockItem(item);
+    decreaseStockCount(item, index, count) {
+      const stockItem = this.getStockItem(item, index);
       if (stockItem) {
         stockItem.decreaseCount(count);
       }
@@ -976,18 +1003,20 @@
   const _SceneShop_doBuy = Scene_Shop.prototype.doBuy;
   Scene_Shop.prototype.doBuy = function (number) {
     _SceneShop_doBuy.call(this, number);
-    shopStockManager.decreaseCurrentStockCount(this._item, number);
+    shopStockManager.decreaseCurrentStockCount(this._item, this._buyWindow.indexOfSameItem(), number);
   };
 
   const _SceneShop_doSell = Scene_Shop.prototype.doSell;
   Scene_Shop.prototype.doSell = function (number) {
     _SceneShop_doSell.call(this, number);
-    shopStockManager.increaseCurrentStockCount(this._item, number);
+    if (settings.supplyWhenSell) {
+      shopStockManager.increaseCurrentStockCount(this._item, 0, number);
+    }
   };
 
   const _SceneShop_maxBuy = Scene_Shop.prototype.maxBuy;
   Scene_Shop.prototype.maxBuy = function () {
-    const currentStock = shopStockManager.stockCount(this._item);
+    const currentStock = shopStockManager.stockCount(this._item, this._buyWindow.indexOfSameItem());
     return currentStock > 0 ? Math.min(
       currentStock,
       _SceneShop_maxBuy.call(this)
@@ -1014,25 +1043,62 @@
   };
 
   Window_ShopStatus.prototype.stockCount = function () {
-    return shopStockManager.stockCount(this._item);
+    return shopStockManager.stockCount(this._item, this.indexOfSameItem());
   };
 
-  Window_ShopBuy.prototype.stockCount = function (item) {
-    return shopStockManager.stockCount(item);
+  Window_ShopStatus.prototype.indexOfSameItem = function () {
+    return this._indexOfSameItem ? this._indexOfSameItem : 0;
   };
 
-  Window_ShopBuy.prototype.soldOut = function (item) {
-    return this.stockCount(item) === 0;
+  Window_ShopStatus.prototype.setIndexOfSameItem = function (index) {
+    this._indexOfSameItem = index;
+  }
+
+  const _Window_ShopBuy_updateHelp = Window_ShopBuy.prototype.updateHelp;
+  Window_ShopBuy.prototype.updateHelp = function() {
+    if (this._statusWindow) {
+        this._statusWindow.setIndexOfSameItem(this.indexOfSameItem());
+    }
+    _Window_ShopBuy_updateHelp.call(this);
+  };
+
+  Window_ShopBuy.prototype.stockCount = function (item, index) {
+    return shopStockManager.stockCount(item, index);
+  };
+
+  Window_ShopBuy.prototype.soldOut = function (item, index) {
+    return this.stockCount(item, index) === 0;
+  };
+
+  const _Window_ShopBuy_drawItem = Window_ShopBuy.prototype.drawItem;
+  Window_ShopBuy.prototype.drawItem = function(index) {
+    const focusedData = this._data[index];
+    this._indexForStock = this._data.slice(0, index+1).filter(data => data === focusedData).length - 1;
+    this._isDrawing = true;
+    _Window_ShopBuy_drawItem.call(this, index);
+    this._isDrawing = false;
   }
 
   const _WindowShopBuy_price = Window_ShopBuy.prototype.price;
   Window_ShopBuy.prototype.price = function (item) {
-    return this.soldOut(item) ? settings.soldOutLabel : _WindowShopBuy_price.call(this, item);
+    const index = this._isDrawing ? this._indexForStock : this.index();
+    return this.soldOut(item, index) ? settings.soldOutLabel : _WindowShopBuy_price.call(this, item);
   };
 
   const _WindowShopBuy_isEnabled = Window_ShopBuy.prototype.isEnabled;
   Window_ShopBuy.prototype.isEnabled = function (item) {
-    return _WindowShopBuy_isEnabled.call(this, item) && !this.soldOut(item);
+    return _WindowShopBuy_isEnabled.call(this, item) && 
+      !this.soldOut(item, this._isDrawing ? this._indexForStock : this.index());
+  };
+
+  /**
+   * このショップの同一アイテムで何番目のアイテムを選択しているか
+   * 存在しない場合は -1 を返すが、存在しないことはありえない……はず
+   * @return {number}
+   */
+  Window_ShopBuy.prototype.indexOfSameItem = function () {
+    const index = this.index();
+    return this._data.slice(0, index+1).filter(data => data === this.item()).length - 1;
   };
 
   /**
@@ -1041,6 +1107,7 @@
   Window_ShopBuy.prototype.makeItemList = function () {
     this._data = [];
     this._price = [];
+    let indexes = {};
     this._shopGoods.map(goods => {
       var item = null;
       switch (goods[0]) {
@@ -1055,10 +1122,17 @@
           break;
       }
       if (item) {
+        /**
+         * 売り切れを一番下に表示する
+         */
+        const key = `${goods[0]}_${item.id}`;
+        if (!indexes[key]) {
+          indexes[key] = 0;
+        }
         return {
           item: item,
           price: goods[2] === 0 ? item.price : goods[3],
-          soldOut: this.soldOut(item)
+          soldOut: this.soldOut(item, indexes[key]++),
         };
       } else {
         return {};
