@@ -29,6 +29,10 @@ MADO付属の AltWindowFrame.js のパッチプラグイン
 
 ショップや、他プラグインで作成したウィンドウにスキンが適用されない不具合を修正します
 
+## DarkPlasma_AnotherPriceInSameShop.js
+
+同じショップで同じアイテムを異なる価格で販売できるようにするプラグイン
+
 ## DarkPlasma_AutoHighlight.js
 
 メッセージ内の指定した文字列を自動でハイライトするプラグイン
