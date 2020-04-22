@@ -4,7 +4,8 @@
 // http://opensource.org/licenses/mit-license.php
 
 /**
- * 2020/04/22 1.1.0 メダル預かりコマンドとメダルシーンを分離
+ * 2020/04/22 1.2.0 報酬受取時のメッセージ設定機能を追加
+ *            1.1.0 メダル預かりコマンドとメダルシーンを分離
  * 2020/04/04 1.0.0 公開
  */
 
@@ -49,6 +50,12 @@
  * @text 報酬防具
  * @type struct<RewardArmors>[]
  * @default []
+ *
+ * @param Reward Messages
+ * @desc 報酬メッセージリスト
+ * @text 報酬メッセージ
+ * @type struct<RewardMessage>[]
+ * @default ["{\"Message\":\"${itemName} を手に入れた！\",\"Face File\":\"\",\"Face Index\":\"0\"}"]
  *
  * @help
  * DQシリーズのちいさなメダルシステムを実現します。
@@ -109,6 +116,28 @@
  * @type armor
  * @default 1
  */
+/*~struct~RewardMessage:
+ *
+ * @param Message
+ * @desc 報酬をもらった際のメッセージ
+ * @text 報酬メッセージ
+ * @type string
+ * @default ${itemName} を手に入れた！
+ *
+ * @param Face File
+ * @desc 報酬メッセージの顔グラファイル
+ * @text 顔グラファイル
+ * @type file
+ * @dir img/faces
+ *
+ * @param Face Index
+ * @desc 報酬メッセージの顔グラ番号
+ * @text 顔グラ番号
+ * @type number
+ * @default 0
+ * @min 0
+ * @max 7
+ */
 
 (function () {
   'use strict';
@@ -124,6 +153,7 @@
   };
 
   let autoIncrementRewardId = 0;
+  let reservedRewardMessages = [];
 
   class RewardItem {
     /**
@@ -187,7 +217,7 @@
     complete() {
       $gameParty.gainItem(this.itemData, 1);
       $gameSystem.completeMedalReward(this._rewardId);
-      $gameMessage.add(`${this.itemData.name} を手に入れた！`);
+      settings.rewardMessages.forEach(message => message.showOrReserve(this.itemData.name));
     }
 
     /**
@@ -195,6 +225,54 @@
      */
     completed() {
       return $gameSystem.isMedalRewardCompleted(this._rewardId);
+    }
+  }
+
+  class RewardMessage {
+    constructor(message, faceFile, faceIndex) {
+      this._message = message;
+      this._faceFile = faceFile;
+      this._faceIndex = faceIndex;
+      this._itemName = '';
+    }
+
+    static fromJson(json) {
+      const parsed = JsonEx.parse(json);
+      return new RewardMessage(
+        String(parsed['Message']),
+        String(parsed['Face File']),
+        Number(parsed['Face Index'])
+      );
+    }
+
+    reserve() {
+      reservedRewardMessages.push(this);
+    }
+
+    showOrReserve(itemName) {
+      this._itemName = itemName;
+      if (!$gameMessage.isBusy()) {
+        this.reserve();
+      } else {
+        this.show();
+      }
+    }
+
+    /**
+     * アイテムを入手した際の報酬メッセージを表示する
+     */
+    show() {
+      this.showFace();
+      const message = this._message.replace(/\$\{itemName\}/gi, this._itemName);
+      $gameMessage.add(message);
+    }
+
+    showFace() {
+      if (this._faceFile) {
+        $gameMessage.setFaceImage(this._faceFile, this._faceIndex);
+      } else {
+        $gameMessage.setFaceImage('', 0);
+      }
     }
   }
 
@@ -209,7 +287,9 @@
       ).concat(
         JsonEx.parse(pluginParameters['Reward Armors'] || '[]')
           .map(json => RewardItem.fromJson(json, ITEM_KIND.ARMOR))
-      )
+      ),
+    rewardMessages: JsonEx.parse(pluginParameters['Reward Messages'] || '[]')
+        .map(json => RewardMessage.fromJson(json))
   };
 
   class Scene_TinyMedal extends Scene_Base {
@@ -421,6 +501,28 @@
       case 'processTinyMedal':
         $gameSystem.processTinyMedal();
         break;
+    }
+  };
+
+  const _Game_Interpreter_executeCommand = Game_Interpreter.prototype.executeCommand;
+  Game_Interpreter.prototype.executeCommand = function () {
+    /**
+     * 報酬メッセージがある場合は次のコマンドに進まない
+     */
+    if (reservedRewardMessages.length > 0) {
+      this.processReservedRewardMessages();
+      return true;
+    }
+    _Game_Interpreter_executeCommand.call(this);
+  };
+
+  /**
+   * 報酬メッセージを表示する
+   */
+  Game_Interpreter.prototype.processReservedRewardMessages = function () {
+    if (!$gameMessage.isBusy()) {
+      const reservedMessage = reservedRewardMessages.shift();
+      reservedMessage.show();
     }
   };
 
