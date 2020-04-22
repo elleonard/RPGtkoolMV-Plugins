@@ -4,7 +4,8 @@
 // http://opensource.org/licenses/mit-license.php
 
 /**
- * 2020/04/23 1.0.0 公開
+ * 2020/04/23 1.0.1 バグ修正
+ *            1.0.0 公開
  */
 
  /*:
@@ -25,8 +26,7 @@
 
   const _Window_ShopBuy_drawItem = Window_ShopBuy.prototype.drawItem;
   Window_ShopBuy.prototype.drawItem = function(index) {
-    const focusedData = this._data[index];
-    this._indexForDwaring = this._data.slice(0, index+1).filter(data => data === focusedData).length - 1;
+    this._indexForDwaring = index;
     this._isDrawing = true;
     _Window_ShopBuy_drawItem.call(this, index);
     this._isDrawing = false;
