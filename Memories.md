@@ -112,6 +112,22 @@
       "tags": ["comical"]
     },
     {
+      "title": "コミカルCG3",
+      "thumbnail": "コミカル3サムネ",
+      "pictures": {
+        "prefix": "コミカル3",
+        "suffix": "_R",
+        "base": "",
+        "additionals": [
+          ["-ベース1", "-差分1頭", "差分1身体"],
+          ["-ベース2", "-差分2頭", "差分2身体"]
+        ]
+      },
+      "switch": 3,
+      "isAdult": false,
+      "tags": ["comical"]
+    },
+    {
       "title": "コミカルCG2-1",
       "thumbnail": "コミカル2サムネ",
       "pictures": {
@@ -175,4 +191,4 @@
 * もちろん、同じ基本CGでありながら全く違う規則で名前をつけても良い
   * その場合、prefixやsuffixには空文字列を入力し、indexesに全てのファイル名を列挙することになる
 
-* 上記の例で、コミカル1は[画像合成プラグイン](https://github.com/elleonard/RPGtkoolMV-Plugins/blob/master/plugins/DarkPlasma_ImageComposer.js)を利用している
+* 上記の例で、コミカル1及び3は[画像合成プラグイン](https://github.com/elleonard/RPGtkoolMV-Plugins/blob/master/plugins/DarkPlasma_ImageComposer.js)を利用している

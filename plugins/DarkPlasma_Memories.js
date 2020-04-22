@@ -4,6 +4,7 @@
 // http://opensource.org/licenses/mit-license.php
 
 /**
+ * 2020/04/23 1.3.0 Memories.json の合成画像に関する記法を拡張
  * 2020/04/16 1.2.0 DarkPlasma_ImageComposer.js に対応
  *            1.1.1 リファクタ
  * version 1.1.0
@@ -390,7 +391,7 @@ var $dataMemories = null;
      * @return {boolean} ImageComposerを利用した合成画像かどうか
      */
     isComposedImage() {
-      return !!this._base;
+      return !!this._base || this._additionals.length > 0;
     }
 
     /**
@@ -414,6 +415,9 @@ var $dataMemories = null;
       if (this.isComposedImage()) {
         if (this._additionals.length <= index) {
           return null;
+        }
+        if (!this._base) {
+          return `${this._prefix}${this._additionals[index][0]}${this._suffix}`;
         }
         return `${this._prefix}${this._base}${this._suffix}`;
       }
@@ -443,13 +447,13 @@ var $dataMemories = null;
      * @return {string[]}
      */
     imageNameList(index) {
-      if (!this._base || this._additionals.length <= index) {
+      if (!this.isComposedImage() || this._additionals.length <= index) {
         return [];
       }
       const additionalImageNames = this._additionals[index].map(imageName => `${this._prefix}${imageName}${this._suffix}.png`);
       return [
         `<${this.getFileName(index)}.png>`
-      ].concat(additionalImageNames);
+      ].concat(this._base ? additionalImageNames : additionalImageNames.slice(1));
     }
   }
 
