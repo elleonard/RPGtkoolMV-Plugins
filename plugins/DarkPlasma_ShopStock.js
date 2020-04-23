@@ -55,6 +55,19 @@
  * the item stock is infinite.
  *
  * With this plugin, RMMV savedata includes stock data.
+ *
+ * You can set different stock count between same item id in same stock setting.
+ * e.g.) One potion is 30 stocked, another is 10.
+ * If you set stock count in this order and set multi same items to shop goods,
+ * shop display them in the same order.
+ * (Stock count of potion displayed upper is 30, lower is 10.)
+ * Please note that if you set "supply stock when sell" is true,
+ * and sell item that is multi displayed in shop,
+ * the only top item of the same id is supplied.
+ *
+ * If you set different price between same item id in the same shop,
+ * please consider that you use DarkPlasma_AnotherPriceInSameShop.js.
+ * Then, please add this plugin lower position than it.
  */
 /*~struct~ShopStockEn:
  *
@@ -279,6 +292,18 @@
  * 在庫リストで指定されなかったアイテムの在庫は無限です。
  *
  * 在庫はセーブデータに記録されます。
+ *
+ * 同じ在庫リストの中で、同一アイテムに対して異なる在庫数を設定できます。
+ * 例えば、片方のポーションは在庫30あるが、もう片方は10しかない、等。
+ * 在庫リストの中で設定した順番が上記の通りである場合、
+ * ショップ内の順番も同様です。
+ * （上に設定したポーションの在庫が30、下に設定したポーションの在庫が10になります）
+ * 売却時の補充は同一アイテムのうち、一番上のアイテムにしか効かないのでご注意ください。
+ *
+ * 同一ショップ内の同一アイテムに別価格を設定したい場合、
+ * DarkPlasma_AnotherPriceInSameShop.js との併用をご検討ください。
+ * その場合、 DarkPlasma_AnotherPriceInSameShop.js よりも
+ * このプラグインを下に読み込んでください。
  */
 /*~struct~ShopStock:
  *
