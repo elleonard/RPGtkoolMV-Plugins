@@ -4,7 +4,8 @@
 // http://opensource.org/licenses/mit-license.php
 
 /**
- * 2020/04/23 1.3.0 Memories.json の合成画像に関する記法を拡張
+ * 2020/04/23 1.3.1 合成画像でない場合にエラーになる不具合を修正
+ *            1.3.0 Memories.json の合成画像に関する記法を拡張
  * 2020/04/16 1.2.0 DarkPlasma_ImageComposer.js に対応
  *            1.1.1 リファクタ
  * version 1.1.0
@@ -391,7 +392,7 @@ var $dataMemories = null;
      * @return {boolean} ImageComposerを利用した合成画像かどうか
      */
     isComposedImage() {
-      return !!this._base || this._additionals.length > 0;
+      return !!this._base || (this._additionals && this._additionals.length > 0);
     }
 
     /**
