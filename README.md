@@ -265,6 +265,10 @@ TMItemCategoryEx.js に対応しています
 
 タイトルメニュー及びゲーム終了メニューにシャットダウンの項目を追加するプラグイン
 
+## DarkPlasma_SkillCooldown.js
+
+スキルにクールタイムを設定するプラグイン
+
 ## DarkPlasma_SkillCostExtension.js
 
 スキルのコストを拡張するプラグイン
