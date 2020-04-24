@@ -4,6 +4,7 @@
 // http://opensource.org/licenses/mit-license.php
 
 /**
+ * 2020/04/24 1.4.0 Memories.json のタグ一覧をスイッチで解放するかどうか記述できるよう拡張
  * 2020/04/23 1.3.1 合成画像でない場合にエラーになる不具合を修正
  *            1.3.0 Memories.json の合成画像に関する記法を拡張
  * 2020/04/16 1.2.0 DarkPlasma_ImageComposer.js に対応
@@ -183,7 +184,13 @@ var $dataMemories = null;
       }
 
       return new MemoriesManager(
-        $dataMemories.tags.map(tag => new MemoryTag(tag.text, tag.symbol)),
+        $dataMemories.tags.map(tag => {
+          return new MemoryTag(
+            tag.text,
+            tag.symbol,
+            tag.switch ? switches[tag.switch] : true
+          )
+        }),
         $dataMemories.scenes.map(scene => new MemoryScene(
           scene.title,
           scene.thumbnail,
@@ -206,7 +213,7 @@ var $dataMemories = null;
     }
 
     get tags() {
-      return this._tags;
+      return this._tags.filter(tag => tag.isEnabled);
     }
 
     /**
@@ -223,10 +230,12 @@ var $dataMemories = null;
     /**
      * @param {string} text タグ文字列
      * @param {string} symbol シンボル
+     * @param {boolean} isEnabled 解放済みかどうか
      */
-    constructor(text, symbol) {
+    constructor(text, symbol, isEnabled) {
       this._text = text;
       this._symbol = symbol;
+      this._isEnabled = isEnabled;
     }
 
     get text() {
@@ -235,6 +244,10 @@ var $dataMemories = null;
 
     get symbol() {
       return this._symbol;
+    }
+
+    get isEnabled() {
+      return this._isEnabled;
     }
   }
 
