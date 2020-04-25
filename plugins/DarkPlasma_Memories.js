@@ -4,6 +4,7 @@
 // http://opensource.org/licenses/mit-license.php
 
 /**
+ * 2020/04/25 1.4.1 回想シーンから戻った際にカーソルがリセットされる不具合を修正
  * 2020/04/24 1.4.0 Memories.json のタグ一覧をスイッチで解放するかどうか記述できるよう拡張
  * 2020/04/23 1.3.1 合成画像でない場合にエラーになる不具合を修正
  *            1.3.0 Memories.json の合成画像に関する記法を拡張
@@ -146,7 +147,7 @@ var $dataMemories = null;
   let cursorIndexes = {
     returned: false,
     mode: true,
-    tag: -1,
+    tag: DEFAULT_TAG,
     list: -1
   };
 
@@ -561,7 +562,7 @@ var $dataMemories = null;
        */
       if (cursorIndexes.returned) {
         this._modeWindow.setMode(cursorIndexes.mode);
-        this._commandWindow.select(cursorIndexes.tag);
+        this._commandWindow.selectSymbol(cursorIndexes.tag);
         this._listWindow.setMode(cursorIndexes.mode);
         this._listWindow.setTag(cursorIndexes.tag);
         this._listWindow.select(cursorIndexes.list);
@@ -585,7 +586,7 @@ var $dataMemories = null;
       cursorIndexes = {
         returned: false,
         mode: true,
-        tag: -1,
+        tag: DEFAULT_TAG,
         list: -1
       };
     }
@@ -594,7 +595,7 @@ var $dataMemories = null;
       cursorIndexes = {
         returned: true,
         mode: this._modeWindow.isCGMode(),
-        tag: this._commandWindow.index(),
+        tag: this._commandWindow.currentSymbol(),
         list: this._listWindow.index()
       };
     }
