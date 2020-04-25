@@ -104,6 +104,10 @@ Trb_TextColor.js を採用している場合は色番号ではなくカラーコ
 
 メニュー開閉時にマップのリロードを行わなくするプラグイン
 
+## DarkPlasma_ElementRateToSum.js
+
+属性有効度計算式を乗算から加算に変更するプラグイン
+
 ## DarkPlasma_EnemyBook.js
 
 拡張エネミー図鑑プラグイン
