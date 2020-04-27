@@ -17,6 +17,10 @@ RPGツクールMVのプラグイン管理から読み込んでください
 
 スキルの概念がない特殊アクターや、装備画面を開けなくするステートなどを実現できます
 
+## DarkPlasma_AddElementToSkillType.js
+
+装備やステートによって特定のスキルタイプに属性を追加するプラグイン
+
 ## DarkPlasma_AdditionalAttackAnimation.js
 
 特定条件で攻撃アニメーションを追加するプラグイン
