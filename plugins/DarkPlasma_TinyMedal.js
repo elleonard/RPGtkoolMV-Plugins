@@ -4,6 +4,7 @@
 // http://opensource.org/licenses/mit-license.php
 
 /**
+ * 2020/04/27 1.2.1 報酬受取時のメッセージ処理を軽量化
  * 2020/04/22 1.2.0 報酬受取時のメッセージ設定機能を追加
  *            1.1.0 メダル預かりコマンドとメダルシーンを分離
  * 2020/04/04 1.0.0 公開
@@ -500,20 +501,9 @@
         break;
       case 'processTinyMedal':
         $gameSystem.processTinyMedal();
+        this.processReservedRewardMessages();
         break;
     }
-  };
-
-  const _Game_Interpreter_executeCommand = Game_Interpreter.prototype.executeCommand;
-  Game_Interpreter.prototype.executeCommand = function () {
-    /**
-     * 報酬メッセージがある場合は次のコマンドに進まない
-     */
-    if (reservedRewardMessages.length > 0) {
-      this.processReservedRewardMessages();
-      return true;
-    }
-    _Game_Interpreter_executeCommand.call(this);
   };
 
   /**
