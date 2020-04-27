@@ -4,7 +4,8 @@
 // http://opensource.org/licenses/mit-license.php
 
 /**
- * 2020/04/27 1.0.0 公開
+ * 2020/04/27 1.0.1 ヘルプのtypo修正
+ *            1.0.0 公開
  */
 
  /*:
@@ -15,7 +16,7 @@
  * @help
  * 装備またはステートのメモ欄に以下のように記述してください。
  *
- * <addElmements:
+ * <addElements:
  * elements: 炎,光
  * skillTypes: 必殺技,剣技
  * ignoreDefault: false
