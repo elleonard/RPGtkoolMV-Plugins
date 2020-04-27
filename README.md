@@ -225,6 +225,10 @@ sample/Memories.json にサンプル用のデータが載せてあります
 
 最低ダメージ保証システムを追加するプラグイン
 
+## DarkPlasma_MultiElementRate.js
+
+属性攻撃を行うとき、すべての属性をダメージ計算に用いるプラグイン
+
 ## DarkPlasma_NameWindow.js
 
 メッセージウィンドウに名前ウィンドウを付属させるプラグイン
