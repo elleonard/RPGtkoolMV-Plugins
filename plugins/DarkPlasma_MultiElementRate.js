@@ -4,7 +4,8 @@
 // http://opensource.org/licenses/mit-license.php
 
 /**
- * 2020/04/27 1.0.0 公開
+ * 2020/04/27 1.0.1 加算設定が効いていない不具合を修正
+ *            1.0.0 公開
  */
 
  /*:
@@ -38,11 +39,15 @@
   });
   const pluginParameters = PluginManager.parameters(pluginName);
 
+  const settings = {
+    useAddition: String(pluginParameters['Use Addition'] || 'false') === 'true'
+  };
+
   const _Game_Action_elementsMaxRate = Game_Action.prototype.elementsMaxRate;
   Game_Action.prototype.elementsMaxRate = function (target, elements) {
     if (elements.length > 0) {
       return elements.map(elementId => target.elementRate(elementId)).reduce((previous, current) => {
-        return previous * current;
+        return settings.useAddition ? previous + current : previous * current;
       }, 1);
     } else {
       return _Game_Action_elementsMaxRate.call(this, target, elements);
