@@ -27,6 +27,10 @@ RPGツクールMVのプラグイン管理から読み込んでください
 
 特定のステートにかかっている敵や、特定の種類の敵に攻撃したとき、アニメーションを追加表示します
 
+## DarkPlasma_AffectDeathBeforeDamage.js
+
+ダメージ発生前に即死判定するプラグイン
+
 ## DarkPlasma_AltWindowFramePatch.js
 
 MADO付属の AltWindowFrame.js のパッチプラグイン
