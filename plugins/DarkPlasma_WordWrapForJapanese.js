@@ -4,6 +4,7 @@
 // http://opensource.org/licenses/mit-license.php
 
 /**
+ * 2020/04/29 1.1.5 文字を小さくするとメッセージウィンドウ下部にゴミが表示される不具合を修正
  * 2020/04/04 1.1.4 戦闘結果の改ページが二重になる不具合を修正
  * 2020/03/09 1.1.3 下記不具合が修正しきれていなかったので再修正
  *            1.1.2 Yanfly系プラグインが読まれていないとエラーが発生する不具合を修正
@@ -203,7 +204,7 @@
     const wordWrap = this._wordWrap;
     this.saveCurrentWindowSettings();
     this._checkWordWrapMode = true;
-    const value = this.drawTextEx(text, 0, this.contents.height);
+    const value = this.drawTextEx(text, 0, this.contents.height * 2);
     this._checkWordWrapMode = false;
     this.restoreCurrentWindowSettings();
     this.clearCurrentWindowSettings();
