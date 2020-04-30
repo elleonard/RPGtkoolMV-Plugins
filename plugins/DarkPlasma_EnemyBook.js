@@ -4,7 +4,8 @@
 // http://opensource.org/licenses/mit-license.php
 
 /**
- * 2020/04/30 2.1.0 縦型レイアウトに対応
+ * 2020/04/30 2.2.0 戦闘中にワンボタンで図鑑を開く機能を追加
+ *            2.1.0 縦型レイアウトに対応
  *            2.0.1 リファクタ
  *            2.0.0 リファクタ（セーブデータ互換性なし）
  * 2019/09/25 1.2.0 詳細表示モードを追加
@@ -73,9 +74,24 @@
  * @parent Detail Mode
  *
  * @param Vertical Layout
- * @desc Window Layout To Vertical
+ * @desc Window layout to vertical
  * @type boolean
  * @default false
+ *
+ * @param Enable In Battle
+ * @desc Enable enemy book in battle
+ * @type boolean
+ * @default true
+ *
+ * @param Open Key In Battle
+ * @desc Open key for enemy book window in battle
+ * @default pagedown
+ * @type select
+ * @option pageup
+ * @option pagedown
+ * @option shift
+ * @option control
+ * @option tab
  *
  * @help
  * The original plugin is RMMV official plugin written by Yoji Ojima.
@@ -99,41 +115,41 @@
  */
 
 /*:ja
- * @plugindesc モンスター図鑑です。敵キャラの詳細なステータスを表示します。
- * @author Yoji Ojima
+ * @plugindesc モンスター図鑑プラグイン
+ * @author DarkPlasma
  *
  * @param Unknown Data
- * @desc 未確認の敵キャラ/ドロップアイテムの索引名です。
+ * @desc 未確認の敵キャラ/ドロップアイテムの索引名です
  * @text 未確認要素表示名
  * @type string
  * @default ？？？？？？
  *
  * @param Gray out Unknown
- * @desc 未確認の敵キャラ/ドロップアイテムをグレー文字で表示します。
+ * @desc 未確認の敵キャラ/ドロップアイテムをグレー文字で表示します
  * @text 未確認要素グレー表示
  * @type boolean
  * @default false
  *
  * @param Mask Unknown Drop Item
- * @desc 未確認のドロップアイテムを？表示にします。
+ * @desc 未確認のドロップアイテムを？表示にします
  * @text 未確認ドロップ隠し
  * @type boolean
  * @default false
  *
  * @param Enemy Percent Label
- * @desc エネミー図鑑収集率ラベルを設定します。
+ * @desc エネミー図鑑収集率ラベルを設定します
  * @text エネミー遭遇率ラベル
  * @type string
  * @default Enemy
  *
  * @param Drop Item Percent Label
- * @desc ドロップアイテム取得率ラベルを設定します。
+ * @desc ドロップアイテム取得率ラベルを設定します
  * @text ドロップ取得率ラベル
  * @type string
  * @default Drop Item
  *
  * @param Display Drop Rate
- * @desc ドロップ率を表示します。
+ * @desc ドロップ率を表示します
  * @text ドロップ率表示
  * @type boolean
  * @default false
@@ -142,7 +158,7 @@
  * @text 詳細モード
  *
  * @param Enable Detail Mode
- * @desc 詳細モードを有効にします。決定キーで詳細モードON/OFFを切り替えます。縦型デザイン時は無効になります。
+ * @desc 詳細モードを有効にします。決定キーで詳細モードON/OFFを切り替えます。縦型デザイン時は無効になります
  * @text 詳細モード
  * @type boolean
  * @default false
@@ -156,14 +172,14 @@
  * @parent Detail Mode
  *
  * @param Weak Element And State Label
- * @desc 弱点属性/ステートのラベルを設定します。
+ * @desc 弱点属性/ステートのラベルを設定します
  * @text 弱点ラベル
  * @type string
  * @default 弱点属性/ステート
  * @parent Detail Mode
  *
  * @param Resist Element And State Label
- * @desc 耐性属性/ステートのラベルを設定します。
+ * @desc 耐性属性/ステートのラベルを設定します
  * @text 耐性ラベル
  * @type string
  * @default 耐性属性/ステート
@@ -174,6 +190,23 @@
  * @text 縦型レイアウト
  * @type boolean
  * @default false
+ *
+ * @param Enable In Battle
+ * @desc 戦闘中に図鑑ウィンドウを開けるかどうか
+ * @text 戦闘中に開く
+ * @type boolean
+ * @default true
+ *
+ * @param Open Key In Battle
+ * @desc 戦闘中に図鑑ウィンドウを開閉するためのボタン。戦闘中に開ける設定の場合のみ有効です
+ * @text 図鑑ウィンドウボタン
+ * @default shift
+ * @type select
+ * @option pageup
+ * @option pagedown
+ * @option shift
+ * @option control
+ * @option tab
  *
  * @help
  * このプラグインはYoji Ojima氏によって書かれたRPGツクール公式プラグインを元に
@@ -214,7 +247,9 @@
     elementIcons: JSON.parse(parameters['Element Icons']).map(icon => Number(icon)),
     weakLabel: String(parameters['Weak Element And State Label'] || 'Weak'),
     resistLabel: String(parameters['Resist Element And State Label'] || 'Resist'),
-    verticalLayout: String(parameters['Vertical Layout']) === 'true',
+    verticalLayout: String(parameters['Vertical Layout'] || 'false') === 'true',
+    enableInBattle: String(parameters['Enable In Battle'] || 'true') === 'true',
+    openKeyInBattle: String(parameters['Open Key In Battle'] || 'pagedown'),
   };
 
   const _Game_Interpreter_pluginCommand = Game_Interpreter.prototype.pluginCommand;
@@ -411,104 +446,6 @@
    */
   let enemyBook = null;
 
-  const _Game_System_initialize = Game_System.prototype.initialize;
-  Game_System.prototype.initialize = function () {
-    _Game_System_initialize.call(this);
-    enemyBook = EnemyBook.initialBook();
-  };
-
-  const _Game_System_onBeforeSave = Game_System.prototype.onBeforeSave;
-  Game_System.prototype.onBeforeSave = function () {
-    _Game_System_onBeforeSave.call(this);
-    this._enemyBook = enemyBook;
-  };
-
-  const _Game_System_onAfterLoad = Game_System.prototype.onAfterLoad;
-  Game_System.prototype.onAfterLoad = function () {
-    _Game_System_onAfterLoad.call(this);
-    if (this._enemyBook) {
-      enemyBook = this._enemyBook;
-    } else {
-      enemyBook = EnemyBook.initialBook();
-    }
-  };
-
-  Game_System.prototype.addToEnemyBook = function (enemyId) {
-    enemyBook.register(enemyId);
-  };
-
-  Game_System.prototype.addDropItemToEnemyBook = function (enemyId, dropIndex) {
-    enemyBook.registerDropItem(enemyId, dropIndex);
-  };
-
-  Game_System.prototype.removeFromEnemyBook = function (enemyId) {
-    enemyBook.unregister(enemyId);
-  };
-
-  Game_System.prototype.completeEnemyBook = function () {
-    enemyBook.complete();
-  };
-
-  Game_System.prototype.clearEnemyBook = function () {
-    enemyBook.clear();
-  };
-
-  Game_System.prototype.isInEnemyBook = function (enemy) {
-    return enemyBook.isRegistered(enemy);
-  };
-
-  Game_System.prototype.isInEnemyBookDrop = function (enemy, dropIndex) {
-    return enemyBook.isDropItemRegistered(enemy, dropIndex);
-  };
-
-  Game_System.prototype.percentCompleteEnemy = function () {
-    return enemyBook.percentRegisteredEnemy();
-  };
-
-  Game_System.prototype.percentCompleteDrop = function () {
-    return enemyBook.percentRegisteredDropItem();
-  };
-
-  const _Game_Troop_setup = Game_Troop.prototype.setup;
-  Game_Troop.prototype.setup = function (troopId) {
-    _Game_Troop_setup.call(this, troopId);
-    this.members().forEach(function (enemy) {
-      if (enemy.isAppeared()) {
-        $gameSystem.addToEnemyBook(enemy.enemyId());
-      }
-    }, this);
-  };
-
-  const _Game_Enemy_appear = Game_Enemy.prototype.appear;
-  Game_Enemy.prototype.appear = function () {
-    _Game_Enemy_appear.call(this);
-    $gameSystem.addToEnemyBook(this._enemyId);
-  };
-
-  const _Game_Enemy_transform = Game_Enemy.prototype.transform;
-  Game_Enemy.prototype.transform = function (enemyId) {
-    _Game_Enemy_transform.call(this, enemyId);
-    $gameSystem.addToEnemyBook(enemyId);
-  };
-
-  Game_Enemy.prototype.dropItemLots = function (dropItem) {
-    return dropItem.kind > 0 && Math.random() * dropItem.denominator < this.dropItemRate();
-  };
-
-  /**
-   * ドロップアイテムリスト生成メソッド 上書き
-   */
-  Game_Enemy.prototype.makeDropItems = function () {
-    return this.enemy().dropItems.reduce((accumlator, dropItem, index) => {
-      if (this.dropItemLots(dropItem)) {
-        $gameSystem.addDropItemToEnemyBook(this.enemy().id, index);
-        return accumlator.concat(this.itemObject(dropItem.kind, dropItem.dataId));
-      } else {
-        return accumlator;
-      }
-    }, []);
-  };
-
   /**
    * エネミー図鑑シーン
    */
@@ -520,26 +457,53 @@
 
     create() {
       super.create();
+      this._enemyBookWindows = new EnemyBookWindows(this.popScene.bind(this), this._windowLayer);
+    }
+  }
+
+  class EnemyBookWindows {
+    constructor(cancelHandler, parentLayer) {
       this._detailMode = false;
       this._percentWindow = new Window_EnemyBookPercent(0, 0);
       this._indexWindow = new Window_EnemyBookIndex(0, this._percentWindow.height);
       this._indexWindow.setHandler('ok', this.toggleDetailMode.bind(this));
-      this._indexWindow.setHandler('cancel', this.popScene.bind(this));
+      this._indexWindow.setHandler('cancel', cancelHandler);
       const x = settings.verticalLayout ? this._indexWindow.width : 0;
       const y = settings.verticalLayout ? 0 : this._indexWindow.height + this._percentWindow.height;
       const width = settings.verticalLayout ? Graphics.boxWidth - this._indexWindow.width : Graphics.boxWidth;
       const height = Graphics.boxHeight - y;
       this._statusWindow = new Window_EnemyBookStatus(x, y, width, height);
-      this.addWindow(this._percentWindow);
-      this.addWindow(this._indexWindow);
-      this.addWindow(this._statusWindow);
+      parentLayer.addChild(this._percentWindow);
+      parentLayer.addChild(this._indexWindow);
+      parentLayer.addChild(this._statusWindow);
       this._indexWindow.setStatusWindow(this._statusWindow);
     }
 
     toggleDetailMode() {
+      if (settings.verticalLayout) {
+        return;
+      }
       this._detailMode = !this._detailMode;
       this._indexWindow.setDetailMode(this._detailMode);
       this._statusWindow.setDetailMode(this._detailMode);
+    }
+
+    close() {
+      this._percentWindow.hide();
+      this._indexWindow.hide();
+      this._indexWindow.deactivate();
+      this._statusWindow.hide();
+    };
+
+    open() {
+      this._percentWindow.show();
+      this._indexWindow.show();
+      this._indexWindow.activate();
+      this._statusWindow.show();
+    };
+
+    isActive() {
+      return this._indexWindow.active;
     }
   }
 
@@ -664,6 +628,13 @@
       }
       this.drawText(name, rect.x, rect.y, rect.width);
       this.changePaintOpacity(true);
+    }
+
+    processHandling() {
+      super.processHandling();
+      if ($gameParty.inBattle() && Input.isTriggered(settings.openKeyInBattle)) {
+        this.processCancel();
+      }
     }
 
     processOk() {
@@ -987,4 +958,182 @@
       this.refresh();
     }
   }
+
+
+  const _Game_System_initialize = Game_System.prototype.initialize;
+  Game_System.prototype.initialize = function () {
+    _Game_System_initialize.call(this);
+    enemyBook = EnemyBook.initialBook();
+  };
+
+  const _Game_System_onBeforeSave = Game_System.prototype.onBeforeSave;
+  Game_System.prototype.onBeforeSave = function () {
+    _Game_System_onBeforeSave.call(this);
+    this._enemyBook = enemyBook;
+  };
+
+  const _Game_System_onAfterLoad = Game_System.prototype.onAfterLoad;
+  Game_System.prototype.onAfterLoad = function () {
+    _Game_System_onAfterLoad.call(this);
+    if (this._enemyBook) {
+      enemyBook = this._enemyBook;
+    } else {
+      enemyBook = EnemyBook.initialBook();
+    }
+  };
+
+  Game_System.prototype.addToEnemyBook = function (enemyId) {
+    enemyBook.register(enemyId);
+  };
+
+  Game_System.prototype.addDropItemToEnemyBook = function (enemyId, dropIndex) {
+    enemyBook.registerDropItem(enemyId, dropIndex);
+  };
+
+  Game_System.prototype.removeFromEnemyBook = function (enemyId) {
+    enemyBook.unregister(enemyId);
+  };
+
+  Game_System.prototype.completeEnemyBook = function () {
+    enemyBook.complete();
+  };
+
+  Game_System.prototype.clearEnemyBook = function () {
+    enemyBook.clear();
+  };
+
+  Game_System.prototype.isInEnemyBook = function (enemy) {
+    return enemyBook.isRegistered(enemy);
+  };
+
+  Game_System.prototype.isInEnemyBookDrop = function (enemy, dropIndex) {
+    return enemyBook.isDropItemRegistered(enemy, dropIndex);
+  };
+
+  Game_System.prototype.percentCompleteEnemy = function () {
+    return enemyBook.percentRegisteredEnemy();
+  };
+
+  Game_System.prototype.percentCompleteDrop = function () {
+    return enemyBook.percentRegisteredDropItem();
+  };
+
+  const _Game_Troop_setup = Game_Troop.prototype.setup;
+  Game_Troop.prototype.setup = function (troopId) {
+    _Game_Troop_setup.call(this, troopId);
+    this.members().forEach(function (enemy) {
+      if (enemy.isAppeared()) {
+        $gameSystem.addToEnemyBook(enemy.enemyId());
+      }
+    }, this);
+  };
+
+  const _Game_Enemy_appear = Game_Enemy.prototype.appear;
+  Game_Enemy.prototype.appear = function () {
+    _Game_Enemy_appear.call(this);
+    $gameSystem.addToEnemyBook(this._enemyId);
+  };
+
+  const _Game_Enemy_transform = Game_Enemy.prototype.transform;
+  Game_Enemy.prototype.transform = function (enemyId) {
+    _Game_Enemy_transform.call(this, enemyId);
+    $gameSystem.addToEnemyBook(enemyId);
+  };
+
+  Game_Enemy.prototype.dropItemLots = function (dropItem) {
+    return dropItem.kind > 0 && Math.random() * dropItem.denominator < this.dropItemRate();
+  };
+
+  /**
+   * ドロップアイテムリスト生成メソッド 上書き
+   */
+  Game_Enemy.prototype.makeDropItems = function () {
+    return this.enemy().dropItems.reduce((accumlator, dropItem, index) => {
+      if (this.dropItemLots(dropItem)) {
+        $gameSystem.addDropItemToEnemyBook(this.enemy().id, index);
+        return accumlator.concat(this.itemObject(dropItem.kind, dropItem.dataId));
+      } else {
+        return accumlator;
+      }
+    }, []);
+  };
+
+  const _Scene_Battle_createWindowLayer = Scene_Battle.prototype.createWindowLayer;
+  Scene_Battle.prototype.createWindowLayer = function () {
+    _Scene_Battle_createWindowLayer.call(this);
+    if (settings.enableInBattle) {
+      this._enemyBookLayer = new WindowLayer();
+      this._enemyBookLayer.move(0, 0, Graphics.boxWidth, Graphics.boxHeight);
+      this.addChild(this._enemyBookLayer);
+    }
+  };
+
+  const _Scene_Battle_createAllWindows = Scene_Battle.prototype.createAllWindows;
+  Scene_Battle.prototype.createAllWindows = function () {
+    _Scene_Battle_createAllWindows.call(this);
+    if (settings.enableInBattle) {
+      this.createEnemyBookWindows();
+    }
+  }
+
+  const _Scene_Battle_createPartyCommandWindow = Scene_Battle.prototype.createPartyCommandWindow;
+  Scene_Battle.prototype.createPartyCommandWindow = function () {
+    _Scene_Battle_createPartyCommandWindow.call(this);
+    if (settings.enableInBattle) {
+      this._partyCommandWindow.setHandler('enemyBook', this.openEnemyBook.bind(this));
+    }
+  };
+
+  const _Scene_Battle_createActorCommandWindow = Scene_Battle.prototype.createActorCommandWindow;
+  Scene_Battle.prototype.createActorCommandWindow = function () {
+    _Scene_Battle_createActorCommandWindow.call(this);
+    if (settings.enableInBattle) {
+      this._actorCommandWindow.setHandler('enemyBook', this.openEnemyBook.bind(this));
+    }
+  };
+
+  const _Scene_Battle_isAnyInputWindowActive = Scene_Battle.prototype.isAnyInputWindowActive;
+  Scene_Battle.prototype.isAnyInputWindowActive = function () {
+    return _Scene_Battle_isAnyInputWindowActive.call(this) || (settings.enableInBattle && this._enemyBookWindows.isActive());
+  };
+
+  Scene_Battle.prototype.createEnemyBookWindows = function () {
+    this._enemyBookWindows = new EnemyBookWindows(this.closeEnemyBook.bind(this), this._enemyBookLayer);
+    this.closeEnemyBook();
+  };
+
+  Scene_Battle.prototype.closeEnemyBook = function () {
+    this._enemyBookWindows.close();
+  };
+
+  Scene_Battle.prototype.openEnemyBook = function () {
+    this._enemyBookWindows.open();
+  };
+
+  const _Window_PartyCommand_processHandling = Window_PartyCommand.prototype.processHandling;
+  Window_PartyCommand.prototype.processHandling = function () {
+    _Window_PartyCommand_processHandling.call(this);
+    if (this.isOpenAndActive()) {
+      if (Input.isTriggered(settings.openKeyInBattle)) {
+        this.processEnemyBook();
+      }
+    }
+  };
+
+  const _Window_ActorCommand_processHandling = Window_ActorCommand.prototype.processHandling;
+  Window_ActorCommand.prototype.processHandling = function () {
+    _Window_ActorCommand_processHandling.call(this);
+    if (this.isOpenAndActive()) {
+      if (Input.isTriggered(settings.openKeyInBattle)) {
+        this.processEnemyBook();
+      }
+    }
+  };
+
+  Window_Command.prototype.processEnemyBook = function () {
+    SoundManager.playCursor();
+    this.updateInputData();
+    this.deactivate();
+    this.callHandler('enemyBook');
+  };
 })();
