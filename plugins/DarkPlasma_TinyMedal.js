@@ -4,6 +4,7 @@
 // http://opensource.org/licenses/mit-license.php
 
 /**
+ * 2020/04/30 1.2.2 報酬を受け取れなかった際にエラーになる不具合を修正
  * 2020/04/27 1.2.1 報酬受取時のメッセージ処理を軽量化
  * 2020/04/22 1.2.0 報酬受取時のメッセージ設定機能を追加
  *            1.1.0 メダル預かりコマンドとメダルシーンを分離
@@ -510,7 +511,7 @@
    * 報酬メッセージを表示する
    */
   Game_Interpreter.prototype.processReservedRewardMessages = function () {
-    if (!$gameMessage.isBusy()) {
+    if (!$gameMessage.isBusy() && reservedRewardMessages.length > 0) {
       const reservedMessage = reservedRewardMessages.shift();
       reservedMessage.show();
     }
