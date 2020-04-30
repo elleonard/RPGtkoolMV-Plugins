@@ -4,7 +4,8 @@
 // http://opensource.org/licenses/mit-license.php
 
 /**
- * 2020/04/30 2.0.1 リファクタ
+ * 2020/04/30 2.1.0 縦型レイアウトに対応
+ *            2.0.1 リファクタ
  *            2.0.0 リファクタ（セーブデータ互換性なし）
  * 2019/09/25 1.2.0 詳細表示モードを追加
  * 2019/09/24 1.1.0 ドロップ率表記オプションを追加
@@ -71,6 +72,11 @@
  * @default Resist
  * @parent Detail Mode
  *
+ * @param Vertical Layout
+ * @desc Window Layout To Vertical
+ * @type boolean
+ * @default false
+ *
  * @help
  * The original plugin is RMMV official plugin written by Yoji Ojima.
  * Arranged by DarkPlasma.
@@ -136,7 +142,7 @@
  * @text 詳細モード
  *
  * @param Enable Detail Mode
- * @desc 詳細モードを有効にします。決定キーで詳細モードON/OFFを切り替えます。
+ * @desc 詳細モードを有効にします。決定キーで詳細モードON/OFFを切り替えます。縦型デザイン時は無効になります。
  * @text 詳細モード
  * @type boolean
  * @default false
@@ -162,6 +168,12 @@
  * @type string
  * @default 耐性属性/ステート
  * @parent Detail Mode
+ *
+ * @param Vertical Layout
+ * @desc ウィンドウ配置を縦型に変更する
+ * @text 縦型レイアウト
+ * @type boolean
+ * @default false
  *
  * @help
  * このプラグインはYoji Ojima氏によって書かれたRPGツクール公式プラグインを元に
@@ -202,6 +214,7 @@
     elementIcons: JSON.parse(parameters['Element Icons']).map(icon => Number(icon)),
     weakLabel: String(parameters['Weak Element And State Label'] || 'Weak'),
     resistLabel: String(parameters['Resist Element And State Label'] || 'Resist'),
+    verticalLayout: String(parameters['Vertical Layout']) === 'true',
   };
 
   const _Game_Interpreter_pluginCommand = Game_Interpreter.prototype.pluginCommand;
@@ -512,10 +525,11 @@
       this._indexWindow = new Window_EnemyBookIndex(0, this._percentWindow.height);
       this._indexWindow.setHandler('ok', this.toggleDetailMode.bind(this));
       this._indexWindow.setHandler('cancel', this.popScene.bind(this));
-      const y = this._indexWindow.height + this._percentWindow.height;
-      const width = Graphics.boxWidth;
+      const x = settings.verticalLayout ? this._indexWindow.width : 0;
+      const y = settings.verticalLayout ? 0 : this._indexWindow.height + this._percentWindow.height;
+      const width = settings.verticalLayout ? Graphics.boxWidth - this._indexWindow.width : Graphics.boxWidth;
       const height = Graphics.boxHeight - y;
-      this._statusWindow = new Window_EnemyBookStatus(0, y, width, height);
+      this._statusWindow = new Window_EnemyBookStatus(x, y, width, height);
       this.addWindow(this._percentWindow);
       this.addWindow(this._indexWindow);
       this.addWindow(this._statusWindow);
@@ -539,20 +553,29 @@
     }
 
     initialize(x, y) {
-      const width = Graphics.boxWidth;
-      const height = this.fittingHeight(1);
+      const width = settings.verticalLayout ? Graphics.boxWidth / 3 : Graphics.boxWidth;
+      const height = this.fittingHeight(settings.verticalLayout ? 2 : 1);
       super.initialize(x, y, width, height);
       this.refresh();
     }
 
     drawPercent() {
-      const width = (Graphics.boxWidth >> 1) - 50;
       const offset = 50;
+      const width = settings.verticalLayout ? this.contentsWidth() : (Graphics.boxWidth >> 1) - offset;
       const percentWidth = this.textWidth('0000000');
       this.drawText(`${settings.enemyPercentLabel}:`, 0, 0, width - percentWidth);
       this.drawText(`${Number($gameSystem.percentCompleteEnemy()).toFixed(1)}％`, 0, 0, width, 'right');
-      this.drawText(`${settings.dropItemPercentLabel}:`, width + offset, 0, width - percentWidth);
-      this.drawText(`${Number($gameSystem.percentCompleteDrop()).toFixed(1)}％`, width + offset, 0, width, 'right');
+      this.drawText(`${settings.dropItemPercentLabel}:`,
+        settings.verticalLayout ? 0 : width + offset,
+        settings.verticalLayout ? this.lineHeight() : 0,
+        width - percentWidth
+      );
+      this.drawText(`${Number($gameSystem.percentCompleteDrop()).toFixed(1)}％`,
+        settings.verticalLayout ? 0 : width + offset,
+        settings.verticalLayout ? this.lineHeight() : 0,
+        width,
+        'right'
+      );
     }
 
     refresh() {
@@ -571,8 +594,8 @@
     }
 
     initialize(x, y) {
-      const width = Graphics.boxWidth;
-      const height = this.fittingHeight(4);
+      const width = settings.verticalLayout ? Math.floor(Graphics.boxWidth / 3) : Graphics.boxWidth;
+      const height = settings.verticalLayout ? Graphics.boxHeight - this.fittingHeight(2) : this.fittingHeight(4);
       super.initialize(x, y, width, height);
       this.refresh();
       this.setTopRow(Window_EnemyBookIndex.lastTopRow);
@@ -581,7 +604,7 @@
     }
 
     maxCols() {
-      return 3;
+      return settings.verticalLayout ? 1 : 3;
     }
 
     maxItems() {
@@ -644,7 +667,7 @@
     }
 
     processOk() {
-      if (!settings.enableDetailMode) {
+      if (!settings.enableDetailMode || settings.verticalLayout) {
         return;
       }
       if (this.isCurrentItemEnabled()) {
@@ -671,6 +694,9 @@
   Window_EnemyBookIndex.lastTopRow = 0;
   Window_EnemyBookIndex.lastIndex = 0;
 
+  /**
+   * 図鑑ステータスウィンドウ
+   */
   class Window_EnemyBookStatus extends Window_Base {
     constructor() {
       super();
@@ -680,18 +706,22 @@
     initialize(x, y, width, height) {
       super.initialize(x, y, width, height);
       this._enemy = null;
-      this._enemySprite = new Sprite();
-      this._enemySprite.anchor.x = 0.5;
-      this._enemySprite.anchor.y = 0.5;
-      this._enemySprite.x = width / 2 - 20;
-      this._enemySprite.y = height / 2;
-      this.addChildToBack(this._enemySprite);
+      this.setupEnemySprite(width, height);
       this._detailMode = false;
       this.refresh();
     }
 
+    setupEnemySprite(width, height) {
+      this._enemySprite = new Sprite();
+      this._enemySprite.anchor.x = 0.5;
+      this._enemySprite.anchor.y = 0.5;
+      this._enemySprite.x = settings.verticalLayout ? width / 4 : width / 2 - 20;
+      this._enemySprite.y = settings.verticalLayout ? height / 4 + this.lineHeight() : height / 2;
+      this.addChildToBack(this._enemySprite);
+    }
+
     contentsHeight() {
-      const maxHeight = settings.enableDetailMode ? Graphics.boxHeight - this.lineHeight(1) * 2 : this.height;
+      const maxHeight = settings.enableDetailMode && !settings.verticalLayout ? Graphics.boxHeight - this.lineHeight(1) * 2 : this.height;
       return maxHeight - this.standardPadding() * 2;
     }
 
@@ -716,15 +746,8 @@
       }
     }
 
-    /**
-     * fixme: too large method
-     */
     refresh() {
       const enemy = this._enemy;
-      let x = 0;
-      let y = 0;
-      const lineHeight = this.lineHeight();
-
       this.contents.clear();
 
       if (!enemy || !$gameSystem.isInEnemyBook(enemy)) {
@@ -743,45 +766,87 @@
       this._enemySprite.bitmap = bitmap;
 
       this.resetTextColor();
-      this.drawText(enemy.name, x, y);
+      this.drawText(enemy.name, 0, 0);
 
-      x = this.textPadding();
-      y = lineHeight + this.textPadding();
-
-      this.drawStatus(x, y);
-
-      const rewardsWidth = 280;
-      if (this._detailMode) {
-        x = this.textPadding();
-        y = lineHeight * 9 + this.textPadding();
+      if (settings.verticalLayout) {
+        this.drawPageWithVerticalLayout();
+      } else if (this._detailMode) {
+        this.drawPageWithDetailMode();
       } else {
-        x = this.contents.width - rewardsWidth;
-        y = lineHeight + this.textPadding();
+        this.drawPage();
       }
+    }
 
-      this.drawExpAndGold(x, y);
+    drawPageWithVerticalLayout() {
+      const enemy = this._enemy;
+      const lineHeight = this.lineHeight();
+      this.drawLevel(this.contentsWidth() / 2 + this.standardPadding() / 2, 0);
+      this.drawStatus(this.contentsWidth() / 2 + this.standardPadding() / 2, lineHeight + this.textPadding());
 
-      const dropItemWidth = this._detailMode ? 480 : rewardsWidth;
-      x = this.contents.width - dropItemWidth;
-      y = this._detailMode ? lineHeight * 7 + this.textPadding() : y + lineHeight;
+      this.drawExpAndGold(this.textPadding(), lineHeight * 9 + this.textPadding());
 
-      this.drawDropItems(x, y, dropItemWidth);
+      const rewardsWidth = this.contentsWidth() / 2;
+      const dropItemWidth = rewardsWidth;
 
-      if (this._detailMode) {
-        const weakAndResistWidth = 280;
-        x = this.contents.width - weakAndResistWidth;
-        y = lineHeight + this.textPadding();
-        this._weakLines = 1;
-        this.drawWeakElementsAndStates(x, y, weakAndResistWidth);
-        y += lineHeight * (1 + this._weakLines);
-        this.drawResistElementsAndStates(x, y, weakAndResistWidth);
-      }
+      this.drawDropItems(0, lineHeight * 6 + this.textPadding(), dropItemWidth);
+
+      const weakAndResistWidth = 280;
+      this._weakLines = 1;
+      this.drawWeakElementsAndStates(0, lineHeight * 10 + this.textPadding(), weakAndResistWidth);
+      this.drawResistElementsAndStates(0, lineHeight * (11 + this._weakLines) + this.textPadding(), weakAndResistWidth);
 
       const descWidth = 480;
-      x = this.contents.width - descWidth;
-      y = this.textPadding() + lineHeight * (this._detailMode ? 10 : 7);
-      this.drawTextEx(enemy.meta.desc1, x, y + lineHeight * 0, descWidth);
-      this.drawTextEx(enemy.meta.desc2, x, y + lineHeight * 1, descWidth);
+      this.drawTextEx(enemy.meta.desc1, 0, this.textPadding() + lineHeight * 14, descWidth);
+      this.drawTextEx(enemy.meta.desc2, 0, this.textPadding() + lineHeight * 15, descWidth);
+    }
+
+    drawPageWithDetailMode() {
+      const enemy = this._enemy;
+      const lineHeight = this.lineHeight();
+      this.drawLevel(this.textPadding(), lineHeight + this.textPadding());
+      this.drawStatus(this.textPadding(), lineHeight * 2 + this.textPadding());
+
+      this.drawExpAndGold(this.textPadding(), lineHeight * 10 + this.textPadding());
+
+      const dropItemWidth = 480;
+
+      this.drawDropItems(this.contentsWidth() - dropItemWidth, lineHeight * 7 + this.textPadding(), dropItemWidth);
+
+      const weakAndResistWidth = 280;
+      this._weakLines = 1;
+      this.drawWeakElementsAndStates(this.contentsWidth() - weakAndResistWidth, lineHeight + this.textPadding(), weakAndResistWidth);
+      this.drawResistElementsAndStates(this.contentsWidth() - weakAndResistWidth, lineHeight * (2 + this._weakLines), weakAndResistWidth);
+
+      const descWidth = 480;
+      this.drawTextEx(enemy.meta.desc1, this.contentsWidth() - descWidth, this.textPadding() + lineHeight * 10, descWidth);
+      this.drawTextEx(enemy.meta.desc2, this.contentsWidth() - descWidth, this.textPadding() + lineHeight * 11, descWidth);
+    }
+
+    drawPage() {
+      const enemy = this._enemy;
+      const lineHeight = this.lineHeight();
+      this.drawLevel(this.contentsWidth() - 280, this.textPadding());
+      this.drawStatus(this.textPadding(), lineHeight + this.textPadding());
+
+      const rewardsWidth = 280;
+      this.drawExpAndGold(this.contentsWidth() - rewardsWidth, lineHeight + this.textPadding());
+
+      const dropItemWidth = rewardsWidth;
+      this.drawDropItems(this.contentsWidth() - dropItemWidth, lineHeight * 3 + this.textPadding(), dropItemWidth);
+
+      const descWidth = 480;
+      this.drawTextEx(enemy.meta.desc1, this.contentsWidth() - descWidth, this.textPadding() + lineHeight * 7, descWidth);
+      this.drawTextEx(enemy.meta.desc2, this.contentsWidth() - descWidth, this.textPadding() + lineHeight * 8, descWidth);
+    }
+
+    drawLevel(x, y) {
+      const enemy = this._enemy;
+      if (enemy.level) {
+        this.changeTextColor(this.systemColor());
+        this.drawText(`Lv.`, x, y, 160);
+        this.resetTextColor();
+        this.drawText(enemy.level, x + 160, y, 60, 'right');
+      }
     }
 
     drawStatus(x, y) {
@@ -798,7 +863,7 @@
 
     drawExpAndGold(x, y) {
       const enemy = this._enemy;
-      if (this._detailMode) {
+      if (!settings.verticalLayout) {
         this.changeTextColor(this.systemColor());
         this.drawText(TextManager.exp, x, y, 160);
         this.resetTextColor();
@@ -878,7 +943,7 @@
     }
 
     maxIconsPerLine() {
-      return 8;
+      return settings.verticalLayout ? 16 : 8;
     }
 
     drawWeakElementsAndStates(x, y, width) {
