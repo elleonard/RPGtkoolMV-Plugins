@@ -4,6 +4,7 @@
 // http://opensource.org/licenses/mit-license.php
 
 /**
+ * 2020/05/02 1.3.0 売却数IDを指定する機能を追加
  * 2020/04/17 1.2.0 アイテム売却数による有効条件設定を追加
  * 2020/03/30 1.1.0 基本売却価格に対して倍率を設定できる機能を追加
  *            1.0.0 公開
@@ -20,6 +21,12 @@
  * @type struct<CustomPriceSetting>[]
  * @default []
  *
+ * @param Sell Count Id variable
+ * @desc 売却数ID指定用の変数。この変数で指定されたIDの売却数を利用します
+ * @text 売却数ID変数
+ * @type variable
+ * @default 0
+ *
  * @help
  * アイテムの売却価格を設定できます。
  *
@@ -34,6 +41,15 @@
  *
  * 同じIDのアイテムに対して複数の有効なセットで売却価格が設定されている場合、
  * 売却価格セットの上のほうに定義されたものが優先されます。
+ *
+ * 特定アイテムの売却数を取得したい場合、以下のスクリプトで取得できます。
+ * $gameSystem.sellCount('item', 1) // アイテムID1の売却数
+ * $gameSystem.sellCount('weapon', 1) // 武器ID1の売却数
+ * $gameSystem.sellCount('armor', 1) // 防具ID1の売却数
+ *
+ * 売却数はIDによって別々のカウントが可能です。
+ * 例えば、街にIDを割り当て、売却数ID変数の値を街ごとに変化させることで、
+ * 街ごとの売却数カウントが可能です。
  */
 /*~struct~CustomPriceSetting:
  *
@@ -596,6 +612,7 @@
   window[SellCount.name] = SellCount;
 
   const settings = JsonEx.parse(pluginParameters['Custom Price Setting'] || '[]').map(json => CustomPriceSetting.fromJson(json));
+  const sellCountIdVariable = Number(pluginParameters['Sell Count Id variable'] || 0);
 
   const _Game_System_initialize = Game_System.prototype.initialize;
   Game_System.prototype.initialize = function () {
@@ -608,20 +625,34 @@
     _Game_System_onAfterLoad.call(this);
     if (!this._sellCounts) {
       this._sellCounts = [];
+    } else if (!Array.isArray(this._sellCounts[0])) {
+      // 1.2.0以前とのセーブデータ互換の維持
+      this._sellCounts[0] = this._sellCounts.slice();
+      this._sellCounts.splice(1);
     }
   };
 
+  Game_System.prototype.currentSellCounts = function () {
+    const sellCountId = sellCountIdVariable > 0 ? $gameVariables.value(sellCountIdVariable) : 0;
+    if (this._sellCounts.length <= sellCountId || !Array.isArray(this._sellCounts[sellCountId])) {
+      this._sellCounts[sellCountId] = [];
+    }
+    return this._sellCounts[sellCountId];
+  };
+
   Game_System.prototype.sellCountPlus = function (category, id, count) {
-    const sellCount = this._sellCounts.find(sellCount => sellCount.category === category && sellCount.id === id);
+    const sellCounts = this.currentSellCounts();
+    const sellCount = sellCounts.find(sellCount => sellCount.category === category && sellCount.id === id);
     if (sellCount) {
       sellCount.sellItem(count);
     } else {
-      this._sellCounts.push(new SellCount(category, id, count));
+      sellCounts.push(new SellCount(category, id, count));
     }
   };
 
   Game_System.prototype.sellCount = function (category, id) {
-    const sellCount = this._sellCounts.find(sellCount => sellCount.category === category && sellCount.id === id);
+    const sellCounts = this.currentSellCounts();
+    const sellCount = sellCounts.find(sellCount => sellCount.category === category && sellCount.id === id);
     return sellCount ? sellCount.count : 0;
   };
 
