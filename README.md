@@ -256,6 +256,10 @@ sample/Memories.json にサンプル用のデータが載せてあります
 指定した装備タイプの装備は、装備を外す行為ができなくなります
 （装備を付け替える行為はできます）
 
+## DarkPlasma_NwjsSaveDir.js
+
+nwjsの機能でpackage.nwを使ってパッキングする場合に、セーブディレクトリが変わってしまうことへの対応プラグイン
+
 ## DarkPlasma_OrderIdAlias.js
 
 スキル/アイテムの表示順IDを制御するプラグイン
