@@ -4,7 +4,8 @@
 // http://opensource.org/licenses/mit-license.php
 
 /**
- * 2020/05/04 2.2.2 リファクタ
+ * 2020/05/04 2.3.0 隊列変更にクールタイムを設定する機能を追加
+ *            2.2.2 リファクタ
  * 2019/08/25 2.2.1 loadFaceせずにreserveFaceするよう修正
  * 2019/08/18 2.2.0 顔グラ読み込みをloadからreserveに変更
  * 2019/07/28 2.1.0 MOG_SceneMenuに対応 クラス非表示オプション追加
@@ -68,6 +69,18 @@
  * @default false
  * @type boolean
  *
+ * @param Formation Cooldown Turn Count
+ * @text クールタイム
+ * @desc 隊列変更後、このターン数が経過するまで再度隊列変更できない（0で即時変更可能）
+ * @default 0
+ * @type number
+ *
+ * @param Enable Cooldown Only When Swap Battle Member For Benchwarmer
+ * @text 前後入れ替え時のみクール
+ * @desc 前衛後衛を入れ替えた場合のみクールタイムを有効にする
+ * @default true
+ * @type boolean
+ *
  * @help
  * 戦闘中のパーティーコマンドに隊列変更を追加します
  * DarkPlasma_ForceFormation.js に対応しています
@@ -88,7 +101,9 @@
     formationWindowVisibleRows: Number(pluginParameters['Formation Window Visible Rows'] || 2),
     formationWindowHeight: Number(pluginParameters['Formation Window Height'] || 400),
     faceOffsetY: Number(pluginParameters['Formation Window Face Offset Y'] || 27),
-    viewClass: String(pluginParameters['View Class']) === "true"
+    viewClass: String(pluginParameters['View Class']) === "true",
+    cooldownTurnCount: Number(pluginParameters['Formation Cooldown Turn Count'] || 0),
+    cooldownOnlySwapBattleMemberForBenchwarmer: String(pluginParameters['Enable Cooldown Only When Swap Battle Member For Benchwarmer']) === 'true'
   };
 
   // Scene_Battle
@@ -117,10 +132,35 @@
       this._fstatusWindow.setPendingIndex(-1);
       this._fstatusWindow.redrawItem(index);
       this._statusWindow.refresh();
+      if (this.triggerCooldownFormation(index, pendingIndex)) {
+        this._fstatusWindow.deselect();
+        this._fstatusWindow.hide();
+        BattleManager.startInput();
+      } else {
+        this._fstatusWindow.activate();
+      }
     } else {
       this._fstatusWindow.setPendingIndex(index);
+      this._fstatusWindow.activate();
     }
-    this._fstatusWindow.activate();
+  };
+
+  /**
+   * 前後列入れ替えの場合、クールタイムを設定して真を返す
+   * そうでない場合は何もせずに偽を返す
+   * @param {number} index 入れ替え対象インデックス
+   * @param {number} pendingIndex 入れ替え対象インデックス
+   * @return {boolean}
+   */
+  Scene_Battle.prototype.triggerCooldownFormation = function (index, pendingIndex) {
+    if (settings.cooldownOnlySwapBattleMemberForBenchwarmer &&
+      (index >= $gameParty.maxBattleMembers() && pendingIndex >= $gameParty.maxBattleMembers()) ||
+      (index < $gameParty.maxBattleMembers() && pendingIndex < $gameParty.maxBattleMembers())) {
+        return false;
+    }
+    this._partyCommandWindow.setFormationCooldownTurn(settings.cooldownTurnCount);
+    this._partyCommandWindow.refresh();
+    return settings.cooldownTurnCount > 0;
   };
 
   Scene_Battle.prototype.onFormationCancel = function () {
@@ -153,12 +193,22 @@
     this._actorCommandWindow.close();
     if (this._fstatusWindow.active) return;
     this._partyCommandWindow.setup();
-
   };
 
   // Window_PartyCommand
+  const _WIndow_PartyCommand_initialize = Window_PartyCommand.prototype.initialize;
+  Window_PartyCommand.prototype.initialize = function () {
+    _WIndow_PartyCommand_initialize.call(this);
+    this._formationCooldownTurn = 0;
+  };
+  Window_PartyCommand.prototype.setFormationCooldownTurn = function(turn) {
+    this._formationCooldownTurn = turn;
+  };
+  Window_PartyCommand.prototype.decreaseFormationCooldownTurn = function() {
+    this._formationCooldownTurn--;
+  };
   Window_PartyCommand.prototype.isFormationEnabled = function () {
-    return $gameParty.size() >= 2 && $gameSystem.isFormationEnabled();
+    return $gameParty.size() >= 2 && $gameSystem.isFormationEnabled() && this._formationCooldownTurn <= 0;
   };
   Window_PartyCommand.prototype.addFormationCommand = function () {
     this.addCommand(TextManager.formation, 'formation', this.isFormationEnabled());
@@ -273,11 +323,6 @@
     this.drawText(TextManager.levelA, x, y, 48);
     this.resetTextColor();
     this.drawText(actor.level, x + 135, y, 36, 'right');
-  };
-
-  Window_FStatus.prototype.processOk = function () {
-    Window_Selectable.prototype.processOk.call(this);
-    $gameParty.setMenuActor($gameParty.allMembers()[this.index()]);
   };
 
   Window_FStatus.prototype.isCurrentItemEnabled = function () {
