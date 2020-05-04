@@ -4,7 +4,8 @@
 // http://opensource.org/licenses/mit-license.php
 
 /**
- * 2020/05/04 2.3.0 隊列変更にクールタイムを設定する機能を追加
+ * 2020/05/04 2.3.1 隊列変更時にエラーが発生する不具合を修正
+ *            2.3.0 隊列変更にクールタイムを設定する機能を追加
  *            2.2.2 リファクタ
  * 2019/08/25 2.2.1 loadFaceせずにreserveFaceするよう修正
  * 2019/08/18 2.2.0 顔グラ読み込みをloadからreserveに変更
@@ -106,6 +107,13 @@
     cooldownOnlySwapBattleMemberForBenchwarmer: String(pluginParameters['Enable Cooldown Only When Swap Battle Member For Benchwarmer']) === 'true'
   };
 
+  // BattleManager
+  const _BattleManager_endTurn = BattleManager.endTurn;
+  BattleManager.endTurn = function () {
+    _BattleManager_endTurn.call(this);
+    $gameParty.decreaseFormationCooldownTurn();
+  };
+
   // Scene_Battle
   const _Scene_Battle_createPartyCommandWindow = Scene_Battle.prototype.createPartyCommandWindow;
   Scene_Battle.prototype.createPartyCommandWindow = function () {
@@ -158,9 +166,9 @@
       (index < $gameParty.maxBattleMembers() && pendingIndex < $gameParty.maxBattleMembers())) {
         return false;
     }
-    this._partyCommandWindow.setFormationCooldownTurn(settings.cooldownTurnCount);
+    $gameParty.startFormationCooldown();
     this._partyCommandWindow.refresh();
-    return settings.cooldownTurnCount > 0;
+    return $gameParty.isDuringFormationCooldown();
   };
 
   Scene_Battle.prototype.onFormationCancel = function () {
@@ -195,20 +203,33 @@
     this._partyCommandWindow.setup();
   };
 
-  // Window_PartyCommand
-  const _WIndow_PartyCommand_initialize = Window_PartyCommand.prototype.initialize;
-  Window_PartyCommand.prototype.initialize = function () {
-    _WIndow_PartyCommand_initialize.call(this);
+  // Game_Party
+  const _Game_Party_onBattleStart = Game_Party.prototype.onBattleStart;
+  Game_Party.prototype.onBattleStart = function () {
+    _Game_Party_onBattleStart.call(this);
     this._formationCooldownTurn = 0;
   };
-  Window_PartyCommand.prototype.setFormationCooldownTurn = function(turn) {
-    this._formationCooldownTurn = turn;
+
+  Game_Party.prototype.isDuringFormationCooldown = function () {
+    return this._formationCooldownTurn > 0;
   };
-  Window_PartyCommand.prototype.decreaseFormationCooldownTurn = function() {
+
+  Game_Party.prototype.startFormationCooldown = function () {
+    this._formationCooldownTurn = settings.cooldownTurnCount;
+  };
+
+  Game_Party.prototype.decreaseFormationCooldownTurn = function () {
     this._formationCooldownTurn--;
   };
+
+  // Window_PartyCommand
+  const _Window_PartyCommand_initialize = Window_PartyCommand.prototype.initialize;
+  Window_PartyCommand.prototype.initialize = function () {
+    _Window_PartyCommand_initialize.call(this);
+    this._formationCooldownTurn = 0;
+  };
   Window_PartyCommand.prototype.isFormationEnabled = function () {
-    return $gameParty.size() >= 2 && $gameSystem.isFormationEnabled() && this._formationCooldownTurn <= 0;
+    return $gameParty.size() >= 2 && $gameSystem.isFormationEnabled() && !$gameParty.isDuringFormationCooldown();
   };
   Window_PartyCommand.prototype.addFormationCommand = function () {
     this.addCommand(TextManager.formation, 'formation', this.isFormationEnabled());
@@ -266,6 +287,10 @@
       }
     }
   };
+
+  Window_FStatus.prototype.processOk = function() {
+    Window_Selectable.prototype.processOk.call(this);
+  }
 
   Window_FStatus.prototype.windowWidth = function () {
     return Graphics.boxWidth - settings.formationWindowX * 2;
