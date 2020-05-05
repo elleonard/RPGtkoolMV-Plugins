@@ -4,6 +4,8 @@
 // http://opensource.org/licenses/mit-license.php
 
 /**
+ * 2020/05/05 2.2.0 売り切れ商品を末尾に表示するか選択する設定を追加
+ *                  商品の順番が環境によって元と変化してしまう不具合を修正
  * 2020/04/23 2.1.0 同一リスト内で同一アイテムIDに対して異なる在庫数を設定可能
  *                  アイテム売却時に在庫に追加する設定項目を追加
  * 2020/04/21 2.0.3 デフォルト在庫リストIDが有効でなかった不具合を修正
@@ -47,6 +49,12 @@
  * @text supply stock when sell
  * @type boolean
  * @default false
+ *
+ * @param Sold Out Item At Bottom
+ * @desc Display sold item at bottom of shop
+ * @text sold out item at bottom
+ * @type boolean
+ * @default true
  *
  * @help
  * You can set shop item stock.
@@ -286,6 +294,12 @@
  * @type boolean
  * @default false
  *
+ * @param Sold Out Item At Bottom
+ * @desc 売り切れ商品をショップの一番下に表示する
+ * @text 売り切れを後ろに
+ * @type boolean
+ * @default true
+ *
  * @help
  * このプラグインはショップに初期在庫を設定できます。
  * 在庫リストID:1のリストをデフォルトの在庫リストとして扱います。
@@ -514,6 +528,7 @@
     stockNumberLabel: String(pluginParameters['stockNumberLabel'] || '在庫数'),
     soldOutLabel: String(pluginParameters['soldOutLabel'] || '売り切れ'),
     supplyWhenSell: String(pluginParameters['Supply Stock When Sell Item'] || 'false') === 'true',
+    soldOutAtBottom: String(pluginParameters['Sold OUt Item At Bottom'] || 'true') === 'true',
     shopStock: JsonEx.parse(pluginParameters['shopStock'] || '[]').map(shopStock => {
       const parsed = JsonEx.parse(shopStock);
       return {
@@ -1132,8 +1147,11 @@
   Window_ShopBuy.prototype.makeItemList = function () {
     this._data = [];
     this._price = [];
-    let indexes = {};
-    this._shopGoods.map(goods => {
+    /**
+     * 同名アイテムで何番目か
+     */
+    let indexesInSameItem = {};
+    this._shopGoods.map((goods, index) => {
       var item = null;
       switch (goods[0]) {
         case 0:
@@ -1151,21 +1169,28 @@
          * 売り切れを一番下に表示する
          */
         const key = `${goods[0]}_${item.id}`;
-        if (!indexes[key]) {
-          indexes[key] = 0;
+        if (!indexesInSameItem[key]) {
+          indexesInSameItem[key] = 0;
         }
         return {
           item: item,
           price: goods[2] === 0 ? item.price : goods[3],
-          soldOut: this.soldOut(item, indexes[key]++),
+          soldOut: this.soldOut(item, indexesInSameItem[key]++),
+          goodsIndex: index
         };
       } else {
         return {};
       }
     }, this).filter(goods => goods.item).sort((a, b) => {
-      if (a.soldOut && !b.soldOut) return 1;
-      if (!a.soldOUt && b.soldOut) return -1;
-      return 0;
+      if (settings.soldOutAtBottom) {
+        if (a.soldOut && !b.soldOut) return 1;
+        if (!a.soldOUt && b.soldOut) return -1;
+      }
+      /**
+       * Array.prototype.sort が stable になるのは NW.js 0.34.0以降
+       * RPGツクールMV1.6系は NW.js 0.29.4 のため、元々のindexで比較してやる
+       */
+      return a.goodsIndex - b.goodsIndex;
     }).forEach(goods => {
       this._data.push(goods.item);
       this._price.push(goods.price);
