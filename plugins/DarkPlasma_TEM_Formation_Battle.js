@@ -4,6 +4,7 @@
 // http://opensource.org/licenses/mit-license.php
 
 /**
+ * 2020/05/05 2.3.2 行動決定後にクールタイムが発生するよう修正
  * 2020/05/04 2.3.1 隊列変更時にエラーが発生する不具合を修正
  *            2.3.0 隊列変更にクールタイムを設定する機能を追加
  *            2.2.2 リファクタ
@@ -107,11 +108,94 @@
     cooldownOnlySwapBattleMemberForBenchwarmer: String(pluginParameters['Enable Cooldown Only When Swap Battle Member For Benchwarmer']) === 'true'
   };
 
+  class BattleFormationCooldownManager {
+    constructor() {
+      this._formationCooldownTurn = 0;
+      this._membersAtTurnStart = [];
+    }
+
+    /**
+     * クールダウン開始の必要があるかどうか
+     * @return {boolean}
+     */
+    needCooldown() {
+      if (settings.cooldownOnlySwapBattleMemberForBenchwarmer) {
+        // 前衛後衛が入れ替わっている場合のみ
+        const battleMembers = $gameParty.battleMembers().map(actor => actor.actorId());
+        return battleMembers.some(actorId => {
+          return !this._membersAtTurnStart.includes(actorId);
+        });
+      } else {
+        // メンバーの順番がいずれか変わっていれば
+        const members = $gameParty.allMembers().map(actor => actor.actorId());
+        return this._membersAtTurnStart.some((actorId, index) => {
+          return actorId !== members[index];
+        });
+      }
+    }
+
+    /**
+     * クールダウンが必要なら開始する
+     */
+    triggerCooldownFormation() {
+      if (this.needCooldown()) {
+        this.startFormationCooldown();
+      }
+      this.storeMemberAtTurnStart();
+    }
+
+    /**
+     * ターン開始時のメンバーを保持する
+     */
+    storeMemberAtTurnStart() {
+      this._membersAtTurnStart =
+        settings.cooldownOnlySwapBattleMemberForBenchwarmer
+         ? $gameParty.battleMembers().map(actor => actor.actorId())
+         : $gameParty.allMembers().map(actor => actor.actorId());
+    }
+
+    /**
+     * クールダウン中かどうか
+     * @return {boolean}
+     */
+    isDuringFormationCooldown () {
+      return this._formationCooldownTurn > 0;
+    };
+
+    /**
+     * クールダウン開始
+     */
+    startFormationCooldown () {
+      this._formationCooldownTurn = settings.cooldownTurnCount;
+    };
+
+    /**
+     * クールダウンターン経過
+     */
+    decreaseFormationCooldownTurn () {
+      this._formationCooldownTurn--;
+    };
+  }
+
+  const formationCooldownManager = new BattleFormationCooldownManager();
+
   // BattleManager
+  const _BattleManager_startBattle = BattleManager.startBattle;
+  BattleManager.startBattle = function () {
+    _BattleManager_startBattle.call(this);
+    formationCooldownManager.storeMemberAtTurnStart();
+  };
+
+  const _BattleManager_startTurn = BattleManager.startTurn;
+  BattleManager.startTurn = function () {
+    _BattleManager_startTurn.call(this);
+    formationCooldownManager.triggerCooldownFormation();
+  };
+
   const _BattleManager_endTurn = BattleManager.endTurn;
   BattleManager.endTurn = function () {
     _BattleManager_endTurn.call(this);
-    $gameParty.decreaseFormationCooldownTurn();
+    formationCooldownManager.decreaseFormationCooldownTurn();
   };
 
   // Scene_Battle
@@ -140,35 +224,11 @@
       this._fstatusWindow.setPendingIndex(-1);
       this._fstatusWindow.redrawItem(index);
       this._statusWindow.refresh();
-      if (this.triggerCooldownFormation(index, pendingIndex)) {
-        this._fstatusWindow.deselect();
-        this._fstatusWindow.hide();
-        BattleManager.startInput();
-      } else {
-        this._fstatusWindow.activate();
-      }
+      this._fstatusWindow.activate();
     } else {
       this._fstatusWindow.setPendingIndex(index);
       this._fstatusWindow.activate();
     }
-  };
-
-  /**
-   * 前後列入れ替えの場合、クールタイムを設定して真を返す
-   * そうでない場合は何もせずに偽を返す
-   * @param {number} index 入れ替え対象インデックス
-   * @param {number} pendingIndex 入れ替え対象インデックス
-   * @return {boolean}
-   */
-  Scene_Battle.prototype.triggerCooldownFormation = function (index, pendingIndex) {
-    if (settings.cooldownOnlySwapBattleMemberForBenchwarmer &&
-      (index >= $gameParty.maxBattleMembers() && pendingIndex >= $gameParty.maxBattleMembers()) ||
-      (index < $gameParty.maxBattleMembers() && pendingIndex < $gameParty.maxBattleMembers())) {
-        return false;
-    }
-    $gameParty.startFormationCooldown();
-    this._partyCommandWindow.refresh();
-    return $gameParty.isDuringFormationCooldown();
   };
 
   Scene_Battle.prototype.onFormationCancel = function () {
@@ -203,33 +263,9 @@
     this._partyCommandWindow.setup();
   };
 
-  // Game_Party
-  const _Game_Party_onBattleStart = Game_Party.prototype.onBattleStart;
-  Game_Party.prototype.onBattleStart = function () {
-    _Game_Party_onBattleStart.call(this);
-    this._formationCooldownTurn = 0;
-  };
-
-  Game_Party.prototype.isDuringFormationCooldown = function () {
-    return this._formationCooldownTurn > 0;
-  };
-
-  Game_Party.prototype.startFormationCooldown = function () {
-    this._formationCooldownTurn = settings.cooldownTurnCount;
-  };
-
-  Game_Party.prototype.decreaseFormationCooldownTurn = function () {
-    this._formationCooldownTurn--;
-  };
-
   // Window_PartyCommand
-  const _Window_PartyCommand_initialize = Window_PartyCommand.prototype.initialize;
-  Window_PartyCommand.prototype.initialize = function () {
-    _Window_PartyCommand_initialize.call(this);
-    this._formationCooldownTurn = 0;
-  };
   Window_PartyCommand.prototype.isFormationEnabled = function () {
-    return $gameParty.size() >= 2 && $gameSystem.isFormationEnabled() && !$gameParty.isDuringFormationCooldown();
+    return $gameParty.size() >= 2 && $gameSystem.isFormationEnabled() && !formationCooldownManager.isDuringFormationCooldown();
   };
   Window_PartyCommand.prototype.addFormationCommand = function () {
     this.addCommand(TextManager.formation, 'formation', this.isFormationEnabled());
