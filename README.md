@@ -157,6 +157,10 @@ Trb_TextColor.js を採用している場合は色番号ではなくカラーコ
 
 ランダム対象スキルの対象を狙われ率の最も高いキャラクターに固定するプラグイン
 
+## DarkPlasma_FollowNPC.js
+
+NPCのフォロワーを設定できるプラグイン
+
 ## DarkPlasma_ForceFormation.js
 
 全滅時に強制的に後衛と入れ替えるプラグイン
