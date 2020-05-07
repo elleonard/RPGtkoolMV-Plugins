@@ -4,6 +4,7 @@
 // http://opensource.org/licenses/mit-license.php
 
 /**
+ * 2020/05/08 1.2.0 自動改行を無効にするウィンドウの設定項目追加
  * 2020/04/29 1.1.5 文字を小さくするとメッセージウィンドウ下部にゴミが表示される不具合を修正
  * 2020/04/04 1.1.4 戦闘結果の改ページが二重になる不具合を修正
  * 2020/03/09 1.1.3 下記不具合が修正しきれていなかったので再修正
@@ -38,6 +39,12 @@
  * @type boolean
  * @default false
  *
+ * @param Ignore Wordwrap Windows
+ * @desc 自動改行しないウィンドウ一覧
+ * @text 自動改行無効ウィンドウ
+ * @type string[]
+ * @default []
+ *
  * @param YEP Quest Journal Buffer Lines
  * @desc YEP_QuestJournal.js併用時のバッファ行数
  * @text クエスト画面バッファ行数
@@ -66,6 +73,9 @@
  *   <WordWrap>タグは不要ですので、改行用タグ削除の有効化をオススメします。
  *   バッファ行数は特別長いクエスト説明文にしなければそのままで構いません。
  *   クエストデータ表示が途切れてしまう場合に増やしてみてください。
+ *   クエストリストウィンドウでの自動改行を無効にしておくことを推奨します。
+ *   （選択式ウィンドウは自動改行しても表示が壊れるため）
+ *   自動改行無効ウィンドウに Window_QuestList を追加してください。
  */
 
 (function () {
@@ -79,11 +89,16 @@
     prohibitLineBreakBefore: String(pluginParameters['Characters Prohibit Line Break Before'] || ",)]｝、〕〉》」』】〙〗〟’”｠»ゝゞーァィゥェォッャュョヮヵヶぁぃぅぇぉっゃゅょゎゕゖㇰㇱㇲㇳㇴㇵㇶㇷㇸㇹㇷ゚ㇺㇻㇼㇽㇾㇿ々〻‐゠–〜～?!‼⁇⁈⁉・:;/。."),
     prohibitLineBreakAfter: String(pluginParameters['Characters Prohibit Line Break After'] || "([｛〔〈《「『【〘〖〝‘“｟«"),
     killWordWrapTags: String(pluginParameters['Kill Word Wrap Tags'] || 'false') === 'true',
+    ignoreWordwrapWindows: JsonEx.parse(pluginParameters['Ignore Wordwrap Windows'] || '[]').map(window => String(window)),
     questJournalBufferLines: Number(pluginParameters['YEP Quest Journal Buffer Lines'] || 10)
   };
 
+  Window_Base.prototype.isIgnoreWordwrapWindow = function () {
+    return settings.ignoreWordwrapWindows.includes(this.constructor.name) || this._ignoreWordWrap;
+  };
+
   Window_Base.prototype.wordWrapEnabled = function () {
-    if (this._checkWordWrapMode || this._ignoreWordWrap) {
+    if (this._checkWordWrapMode || this.isIgnoreWordwrapWindow()) {
       return false;
     }
     if (PluginManager.isLoadedPlugin("YEP_MessageCore")) {
@@ -229,14 +244,6 @@
   Game_Message.prototype.newLine = function () {
     this._currentLine++;
   };
-
-  /*const _Game_Message_newPage = Game_Message.prototype.newPage;
-  Game_Message.prototype.newPage = function () {
-    _Game_Message_newPage.call(this);
-    if (this._texts.length > 0) {
-      this._currentLine = 0;
-    }
-  };*/
 
   Game_Message.prototype.wordWrap = function () {
     this._wordWrapCount[this._currentLine]++;
