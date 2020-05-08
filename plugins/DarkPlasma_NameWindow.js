@@ -4,6 +4,7 @@
 // http://opensource.org/licenses/mit-license.php
 
 /**
+ * 2020/05/08 1.3.0 閉じるアニメーションの設定項目を追加
  * 2020/04/20 1.2.1 自動名前ウィンドウ以外でアクター名色付けが機能していない不具合を修正
  * 2020/04/18 1.2.0 MessageWindowHidden.js との競合を修正
  *                  DarkPlasma_AutoHightlight.js よりも自動名前検出時の色設定を優先するオプションを追加
@@ -80,6 +81,12 @@
  * @type boolean
  * @default true
  *
+ * @param Enable Close Animation
+ * @desc 閉じるアニメーションを有効にする
+ * @text 閉じるアニメーション
+ * @type boolean
+ * @default true
+ *
  * @help
  *  メッセージテキストに以下のように記述すると名前ウィンドウを表示します。
  * 
@@ -127,7 +134,8 @@
       };
     }, this),
     autoNameWindow: String(pluginParameters['Auto Name Window'] || 'false') === 'true',
-    forceAutoNameColor: String(pluginParameters['Force Auto Name Color'] || 'true') === 'true'
+    forceAutoNameColor: String(pluginParameters['Force Auto Name Color'] || 'true') === 'true',
+    enableCloseAnimation: String(pluginParameters['Enable Close Animation'] || 'true') === 'true'
   };
 
   /** 名前ウィンドウの位置 */
@@ -223,6 +231,13 @@
     stopClose() {
       this._startClose = false;
       this._closeDelayCounter = settings.closeDelayFrame;
+    }
+
+    updateClose() {
+      if (this._closing && !settings.enableCloseAnimation) {
+        this.openness = 0;
+      }
+      super.updateClose();
     }
 
     update() {
