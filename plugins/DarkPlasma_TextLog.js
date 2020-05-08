@@ -4,6 +4,7 @@
 // http://opensource.org/licenses/mit-license.php
 
 /**
+ * 2020/05/09 1.7.2 ログ保存イベント数を超えるとログが壊れる不具合を修正
  * 2020/05/08 1.7.1 軽微なリファクタ
  *            1.7.0 名前ウィンドウの名前をログに含める設定を追加
  * 2020/03/09 1.6.4 プラグインが無効の状態で読み込まれていても有効と判定される不具合を修正
@@ -198,14 +199,84 @@
     includeName: String(pluginParameters['Include Name In Log'] || 'true') === 'true'
   };
 
+  class EventTextLog {
+    constructor() {
+      this.initialize();
+    }
+
+    initialize() {
+      this._messages = [];
+      this._eventId = 0;
+    }
+
+    /**
+     * @return {LogText[]}
+     */
+    get messages() {
+      return this._messages;
+    }
+
+    /**
+     * @return {number}
+     */
+    get messageLength() {
+      return this._messages.length;
+    }
+
+    /**
+     * ログを追加する
+     * @param {string} text テキスト
+     * @param {number[]} wordwrapCounts 折返し数リスト
+     */
+    addMessageLog(text, wordwrapCounts) {
+      this._messages.push(new LogText(text, wordwrapCounts));
+      if (settings.logMessageCount > 0 && this._messages.length > settings.logMessageCount) {
+        this._messages.splice(0, this._messages.length - settings.logMessageCount);
+      }
+    }
+  }
+
+  /**
+   * ログテキスト
+   */
+  class LogText {
+    /**
+     * @param {string} text テキスト
+     * @param {number[]} wordwrapCounts 折り返し数リスト
+     */
+    constructor(text, wordwrapCounts) {
+      this._text = text;
+      this._wordwrapCounts = wordwrapCounts;
+    }
+
+    /**
+     * @return {string}
+     */
+    get text() {
+      return this._text;
+    }
+
+    /**
+     * @return {number[]}
+     */
+    get wordWraps() {
+      return this._wordwrapCounts;
+    }
+  }
+
   // 必要変数初期化
+  /**
+   * @type {LogText[]}
+   */
   let viewTexts = [];
-  let currentEventLog = {
-    messages: [],
-    eventId: 0
-  };
+  /**
+   * @type {EventTextLog}
+   */
+  let currentEventLog = new EventTextLog();
+  /**
+   * @type {EventTextLog[]}
+   */
   let pastEventLog = [];
-  let loggedEventCount = 0;
 
   // ログ表示用シーン
   class Scene_TextLog extends Scene_Base {
@@ -217,11 +288,11 @@
     initialize() {
       super.initialize();
       viewTexts = [];
-      if (loggedEventCount > 0) {
+      if (pastEventLog.length > 0) {
         viewTexts = pastEventLog.map(pastLog => pastLog.messages).reverse()
           .reduce((accumlator, currentValue) => currentValue.concat(accumlator));
       }
-      if (currentEventLog.messages.length > 0) {
+      if (currentEventLog.messageLength > 0) {
         viewTexts = viewTexts.concat(currentEventLog.messages);
       }
       // 表示行数制限
@@ -319,6 +390,7 @@
 
     /**
      * これ以上下にスクロールできない状態かどうかを計算する
+     * fixme: 予め計算しておくとスクロール速度が改善しそう？
      * @return {boolean}
      */
     isCursorMax() {
@@ -410,6 +482,8 @@
           const text = viewTexts[i].text;
           const wordWraps = viewTexts[i].wordWraps;
           this.drawTextEx(text, 0, height);
+          // fixme: いちいち高さ計算するより全描画してしまったほうが早いケースがありそう
+          // 閾値は適当に決めてしまう
           height += this.calcMessageHeight(text, wordWraps);
           if (height > Graphics.boxHeight) {
             break;
@@ -475,36 +549,27 @@
   }
 
   // Window_Message.terminateMessageから呼ぶ
-  const addTextLog = function (text, wordWraps) {
-    currentEventLog.messages.push({
-      text: text,
-      wordWraps: wordWraps
-    });
-    if (settings.logMessageCount > 0 && currentEventLog.messages.length > settings.logMessageCount) {
-      currentEventLog.messages.splice(0, currentEventLog.messages.length - settings.logMessageCount);
-    }
+  function addTextLog (text, wordWraps) {
+    currentEventLog.addMessageLog(text, wordWraps);
   };
 
-  const moveToPrevLog = function () {
+  function moveToPrevLog () {
     // 文章を表示しないイベントは無視する
-    if (currentEventLog.messages.length === 0) {
+    if (currentEventLog.messageLength === 0) {
       return;
     }
     if (settings.autoEventLogSplit) {
       addTextLog(settings.eventLogSplitter, []);
     }
-    pastEventLog[loggedEventCount++] = currentEventLog;
-    if (settings.logEventCount > 0 && loggedEventCount > settings.logEventCount) {
+    pastEventLog.push(currentEventLog);
+    if (settings.logEventCount > 0 && pastEventLog.length > settings.logEventCount) {
       pastEventLog.splice(0, pastEventLog.length - settings.logEventCount);
     }
     initializeCurrentEventLog();
   };
 
-  const initializeCurrentEventLog = function () {
-    currentEventLog = {
-      messages: [],
-      eventId: 0
-    };
+  function initializeCurrentEventLog () {
+    currentEventLog = new EventTextLog();
   };
 
   // テキストログを表示できるかどうか
@@ -512,9 +577,9 @@
   // B 空のログウィンドウを表示するフラグがtrue
   // C スイッチで禁止されていない
   // (A || B) && C
-  const isTextLogEnabled = function () {
+  function isTextLogEnabled () {
     return (showLogWindowWithoutText ||
-      (currentEventLog.messages.length > 0 ||
+      (currentEventLog.messageLength > 0 ||
         pastEventLog.length > 0)) &&
       (disableShowLogSwitch === 0 ||
         !$gameSwitches.value(disableShowLogSwitch));
