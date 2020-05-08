@@ -4,7 +4,8 @@
 // http://opensource.org/licenses/mit-license.php
 
 /**
- * 2020/05/08 1.7.0 名前ウィンドウの名前をログに含める設定を追加
+ * 2020/05/08 1.7.1 軽微なリファクタ
+ *            1.7.0 名前ウィンドウの名前をログに含める設定を追加
  * 2020/03/09 1.6.4 プラグインが無効の状態で読み込まれていても有効と判定される不具合を修正
  * 2020/01/28 1.6.3 文章を表示しないイベントに自動区切り線を入れないよう修正
  * 2020/01/27 1.6.2 決定キーでログウィンドウを閉じられるよう修正
@@ -207,230 +208,271 @@
   let loggedEventCount = 0;
 
   // ログ表示用シーン
-  function Scene_TextLog() {
-    this.initialize.apply(this, arguments);
-  };
-
-  Scene_TextLog.prototype = Object.create(Scene_Base.prototype);
-  Scene_TextLog.prototype.constructor = Scene_TextLog;
-
-  Scene_TextLog.prototype.initialize = function () {
-    Scene_Base.prototype.initialize.call(this);
-    viewTexts = [];
-    if (loggedEventCount > 0) {
-      viewTexts = pastEventLog.map(pastLog => pastLog.messages).reverse()
-        .reduce((accumlator, currentValue) => currentValue.concat(accumlator));
+  class Scene_TextLog extends Scene_Base {
+    constructor() {
+      super();
+      this.initialize.apply(this, arguments);
     }
-    if (currentEventLog.messages.length > 0) {
-      viewTexts = viewTexts.concat(currentEventLog.messages);
+
+    initialize() {
+      super.initialize();
+      viewTexts = [];
+      if (loggedEventCount > 0) {
+        viewTexts = pastEventLog.map(pastLog => pastLog.messages).reverse()
+          .reduce((accumlator, currentValue) => currentValue.concat(accumlator));
+      }
+      if (currentEventLog.messages.length > 0) {
+        viewTexts = viewTexts.concat(currentEventLog.messages);
+      }
+      // 表示行数制限
+      if (settings.logMessageCount > 0 && viewTexts.length > settings.logMessageCount) {
+        viewTexts.splice(0, viewTexts.length - settings.logMessageCount);
+      }
     }
-    // 表示行数制限
-    if (settings.logMessageCount > 0 && viewTexts.length > settings.logMessageCount) {
-      viewTexts.splice(0, viewTexts.length - settings.logMessageCount);
+
+    create() {
+      super.create();
+      this.createBackground();
+      this.createWindowLayer();
+      this.createTextLogWindow();
     }
-  };
 
-  Scene_TextLog.prototype.create = function () {
-    Scene_Base.prototype.create.call(this);
-    this.createBackground();
-    this.createWindowLayer();
-    this.createTextLogWindow();
-  };
+    start() {
+      super.start();
+      this._textLogWindow.refresh();
+    }
 
-  Scene_TextLog.prototype.start = function () {
-    Scene_Base.prototype.start.call(this);
-    this._textLogWindow.refresh();
-  };
+    createBackground() {
+      this._backgroundSprite = new Sprite();
+      this._backgroundSprite.bitmap = SceneManager.backgroundBitmap();
+      this.addChild(this._backgroundSprite);
+    }
 
-  Scene_TextLog.prototype.createBackground = function () {
-    this._backgroundSprite = new Sprite();
-    this._backgroundSprite.bitmap = SceneManager.backgroundBitmap();
-    this.addChild(this._backgroundSprite);
-  };
+    createTextLogWindow() {
+      this._textLogWindow = new Window_TextLog();
+      this._textLogWindow.setHandler('cancel', this.popScene.bind(this));
+      this.addWindow(this._textLogWindow);
+    }
+  }
 
-  Scene_TextLog.prototype.createTextLogWindow = function () {
-    this._textLogWindow = new Window_TextLog();
-    this._textLogWindow.setHandler('cancel', this.popScene.bind(this));
-    this.addWindow(this._textLogWindow);
-  };
 
   // ログ表示用ウィンドウ
-  function Window_TextLog() {
-    this.initialize.apply(this, arguments);
-  }
-
-  Window_TextLog.prototype = Object.create(Window_Base.prototype);
-  Window_TextLog.prototype.constructor = Window_TextLog;
-
-  Window_TextLog.prototype.initialize = function () {
-    Window_Base.prototype.initialize.call(this, 0, 0, Graphics.boxWidth, Graphics.boxHeight);
-    this._cursor = this.calcDefaultCursor();
-    this._handlers = {};
-    this._maxViewCount = maxViewCount;
-  };
-
-  Window_TextLog.prototype.cursor = function () {
-    return this._cursor;
-  };
-
-  Window_TextLog.prototype.setHandler = function (symbol, method) {
-    this._handlers[symbol] = method;
-  };
-
-  Window_TextLog.prototype.isHandled = function (symbol) {
-    return !!this._handlers[symbol];
-  };
-
-  Window_TextLog.prototype.callHandler = function (symbol) {
-    if (this.isHandled(symbol)) {
-      this._handlers[symbol]();
+  class Window_TextLog extends Window_Base {
+    constructor() {
+      super();
+      this.initialize.apply(this, arguments);
     }
-  };
 
-  Window_TextLog.prototype.isCursorMovable = function () {
-    return true;
-  };
-
-  Window_TextLog.prototype.cursorDown = function () {
-    if (!this.isCursorMax()) {
-      this._cursor++;
+    initialize() {
+      super.initialize(0, 0, Graphics.boxWidth, Graphics.boxHeight);
+      this._cursor = this.calcDefaultCursor();
+      this._handlers = {};
+      this._maxViewCount = maxViewCount;
     }
-  };
 
-  // これ以上下にスクロールできない状態かどうかを計算する
-  Window_TextLog.prototype.isCursorMax = function () {
-    const size = viewTexts.length;
-    let height = 0;
-    for (let i = this.cursor(); i < size; i++) {
-      const text = viewTexts[i].text;
-      let wordWraps = viewTexts[i].wordWraps;
-      height += this.calcMessageHeight(text, wordWraps);
-      if (height > Graphics.boxHeight - this.lineHeight()) {
-        return false;
+    /**
+     * @return {number}
+     */
+    cursor() {
+      return this._cursor;
+    }
+
+    /**
+     * ハンドラを登録する
+     * @param {string} symbol シンボル
+     * @param {Function} method メソッド
+     */
+    setHandler(symbol, method) {
+      this._handlers[symbol] = method;
+    }
+
+    /**
+     * 指定したシンボルでハンドラが登録されているか
+     * @param {string} symbol シンボル
+     */
+    isHandled(symbol) {
+      return !!this._handlers[symbol];
+    }
+
+    /**
+     * 指定したシンボルのハンドラを呼び出す
+     * @param {string} symbol シンボル
+     */
+    callHandler(symbol) {
+      if (this.isHandled(symbol)) {
+        this._handlers[symbol]();
       }
     }
-    return true;
-  };
 
-  Window_TextLog.prototype.cursorUp = function () {
-    if (this.cursor() > 0) {
-      this._cursor--;
+    /**
+     * @return {boolean}
+     */
+    isCursorMovable() {
+      return true;
     }
-  };
 
-  Window_TextLog.prototype.processCursorMove = function () {
-    if (this.isCursorMovable()) {
-      var lastCursor = this.cursor();
-      var moved = false;
-      if (Input.isRepeated('down') || TouchInput.wheelY > 0 || TouchInput.isDownMoved()) {
-        this.cursorDown();
-        moved = true;
-      }
-      if (Input.isRepeated('up') || TouchInput.wheelY < 0 || TouchInput.isUpMoved()) {
-        this.cursorUp();
-        moved = true;
-      }
-      if (overflowBuzzer && moved && lastCursor === this.cursor()) {
-        SoundManager.playBuzzer();
+    cursorDown() {
+      if (!this.isCursorMax()) {
+        this._cursor++;
       }
     }
-  };
 
-  Window_TextLog.prototype.processCancel = function () {
-    this.callHandler('cancel');
-    SoundManager.playCancel();
-  }
-
-  Window_TextLog.prototype.processHandling = function () {
-    if (this.isCancelEnabled() && this.isCancelTriggered()) {
-      this.processCancel();
-    }
-  };
-
-  Window_TextLog.prototype.isCancelEnabled = function () {
-    return this.isHandled('cancel');
-  };
-
-  Window_TextLog.prototype.isCancelTriggered = function () {
-    return Input.isRepeated('cancel') || Input.isTriggered('ok') ||
-      Input.isTriggered(openLogKey) || TouchInput.isCancelled();
-  };
-
-  Window_TextLog.prototype.update = function () {
-    Window_Base.prototype.update.call(this);
-    this.updateArrows();
-    this.processCursorMove();
-    this.processHandling();
-    this.refresh();
-  };
-
-  Window_TextLog.prototype.updateArrows = function () {
-    this.upArrowVisible = this.cursor() > 0;
-    this.downArrowVisible = !this.isCursorMax();
-  };
-
-  Window_TextLog.prototype.refresh = function () {
-    this.contents.clear();
-    this.drawTextLog();
-  };
-
-  Window_TextLog.prototype.drawTextLog = function () {
-    let height = 0;
-    for (let i = this.cursor(); i < this.cursor() + this._maxViewCount; i++) {
-      if (i < viewTexts.length) {
+    /**
+     * これ以上下にスクロールできない状態かどうかを計算する
+     * @return {boolean}
+     */
+    isCursorMax() {
+      const size = viewTexts.length;
+      let height = 0;
+      for (let i = this.cursor(); i < size; i++) {
         const text = viewTexts[i].text;
         const wordWraps = viewTexts[i].wordWraps;
-        this.drawTextEx(text, 0, height);
         height += this.calcMessageHeight(text, wordWraps);
-        if (height > Graphics.boxHeight) {
-          break;
+        if (height > Graphics.boxHeight - this.lineHeight()) {
+          return false;
+        }
+      }
+      return true;
+    }
+
+    cursorUp() {
+      if (this.cursor() > 0) {
+        this._cursor--;
+      }
+    }
+
+    processCursorMove() {
+      if (this.isCursorMovable()) {
+        const lastCursor = this.cursor();
+        let moved = false;
+        if (Input.isRepeated('down') || TouchInput.wheelY > 0 || TouchInput.isDownMoved()) {
+          this.cursorDown();
+          moved = true;
+        }
+        if (Input.isRepeated('up') || TouchInput.wheelY < 0 || TouchInput.isUpMoved()) {
+          this.cursorUp();
+          moved = true;
+        }
+        if (overflowBuzzer && moved && lastCursor === this.cursor()) {
+          SoundManager.playBuzzer();
         }
       }
     }
-  };
 
-  // デフォルトのスクロール位置を計算する
-  Window_TextLog.prototype.calcDefaultCursor = function () {
-    var height = 0;
-    var size = viewTexts.length;
-    for (var i = 0; i < size; i++) {
-      const text = viewTexts[size - 1 - i].text;
-      const wordWraps = viewTexts[size - 1 - i].wordWraps;
-      height += this.calcMessageHeight(text, wordWraps);
-      if (height > Graphics.boxHeight - this.lineHeight()) {
-        return (i > 0) ? size - i : size - 1;
+    processCancel() {
+      this.callHandler('cancel');
+      SoundManager.playCancel();
+    }
+
+    processHandling() {
+      if (this.isCancelEnabled() && this.isCancelTriggered()) {
+        this.processCancel();
       }
     }
-    return 0;
-  };
 
-  Window_TextLog.prototype.lineHeight = function () {
-    return this.contents.fontSize + settings.lineSpacing;
-  };
+    /**
+     * @return {boolean}
+     */
+    isCancelEnabled() {
+      return this.isHandled('cancel');
+    }
 
-  Window_TextLog.prototype.calcMessageHeight = function (text, wordWraps) {
-    let height = 0;
-    let lines = text.split('\n');
-    for (let i = 0; i < lines.length; i++) {
-      let maxFontSize = this.contents.fontSize;
-      let regExp = /x1b[\{\}]/g;
-      for (; ;) {
-        let array = regExp.exec(lines[i]);
-        if (array) {
-          if (array[0] === '\x1b{' && maxFontSize <= 96) {
-            maxFontSize += 12;
+    /**
+     * @return {boolean}
+     */
+    isCancelTriggered() {
+      return Input.isRepeated('cancel') || Input.isTriggered('ok') ||
+      Input.isTriggered(openLogKey) || TouchInput.isCancelled();
+    }
+
+    update() {
+      super.update();
+      this.updateArrows();
+      this.processCursorMove();
+      this.processHandling();
+      this.refresh();
+    }
+
+    updateArrows() {
+      this.upArrowVisible = this.cursor() > 0;
+      this.downArrowVisible = !this.isCursorMax();
+    }
+
+    refresh() {
+      this.contents.clear();
+      this.drawTextLog();
+    }
+
+    drawTextLog() {
+      let height = 0;
+      for (let i = this.cursor(); i < this.cursor() + this._maxViewCount; i++) {
+        if (i < viewTexts.length) {
+          const text = viewTexts[i].text;
+          const wordWraps = viewTexts[i].wordWraps;
+          this.drawTextEx(text, 0, height);
+          height += this.calcMessageHeight(text, wordWraps);
+          if (height > Graphics.boxHeight) {
+            break;
           }
-          if (array[0] === '\x1b}' && maxFontSize >= 24) {
-            maxFontSize -= 12;
-          }
-        } else {
-          break;
         }
       }
-      height += (maxFontSize + settings.lineSpacing) * ((wordWraps.length > 0 && i < 3 ? wordWraps[i] : 0) + 1);
     }
-    return height + settings.messageSpacing;
-  };
+
+    /**
+     * デフォルトのスクロール位置を計算する
+     * @return {number}
+     */
+    calcDefaultCursor() {
+      var height = 0;
+      var size = viewTexts.length;
+      for (var i = 0; i < size; i++) {
+        const text = viewTexts[size - 1 - i].text;
+        const wordWraps = viewTexts[size - 1 - i].wordWraps;
+        height += this.calcMessageHeight(text, wordWraps);
+        if (height > Graphics.boxHeight - this.lineHeight()) {
+          return (i > 0) ? size - i : size - 1;
+        }
+      }
+      return 0;
+    }
+
+    /**
+     * @return {number}
+     */
+    lineHeight() {
+      return this.contents.fontSize + settings.lineSpacing;
+    }
+
+    /**
+     * メッセージの表示高さを計算する
+     * @param {string} text テキスト
+     * @param {number[]} wordWraps 折返し数一覧
+     * @return {number}
+     */
+    calcMessageHeight(text, wordWraps) {
+      let height = 0;
+      const lines = text.split('\n');
+      for (let i = 0; i < lines.length; i++) {
+        let maxFontSize = this.contents.fontSize;
+        let regExp = /x1b[\{\}]/g;
+        for (; ;) {
+          let array = regExp.exec(lines[i]);
+          if (array) {
+            if (array[0] === '\x1b{' && maxFontSize <= 96) {
+              maxFontSize += 12;
+            }
+            if (array[0] === '\x1b}' && maxFontSize >= 24) {
+              maxFontSize -= 12;
+            }
+          } else {
+            break;
+          }
+        }
+        height += (maxFontSize + settings.lineSpacing) * ((wordWraps.length > 0 && i < 3 ? wordWraps[i] : 0) + 1);
+      }
+      return height + settings.messageSpacing;
+    }
+  }
 
   // Window_Message.terminateMessageから呼ぶ
   const addTextLog = function (text, wordWraps) {
@@ -470,7 +512,7 @@
   // B 空のログウィンドウを表示するフラグがtrue
   // C スイッチで禁止されていない
   // (A || B) && C
-  var isTextLogEnabled = function () {
+  const isTextLogEnabled = function () {
     return (showLogWindowWithoutText ||
       (currentEventLog.messages.length > 0 ||
         pastEventLog.length > 0)) &&
@@ -479,21 +521,21 @@
   };
 
   // Scene_Mapの拡張
-  var Scene_Map_start = Scene_Map.prototype.start;
+  const _Scene_Map_start = Scene_Map.prototype.start;
   Scene_Map.prototype.start = function () {
-    Scene_Map_start.call(this);
+    _Scene_Map_start.call(this);
 
     // 呼び出し中フラグの初期化
     this.textLogCalling = false;
   };
 
-  var Scene_Map_update = Scene_Map.prototype.update;
+  const _Scene_Map_update = Scene_Map.prototype.update;
   Scene_Map.prototype.update = function () {
     // isSceneChangeOK時はイベント中も含まれるため、特殊な条件で許可する
     if (this.isActive() && !SceneManager.isSceneChanging()) {
       this.updateCallTextLog();
     }
-    Scene_Map_update.call(this);
+    _Scene_Map_update.call(this);
   };
 
   Scene_Map.prototype.updateCallTextLog = function () {
@@ -534,7 +576,7 @@
 
   // Window_Messageの拡張
   // メッセージ表示時にログに追加する
-  var Window_Message_terminateMessage = Window_Message.prototype.terminateMessage;
+  const _Window_Message_terminateMessage = Window_Message.prototype.terminateMessage;
   Window_Message.prototype.terminateMessage = function () {
     if ((disableLoggingSwitch === 0 ||
       !$gameSwitches.value(disableLoggingSwitch)) &&
@@ -554,7 +596,7 @@
       }
       addTextLog(message.text, message.wordWraps);
     }
-    Window_Message_terminateMessage.call(this);
+    _Window_Message_terminateMessage.call(this);
   }
 
   // YEP_MessageCore.js や DarkPlasma_NameWindow のネーム表示ウィンドウを使用しているかどうか
@@ -584,7 +626,7 @@
   };
 
   // イベント終了時にそのイベントのログを直前のイベントのログとして保持する
-  var Game_Interpreter_terminate = Game_Interpreter.prototype.terminate;
+  const _Game_Interpreter_terminate = Game_Interpreter.prototype.terminate;
   Game_Interpreter.prototype.terminate = function () {
     // 以下の場合はリセットしない
     //  - バトルイベント終了時
@@ -593,7 +635,7 @@
     if (!this.isCommonOrBattleEvent() && !this.isParallelEvent()) {
       moveToPrevLog();
     }
-    Game_Interpreter_terminate.call(this);
+    _Game_Interpreter_terminate.call(this);
   };
 
   // コモンイベントは以下の条件を満たす
@@ -612,9 +654,9 @@
   };
 
   // プラグインコマンド showTextLog
-  var Game_Interpreter_pluginCommand = Game_Interpreter.prototype.pluginCommand;
+  const _Game_Interpreter_pluginCommand = Game_Interpreter.prototype.pluginCommand;
   Game_Interpreter.prototype.pluginCommand = function (command, args) {
-    Game_Interpreter_pluginCommand.call(this, command, args);
+    _Game_Interpreter_pluginCommand.call(this, command, args);
     switch ((command || '')) {
       case 'showTextLog':
         if (isTextLogEnabled()) {
@@ -639,23 +681,23 @@
   };
 
   // TouchInput拡張 マウスドラッグ/スワイプ対応
-  var TouchInput_clear = TouchInput.clear;
+  const _TouchInput_clear = TouchInput.clear;
   TouchInput.clear = function () {
-    TouchInput_clear.call(this);
+    _TouchInput_clear.call(this);
     this._deltaX = 0;
     this._deltaY = 0;
   };
 
-  var TouchInput_update = TouchInput.update;
+  const _TouchInput_update = TouchInput.update;
   TouchInput.update = function () {
-    TouchInput_update.call(this);
+    _TouchInput_update.call(this);
     if (!this.isPressed()) {
       this._deltaX = 0;
       this._deltaY = 0;
     }
   };
 
-  var TouchInput_onMove = TouchInput._onMove;
+  const _TouchInput_onMove = TouchInput._onMove;
   TouchInput._onMove = function (x, y) {
     if (this._x !== 0) {
       this._deltaX = x - this._x;
@@ -663,7 +705,7 @@
     if (this._y !== 0) {
       this._deltaY = y - this._y;
     }
-    TouchInput_onMove.call(this, x, y);
+    _TouchInput_onMove.call(this, x, y);
   };
 
   // 上下にドラッグ、スワイプしているかどうか
