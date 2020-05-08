@@ -4,7 +4,8 @@
 // http://opensource.org/licenses/mit-license.php
 
 /**
- * 2020/05/09 1.7.2 ログ保存イベント数を超えるとログが壊れる不具合を修正
+ * 2020/05/09 1.7.3 ログ表示/スクロール処理を軽量化
+ *            1.7.2 ログ保存イベント数を超えるとログが壊れる不具合を修正
  * 2020/05/08 1.7.1 軽微なリファクタ
  *            1.7.0 名前ウィンドウの名前をログに含める設定を追加
  * 2020/03/09 1.6.4 プラグインが無効の状態で読み込まれていても有効と判定される不具合を修正
@@ -266,10 +267,6 @@
 
   // 必要変数初期化
   /**
-   * @type {LogText[]}
-   */
-  let viewTexts = [];
-  /**
    * @type {EventTextLog}
    */
   let currentEventLog = new EventTextLog();
@@ -283,22 +280,6 @@
     constructor() {
       super();
       this.initialize.apply(this, arguments);
-    }
-
-    initialize() {
-      super.initialize();
-      viewTexts = [];
-      if (pastEventLog.length > 0) {
-        viewTexts = pastEventLog.map(pastLog => pastLog.messages).reverse()
-          .reduce((accumlator, currentValue) => currentValue.concat(accumlator));
-      }
-      if (currentEventLog.messageLength > 0) {
-        viewTexts = viewTexts.concat(currentEventLog.messages);
-      }
-      // 表示行数制限
-      if (settings.logMessageCount > 0 && viewTexts.length > settings.logMessageCount) {
-        viewTexts.splice(0, viewTexts.length - settings.logMessageCount);
-      }
     }
 
     create() {
@@ -336,6 +317,18 @@
 
     initialize() {
       super.initialize(0, 0, Graphics.boxWidth, Graphics.boxHeight);
+      this._viewTexts = [];
+      if (pastEventLog.length > 0) {
+        this._viewTexts = pastEventLog.map(pastLog => pastLog.messages).reverse()
+          .reduce((accumlator, currentValue) => currentValue.concat(accumlator));
+      }
+      if (currentEventLog.messageLength > 0) {
+        this._viewTexts = this._viewTexts.concat(currentEventLog.messages);
+      }
+      // 表示行数制限
+      if (settings.logMessageCount > 0 && this._viewTexts.length > settings.logMessageCount) {
+        this._viewTexts.splice(0, this._viewTexts.length - settings.logMessageCount);
+      }
       this._cursor = this.calcDefaultCursor();
       this._handlers = {};
       this._maxViewCount = maxViewCount;
@@ -390,15 +383,14 @@
 
     /**
      * これ以上下にスクロールできない状態かどうかを計算する
-     * fixme: 予め計算しておくとスクロール速度が改善しそう？
      * @return {boolean}
      */
     isCursorMax() {
-      const size = viewTexts.length;
+      const size = this._viewTexts.length;
       let height = 0;
       for (let i = this.cursor(); i < size; i++) {
-        const text = viewTexts[i].text;
-        const wordWraps = viewTexts[i].wordWraps;
+        const text = this._viewTexts[i].text;
+        const wordWraps = this._viewTexts[i].wordWraps;
         height += this.calcMessageHeight(text, wordWraps);
         if (height > Graphics.boxHeight - this.lineHeight()) {
           return false;
@@ -428,6 +420,7 @@
         if (overflowBuzzer && moved && lastCursor === this.cursor()) {
           SoundManager.playBuzzer();
         }
+        this._needRefresh = lastCursor !== this.cursor();
       }
     }
 
@@ -462,7 +455,12 @@
       this.updateArrows();
       this.processCursorMove();
       this.processHandling();
-      this.refresh();
+      /**
+       * refresh処理は重いので、必要なケースのみ行う
+       */
+      if (this._needRefresh) {
+        this.refresh();
+      }
     }
 
     updateArrows() {
@@ -478,12 +476,10 @@
     drawTextLog() {
       let height = 0;
       for (let i = this.cursor(); i < this.cursor() + this._maxViewCount; i++) {
-        if (i < viewTexts.length) {
-          const text = viewTexts[i].text;
-          const wordWraps = viewTexts[i].wordWraps;
+        if (i < this._viewTexts.length) {
+          const text = this._viewTexts[i].text;
+          const wordWraps = this._viewTexts[i].wordWraps;
           this.drawTextEx(text, 0, height);
-          // fixme: いちいち高さ計算するより全描画してしまったほうが早いケースがありそう
-          // 閾値は適当に決めてしまう
           height += this.calcMessageHeight(text, wordWraps);
           if (height > Graphics.boxHeight) {
             break;
@@ -498,10 +494,10 @@
      */
     calcDefaultCursor() {
       var height = 0;
-      var size = viewTexts.length;
+      var size = this._viewTexts.length;
       for (var i = 0; i < size; i++) {
-        const text = viewTexts[size - 1 - i].text;
-        const wordWraps = viewTexts[size - 1 - i].wordWraps;
+        const text = this._viewTexts[size - 1 - i].text;
+        const wordWraps = this._viewTexts[size - 1 - i].wordWraps;
         height += this.calcMessageHeight(text, wordWraps);
         if (height > Graphics.boxHeight - this.lineHeight()) {
           return (i > 0) ? size - i : size - 1;
