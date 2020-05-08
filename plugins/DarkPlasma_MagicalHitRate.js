@@ -4,7 +4,8 @@
 // http://opensource.org/licenses/mit-license.php
 
 /**
- * 2020/05/08 1.0.0 公開
+ * 2020/05/08 1.0.1 魔法以外の行動にも影響してしまう不具合を修正
+ *            1.0.0 公開
  */
 
 /*:
@@ -25,7 +26,7 @@
 
   const _Game_Action_itemHit = Game_Action.prototype.itemHit;
   Game_Action.prototype.itemHit = function (target) {
-    if (!this.isPhysical()) {
+    if (this.isMagical()) {
       return this.item().successRate * 0.01 * this.subject().hit;
     } else {
       return _Game_Action_itemHit.call(this, target);
