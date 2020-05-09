@@ -120,6 +120,10 @@ Trb_TextColor.js を採用している場合は色番号ではなくカラーコ
 
 属性有効度計算式を乗算から加算に変更するプラグイン
 
+## DarkPlasma_EncounterListPlus.js
+
+敵遭遇パターンをアクターや装備などで拡張するプラグイン
+
 ## DarkPlasma_EnemyBook.js
 
 拡張エネミー図鑑プラグイン
