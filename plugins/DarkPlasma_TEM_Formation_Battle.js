@@ -4,6 +4,7 @@
 // http://opensource.org/licenses/mit-license.php
 
 /**
+ * 2020/05/11 2.3.3 戦闘開始時にクールタイムがリセットされていない不具合を修正
  * 2020/05/05 2.3.2 行動決定後にクールタイムが発生するよう修正
  * 2020/05/04 2.3.1 隊列変更時にエラーが発生する不具合を修正
  *            2.3.0 隊列変更にクールタイムを設定する機能を追加
@@ -115,6 +116,14 @@
     }
 
     /**
+     * 戦闘開始時の初期化処理
+     */
+    initCooldown() {
+      this._formationCooldownTurn = 0;
+      this.storeMemberAtTurnStart();
+    }
+
+    /**
      * クールダウン開始の必要があるかどうか
      * @return {boolean}
      */
@@ -183,7 +192,7 @@
   const _BattleManager_startBattle = BattleManager.startBattle;
   BattleManager.startBattle = function () {
     _BattleManager_startBattle.call(this);
-    formationCooldownManager.storeMemberAtTurnStart();
+    formationCooldownManager.initCooldown();
   };
 
   const _BattleManager_startTurn = BattleManager.startTurn;
