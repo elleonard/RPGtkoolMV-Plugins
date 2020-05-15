@@ -141,6 +141,10 @@ Trb_TextColor.js を採用している場合は色番号ではなくカラーコ
 
 装備画面のレイアウトをちょっといじれるプラグイン
 
+## DarkPlasma_EscapePenalty.js
+
+逃走成功時にペナルティを与えるプラグイン
+
 ## DarkPlasma_EventExtension.js
 
 イベントを拡張するプラグイン
