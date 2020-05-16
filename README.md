@@ -161,6 +161,12 @@ Trb_TextColor.js を採用している場合は色番号ではなくカラーコ
 
 顔グラの代わりに立ち絵を表示するプラグイン
 
+## DarkPlasma_FindSaveDataExtender.js
+
+セーブデータを拡張しているプラグインを特定するデバッグ用プラグイン
+
+利用するためには、Node.js及び特定のNodeモジュールのインストールが必要です
+
 ## DarkPlasma_FixRandomTarget.js
 
 ランダム対象スキルの対象を狙われ率の最も高いキャラクターに固定するプラグイン
