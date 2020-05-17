@@ -4,7 +4,8 @@
 // http://opensource.org/licenses/mit-license.php
 
 /**
- * 2020/05/17 1.0.0 公開
+ * 2020/05/17 1.0.1 セーブデータの1層目にデータを追加するプラグインを検出できない不具合の修正
+ *            1.0.0 公開
  */
 
 /*:
@@ -554,6 +555,7 @@
       Object.values(SAVE_DATA_CLASS).forEach(type => {
         this._found[type] = [];
       });
+      this._found.base = [];
     }
 
     /**
@@ -1025,13 +1027,12 @@
       astTypes.namedTypes.FunctionExpression.check(path.parent.parent.parent.parent.node) &&
       astTypes.namedTypes.AssignmentExpression.check(path.parent.parent.parent.parent.parent.node) &&
       astTypes.namedTypes.MemberExpression.check(path.parent.parent.parent.parent.parent.node.left) &&
-      astTypes.namedTypes.MemberExpression.check(path.parent.parent.parent.parent.parent.node.left.object) &&
-      astTypes.namedTypes.Identifier.check(path.parent.parent.parent.parent.parent.node.left.object.object) &&
-      path.parent.parent.parent.parent.parent.node.left.object.object.name === "DataManager" &&
-      astTypes.namedTypes.Identifier.check(path.parent.parent.parent.parent.parent.node.left.object.property) &&
-      path.parent.parent.parent.parent.parent.node.left.object.property.name === "makeSaveContents" &&
-      astTypes.namedTypes.ReturnStatement.check(path.parent.parent.parent.node.body.slice(-1))) {
-      const returnName = path.parent.parent.parent.node.body.slice(-1).argument.name;
+      astTypes.namedTypes.Identifier.check(path.parent.parent.parent.parent.parent.node.left.object) &&
+      path.parent.parent.parent.parent.parent.node.left.object.name === "DataManager" &&
+      astTypes.namedTypes.Identifier.check(path.parent.parent.parent.parent.parent.node.left.property) &&
+      path.parent.parent.parent.parent.parent.node.left.property.name === "makeSaveContents" &&
+      astTypes.namedTypes.ReturnStatement.check(path.parent.parent.parent.node.body.slice(-1)[0])) {
+      const returnName = path.parent.parent.parent.node.body.slice(-1)[0].argument.name;
       return path.node.object.name === returnName;
     }
     return false;
