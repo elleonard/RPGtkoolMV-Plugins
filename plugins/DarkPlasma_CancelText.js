@@ -4,7 +4,8 @@
 // http://opensource.org/licenses/mit-license.php
 
 /**
- * 2020/05/19 1.0.0 公開
+ * 2020/05/19 1.0.1 キャンセルコマンドが存在しない場合にエラーになる不具合を修正
+ *            1.0.0 公開
  */
 
 /*:
@@ -54,7 +55,10 @@
   Window_GameEnd.prototype.makeCommandList = function () {
     _Window_GameEnd_makeCommandList.call(this);
     if (settings.gameEndCancel) {
-      this._list.find(command => command.symbol === 'cancel').name = settings.gameEndCancel;
+      const cancelCommand = this._list.find(command => command.symbol === 'cancel');
+      if (cancelCommand) {
+        cancelCommand.name = settings.gameEndCancel;
+      }
     }
   };
 
@@ -62,7 +66,10 @@
   Window_ShopCommand.prototype.makeCommandList = function() {
     _Window_ShopCommand_makeCommandList.call(this);
     if (settings.shopCancel) {
-      this._list.find(command => command.symbol === 'cancel').name = settings.shopCancel;
+      const cancelCommand = this._list.find(command => command.symbol === 'cancel');
+      if (cancelCommand) {
+        cancelCommand.name = settings.shopCancel;
+      }
     }
   }
 })();
