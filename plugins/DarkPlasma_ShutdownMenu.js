@@ -3,6 +3,10 @@
 // This software is released under the MIT license.
 // http://opensource.org/licenses/mit-license.php
 
+/**
+ * 2020/05/19 1.0.1 リファクタ
+ */
+
 /*:
  * @plugindesc シャットダウンをメニューに追加する
  * @author DarkPlasma
@@ -19,11 +23,13 @@
 
 (function(){
   'use strict';
-  var pluginName = 'DarkPlasma_ShutdownMenu';
-  var Parameters = PluginManager.parameters(pluginName);
-  var shutdownMenuText = String(Parameters['Shutdown Menu Text']);
+  const pluginName = document.currentScript.src.replace(/^.*\/(.*).js$/, function () {
+    return arguments[1];
+  });
+  const pluginParameters = PluginManager.parameters(pluginName);
+  const shutdownMenuText = String(pluginParameters['Shutdown Menu Text']);
 
-  var shutdown = function () {
+  function shutdown() {
     if (StorageManager.isLocalMode()) {
       window.close();
     } else {
@@ -31,13 +37,13 @@
     }
   };
 
-  var _WindowTitleCommand_makeCommandList = Window_TitleCommand.prototype.makeCommandList;
+  const _WindowTitleCommand_makeCommandList = Window_TitleCommand.prototype.makeCommandList;
   Window_TitleCommand.prototype.makeCommandList = function () {
     _WindowTitleCommand_makeCommandList.call(this);
     this.addCommand(shutdownMenuText, 'shutdown');
   };
 
-  var _Scene_Title_createCommandWindow = Scene_Title.prototype.createCommandWindow;
+  const _Scene_Title_createCommandWindow = Scene_Title.prototype.createCommandWindow;
   Scene_Title.prototype.createCommandWindow = function () {
     _Scene_Title_createCommandWindow.call(this);
     this._commandWindow.setHandler('shutdown', this.commandShutdown.bind(this));
@@ -47,13 +53,13 @@
     shutdown();
   };
 
-  var _SceneGameEnd_createCommandWindow = Scene_GameEnd.prototype.createCommandWindow;
+  const _SceneGameEnd_createCommandWindow = Scene_GameEnd.prototype.createCommandWindow;
   Scene_GameEnd.prototype.createCommandWindow = function() {
     _SceneGameEnd_createCommandWindow.call(this);
     this._commandWindow.setHandler('shutdown',   this.commandShutdown.bind(this));
   };
 
-  var _WindowGameEnd_makeCommandList = Window_GameEnd.prototype.makeCommandList;
+  const _WindowGameEnd_makeCommandList = Window_GameEnd.prototype.makeCommandList;
   Window_GameEnd.prototype.makeCommandList = function() {
     _WindowGameEnd_makeCommandList.call(this);
     this.addCommand(shutdownMenuText, 'shutdown');
