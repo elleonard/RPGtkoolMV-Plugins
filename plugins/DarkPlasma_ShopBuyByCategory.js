@@ -4,6 +4,7 @@
 // http://opensource.org/licenses/mit-license.php
 
 /**
+ * 2020/05/19 1.0.2 DarkPlasma_ShopStock.js 2.2.2に対応
  * 2020/04/23 1.0.1 購入画面を開いてから売却画面を開くと売却数が表示されない不具合を修正
  *                  購入数/売却数ウィンドウのレイアウトが崩れていた不具合を修正
  *                  売却時にもカテゴリウィンドウを表示したままにするよう修正
@@ -183,6 +184,9 @@
     });
     this._data = this._data.filter((_, index) => indexes.includes(index));
     this._price = this._price.filter((_, index) => indexes.includes(index));
+    if (this._extendedData) {
+      this._extendedData = this._extendedData.filter((_, index) => indexes.includes(index));
+    }
   };
 
   PluginManager.isLoadedPlugin = function (name) {
