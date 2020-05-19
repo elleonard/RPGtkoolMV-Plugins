@@ -4,7 +4,8 @@
 // http://opensource.org/licenses/mit-license.php
 
 /**
- * 2020/05/19 2.2.1 売り切れ商品が購入できる不具合を修正
+ * 2020/05/19 2.2.2 DarkPlasma_ShopBuyByCategory.js と併用するとエラーになる不具合を修正
+ *            2.2.1 売り切れ商品が購入できる不具合を修正
  *                  ニューゲーム開始時に前回の在庫数を引き継ぐ不具合を修正
  * 2020/05/05 2.2.0 売り切れ商品を末尾に表示するか選択する設定を追加
  *                  商品の順番が環境によって元と変化してしまう不具合を修正
@@ -1163,11 +1164,15 @@
 
   /**
    * このショップの同一アイテムで何番目のアイテムを選択しているか
-   * 存在しない場合は -1 を返すが、存在しないことはありえない……はず
+   * アイテムを選択していない場合や、存在しない場合は -1 を返す
+   * 描画中は描画対象を選択しているとみなす
    * @return {number}
    */
   Window_ShopBuy.prototype.indexOfSameItem = function () {
     const index = this._isDrawing ? this._indexForDrawing : this.index();
+    if (this._extendedData.length <= index || index < 0) {
+      return -1;
+    }
     return this._extendedData[index].indexOfSameItem;
   };
 
