@@ -4,6 +4,8 @@
 // http://opensource.org/licenses/mit-license.php
 
 /**
+ * 2020/05/19 2.2.1 売り切れ商品が購入できる不具合を修正
+ *                  ニューゲーム開始時に前回の在庫数を引き継ぐ不具合を修正
  * 2020/05/05 2.2.0 売り切れ商品を末尾に表示するか選択する設定を追加
  *                  商品の順番が環境によって元と変化してしまう不具合を修正
  * 2020/04/23 2.1.0 同一リスト内で同一アイテムIDに対して異なる在庫数を設定可能
@@ -575,6 +577,10 @@
 
   class ShopStockManager {
     constructor() {
+      this.initialize();
+    }
+
+    initialize() {
       /**
        * @type {ShopStock[]}
        */
@@ -1019,6 +1025,15 @@
    */
   const shopStockManager = new ShopStockManager();
 
+  const _Game_System_initialize = Game_System.prototype.initialize;
+  Game_System.prototype.initialize = function() {
+    _Game_System_initialize.call(this);
+    /**
+     * ゲーム開始時に初期化する
+     */
+    shopStockManager.initialize();
+  };
+
   const _Game_System_onBeforeSave = Game_System.prototype.onBeforeSave;
   Game_System.prototype.onBeforeSave = function () {
     _Game_System_onBeforeSave.call(this);
@@ -1030,6 +1045,11 @@
     _Game_System_onAfterLoad.call(this);
     if (this._shopStock && Array.isArray(this._shopStock)) {
       shopStockManager.updateCountBySaveData(this._shopStock);
+    } else {
+      /**
+       * セーブデータになければとりあえず初期化する
+       */
+      shopStockManager.initialize();
     }
   };
 
@@ -1102,33 +1122,43 @@
     _Window_ShopBuy_updateHelp.call(this);
   };
 
+  /**
+   * 指定したアイテムの在庫数を取得する
+   * @param {RPG.Item} item アイテムデータ
+   * @param {number} index 在庫リストの中での順番
+   * @return {number}
+   */
   Window_ShopBuy.prototype.stockCount = function (item, index) {
     return shopStockManager.stockCount(item, index);
   };
 
+  /**
+   * 指定したアイテムが売り切れであるかどうか
+   * @param {RPG.Item} item アイテムデータ
+   * @param {number} index 在庫リストの中での順番
+   * @return {boolean}
+   */
   Window_ShopBuy.prototype.soldOut = function (item, index) {
     return this.stockCount(item, index) === 0;
   };
 
-  const _Window_ShopBuy_drawItem = Window_ShopBuy.prototype.drawItem;
-  Window_ShopBuy.prototype.drawItem = function(index) {
-    const focusedData = this._data[index];
-    this._indexForStock = this._data.slice(0, index+1).filter(data => data === focusedData).length - 1;
-    this._isDrawing = true;
-    _Window_ShopBuy_drawItem.call(this, index);
-    this._isDrawing = false;
-  }
-
   const _WindowShopBuy_price = Window_ShopBuy.prototype.price;
   Window_ShopBuy.prototype.price = function (item) {
-    const index = this._isDrawing ? this._indexForStock : this.index();
-    return this.soldOut(item, index) ? settings.soldOutLabel : _WindowShopBuy_price.call(this, item);
+    return this.soldOut(item, this.indexOfSameItem()) ? settings.soldOutLabel : _WindowShopBuy_price.call(this, item);
   };
 
   const _WindowShopBuy_isEnabled = Window_ShopBuy.prototype.isEnabled;
   Window_ShopBuy.prototype.isEnabled = function (item) {
     return _WindowShopBuy_isEnabled.call(this, item) && 
-      !this.soldOut(item, this._isDrawing ? this._indexForStock : this.index());
+      !this.soldOut(item, this.indexOfSameItem());
+  };
+
+  const _Window_ShopBuy_drawItem = Window_ShopBuy.prototype.drawItem;
+  Window_ShopBuy.prototype.drawItem = function(index) {
+    this._indexForDrawing = index;
+    this._isDrawing = true;
+    _Window_ShopBuy_drawItem.call(this, index);
+    this._isDrawing = false;
   };
 
   /**
@@ -1137,8 +1167,8 @@
    * @return {number}
    */
   Window_ShopBuy.prototype.indexOfSameItem = function () {
-    const index = this.index();
-    return this._data.slice(0, index+1).filter(data => data === this.item()).length - 1;
+    const index = this._isDrawing ? this._indexForDrawing : this.index();
+    return this._extendedData[index].indexOfSameItem;
   };
 
   /**
@@ -1148,11 +1178,15 @@
     this._data = [];
     this._price = [];
     /**
+     * 拡張データ
+     */
+    this._extendedData = [];
+    /**
      * 同名アイテムで何番目か
      */
-    let indexesInSameItem = {};
+    let indexesOfSameItem = {};
     this._shopGoods.map((goods, index) => {
-      var item = null;
+      let item = null;
       switch (goods[0]) {
         case 0:
           item = $dataItems[goods[1]];
@@ -1169,14 +1203,15 @@
          * 売り切れを一番下に表示する
          */
         const key = `${goods[0]}_${item.id}`;
-        if (!indexesInSameItem[key]) {
-          indexesInSameItem[key] = 0;
+        if (!indexesOfSameItem[key]) {
+          indexesOfSameItem[key] = 0;
         }
         return {
           item: item,
           price: goods[2] === 0 ? item.price : goods[3],
-          soldOut: this.soldOut(item, indexesInSameItem[key]++),
-          goodsIndex: index
+          indexOfSameItem: indexesOfSameItem[key],
+          soldOut: this.soldOut(item, indexesOfSameItem[key]++),
+          goodsIndex: index,
         };
       } else {
         return {};
@@ -1194,6 +1229,9 @@
     }).forEach(goods => {
       this._data.push(goods.item);
       this._price.push(goods.price);
+      this._extendedData.push({
+        indexOfSameItem: goods.indexOfSameItem
+      });
     }, this);
   };
 })();
