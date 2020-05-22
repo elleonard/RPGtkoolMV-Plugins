@@ -294,6 +294,12 @@ nwjsの機能でpackage.nwを使ってパッキングする場合に、セーブ
 
 後々追加したスキルやアイテムの表示をどこかに差し込みたいときなどにどうぞ
 
+## DarkPlasma_PermanentSkillCP.js
+
+SkillCPSystem.js のパッチプラグイン
+
+スキルCPを永続的に増加させることができます。
+
 ## DarkPlasma_PreventMultiDamageSe.js
 
 PromptlyPopup.js における連続攻撃や全体攻撃のダメージ/回避SEの再生をそれぞれ1回に抑えるプラグイン
