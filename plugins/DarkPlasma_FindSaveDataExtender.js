@@ -4,6 +4,7 @@
 // http://opensource.org/licenses/mit-license.php
 
 /**
+ * 2020/05/22 1.0.2 関数ブロックより内側の別ブロックで定義された変数を正しく検出できない不具合を修正
  * 2020/05/17 1.0.1 セーブデータの1層目にデータを追加するプラグインを検出できない不具合の修正
  *            1.0.0 公開
  */
@@ -1059,14 +1060,20 @@
    * @return {boolean}
    */
   function isInDataClass(path, className) {
-    return astTypes.namedTypes.ExpressionStatement.check(path.parent.parent.node) &&
-      astTypes.namedTypes.BlockStatement.check(path.parent.parent.parent.node) &&
-      astTypes.namedTypes.FunctionExpression.check(path.parent.parent.parent.parent.node) &&
-      astTypes.namedTypes.AssignmentExpression.check(path.parent.parent.parent.parent.parent.node) &&
-      astTypes.namedTypes.MemberExpression.check(path.parent.parent.parent.parent.parent.node.left) &&
-      astTypes.namedTypes.MemberExpression.check(path.parent.parent.parent.parent.parent.node.left.object) &&
-      astTypes.namedTypes.Identifier.check(path.parent.parent.parent.parent.parent.node.left.object.object) &&
-      path.parent.parent.parent.parent.parent.node.left.object.object.name === className;
+    // 関数ブロックまで遡る
+    let functionBlockNode = path.parent.parent;
+    while(!astTypes.namedTypes.BlockStatement.check(functionBlockNode.node) ||
+      !astTypes.namedTypes.FunctionExpression.check(functionBlockNode.parent.node) ||
+      !astTypes.namedTypes.AssignmentExpression.check(functionBlockNode.parent.parent.node)) {
+        if (!functionBlockNode.parent) {
+          return false;
+        }
+        functionBlockNode = functionBlockNode.parent;
+    }
+    return astTypes.namedTypes.MemberExpression.check(functionBlockNode.parent.parent.node.left) &&
+      astTypes.namedTypes.MemberExpression.check(functionBlockNode.parent.parent.node.left.object) &&
+      astTypes.namedTypes.Identifier.check(functionBlockNode.parent.parent.node.left.object.object) &&
+      functionBlockNode.parent.parent.node.left.object.object.name === className;
   }
 
   PluginManager.allEnabledPluginPath = function () {
