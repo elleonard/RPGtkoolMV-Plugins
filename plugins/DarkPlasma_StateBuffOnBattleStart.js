@@ -4,6 +4,8 @@
 // http://opensource.org/licenses/mit-license.php
 
 /**
+ * 2020/05/24 1.1.0 敵キャラに対しても戦闘開始時にステート/バフをかける機能を追加
+ *                  アクターに対しての設定が動作しない不具合を修正
  * 2020/05/12 1.0.0 公開
  */
 
@@ -27,12 +29,14 @@
  * @help
  * 持続ターン数を上書き指定できるようにする
  *
- * 任意のアクター、職業、スキル、装備のメモ欄に以下のように記述してください。
+ * 任意のアクター、職業、スキル、装備、敵キャラのメモ欄に以下のように記述してください。
  *
  * アクター: そのアクターであれば自身に
  * 職業: その職業であれば自身に
  * スキル: そのスキルを習得していれば自身に
  * 装備: その武器/防具を装備していれば自身に
+ *
+ * 敵キャラ: そのエネミーであれば自身に（敵キャラにステートやバフがかかる）
  *
  * <StateOnBattleStartId: id1, id2, id3, ...>
  * 戦闘開始時にステートにかかる
@@ -215,7 +219,7 @@
   const _DataManager_extractMetadata = DataManager.extractMetadata;
   DataManager.extractMetadata = function (data) {
     _DataManager_extractMetadata.call(this, data);
-    if (this.isActor(data) || this.isSkill(data) || this.isWeapon(data) || this.isArmor(data)) {
+    if (this.isActor(data) || this.isSkill(data) || this.isWeapon(data) || this.isArmor(data) || this.isEnemy(data)) {
       if (data.meta.StateOnBattleStartId) {
         data.stateOnBattleStartIds = data.meta.StateOnBattleStartId.split(",").map(id => Number(id));
       }
@@ -223,6 +227,10 @@
         data.buffOnBattleStartIds = data.meta.BuffOnBattleStartId.split(",").map(id => Number(id));
       }
     }
+  };
+
+  DataManager.isEnemy = function (data) {
+    return $dataEnemies && data && data.id && $dataEnemies.length > data.id && data === $dataEnemies[data.id];
   };
 
   const _DataManager_isSkill = DataManager.isSkill;
@@ -280,7 +288,7 @@
    * @return {StateOnBattleStart[]}
    */
   Game_Actor.prototype.statesOnBattleStart = function () {
-    const statesOnBattleStartIds = (this.actor().stateOnBattleStart || [])
+    const statesOnBattleStartIds = (this.actor().stateOnBattleStartIds || [])
       .concat(this.equipsStatesOnBattleStartIds())
       .concat(this.skillsStatesOnBattleStartIds());
     return stateBuffOnBattleStartManager.statesFromIds(statesOnBattleStartIds);
@@ -311,7 +319,7 @@
    * @return {BuffOnBattleStart[]}
    */
   Game_Actor.prototype.buffsOnStartBattle = function () {
-    const buffsOnStartBattleIds = (this.actor().buffOnBattleStart || [])
+    const buffsOnStartBattleIds = (this.actor().buffOnBattleStartIds || [])
       .concat(this.equipsBuffsOnBattleStartIds())
       .concat(this.skillsBuffsOnBattleStartIds());
     return stateBuffOnBattleStartManager.buffsFromIds(buffsOnStartBattleIds);
@@ -335,5 +343,54 @@
     return this.skills()
       .filter(equip => equip && equip.buffOnBattleStartIds)
       .reduce((previous, current) => previous.concat(current.buffOnBattleStartIds), []);
+  };
+
+  const _Game_Enemy_onBattleStart = Game_Enemy.prototype.onBattleStart;
+  Game_Enemy.prototype.onBattleStart = function () {
+    _Game_Enemy_onBattleStart.call(this);
+    /**
+     * 戦闘開始時ステート
+     */
+    this.statesOnBattleStart().forEach(stateOnBattleStart => {
+      this.addState(stateOnBattleStart.stateId);
+      /**
+       * ターン数上書き
+       */
+      if (this.isStateAffected(stateOnBattleStart.stateId) && stateOnBattleStart.turn >= 0) {
+        this._stateTurns[stateOnBattleStart.stateId] = stateOnBattleStart.turn;
+      }
+    });
+    /**
+     * 戦闘開始時バフ
+     */
+    this.buffsOnStartBattle().forEach(buffOnBattleStart => {
+      let buffStep = buffOnBattleStart.buffStep;
+      while (buffStep > 0) {
+        this.addBuff(buffOnBattleStart.paramId, buffOnBattleStart.turn);
+        buffStep--;
+      }
+      while(buffStep < 0) {
+        this.addDebuff(buffOnBattleStart.paramId, buffOnBattleStart.turn);
+        buffStep++;
+      }
+    });
+  };
+
+  /**
+   * 戦闘開始時ステート一覧
+   * @return {StateOnBattleStart[]}
+   */
+  Game_Enemy.prototype.statesOnBattleStart = function () {
+    const statesOnBattleStartIds = (this.enemy().stateOnBattleStartIds || []);
+    return stateBuffOnBattleStartManager.statesFromIds(statesOnBattleStartIds);
+  };
+
+  /**
+   * 戦闘開始時バフ一覧
+   * @return {BuffOnBattleStart[]}
+   */
+  Game_Enemy.prototype.buffsOnStartBattle = function () {
+    const buffsOnStartBattleIds = (this.enemy().buffOnBattleStartIds || []);
+    return stateBuffOnBattleStartManager.buffsFromIds(buffsOnStartBattleIds);
   };
 })();
