@@ -4,6 +4,7 @@
 // http://opensource.org/licenses/mit-license.php
 
 /**
+ * 2020/05/25 1.0.3 装備欄のソート順が壊れる不具合を修正
  * 2019/10/29 1.0.2 装備を外すとエラーになる不具合の修正
  * 2019/08/20 1.0.1 MOT_ItemFavoriteSort.js がない時にエラーになる不具合の修正
  *            1.0.0 公開
@@ -31,21 +32,34 @@ var Imported = Imported || {};
 
 (function () {
   'use strict';
-  var pluginName = 'DarkPlasma_OrderIdAlias';
+  const pluginName = document.currentScript.src.replace(/^.*\/(.*).js$/, function () {
+    return arguments[1];
+  });
+  const pluginParameters = PluginManager.parameters(pluginName);
 
-  var _extractMetadata = DataManager.extractMetadata;
+  const _extractMetadata = DataManager.extractMetadata;
   DataManager.extractMetadata = function (data) {
     _extractMetadata.call(this, data);
     data.orderId = Number(data.meta.OrderId || data.id);
   };
 
-  var _Window_ItemList_makeItemList = Window_ItemList.prototype.makeItemList;
+  const _Window_ItemList_makeItemList = Window_ItemList.prototype.makeItemList;
   Window_ItemList.prototype.makeItemList = function () {
     _Window_ItemList_makeItemList.call(this);
-    this._data.sort((a, b) => (a === null || b === null) ? 0 : a.orderId - b.orderId);
+    this._data.sort((a, b) => {
+      if (a === null && b === null) {
+        // 両方nullなら順不同
+        return 0;
+      } else if (a === null) {
+        return 1;
+      } else if (b === null) {
+        return -1;
+      }
+      return a.orderId - b.orderId;
+    });
   };
 
-  var _Window_SkillList_makeItemList = Window_SkillList.prototype.makeItemList;
+  const _Window_SkillList_makeItemList = Window_SkillList.prototype.makeItemList;
   Window_SkillList.prototype.makeItemList = function () {
     _Window_SkillList_makeItemList.call(this);
     this._data.sort((a,b) => a.orderId - b.orderId);
@@ -55,7 +69,7 @@ var Imported = Imported || {};
   // https://tm.lucky-duet.com/viewtopic.php?f=5&t=728&start=20
   // https://twitter.com/hajimari_midori
   if (Imported && Imported.MOT_ItemFavoriteSort) {
-    var _ascending = Window_ItemFavoriteSortList.prototype.ascending;
+    const _ascending = Window_ItemFavoriteSortList.prototype.ascending;
     Window_ItemFavoriteSortList.prototype.ascending = function (mode) {
       if (mode === 'id') {
         this._data.sort((a, b) => a.orderId - b.orderId);
@@ -64,7 +78,7 @@ var Imported = Imported || {};
       _ascending.call(this, mode);
     };
 
-    var _descending = Window_ItemFavoriteSortList.prototype.descending;
+    const _descending = Window_ItemFavoriteSortList.prototype.descending;
     Window_ItemFavoriteSortList.prototype.descending = function (mode) {
       if (mode === 'id') {
         this._data.sort((a, b) => b.orderId - a.orderId);
