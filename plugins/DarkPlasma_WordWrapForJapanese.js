@@ -4,6 +4,7 @@
 // http://opensource.org/licenses/mit-license.php
 
 /**
+ * 2020/05/28 1.3.0 戦闘中のログに対応
  * 2020/05/08 1.2.0 自動改行を無効にするウィンドウの設定項目追加
  * 2020/04/29 1.1.5 文字を小さくするとメッセージウィンドウ下部にゴミが表示される不具合を修正
  * 2020/04/04 1.1.4 戦闘結果の改ページが二重になる不具合を修正
@@ -93,10 +94,18 @@
     questJournalBufferLines: Number(pluginParameters['YEP Quest Journal Buffer Lines'] || 10)
   };
 
+  /**
+   * 自動折返しが無効なウィンドウであるかどうか
+   * @return {boolean}
+   */
   Window_Base.prototype.isIgnoreWordwrapWindow = function () {
     return settings.ignoreWordwrapWindows.includes(this.constructor.name) || this._ignoreWordWrap;
   };
 
+  /**
+   * 自動折返しが有効かどうか
+   * @return {boolean}
+   */
   Window_Base.prototype.wordWrapEnabled = function () {
     if (this._checkWordWrapMode || this.isIgnoreWordwrapWindow()) {
       return false;
@@ -116,6 +125,11 @@
     return settings.killWordWrapTags ? this.killWordWrapTags(text) : text;
   };
 
+  /**
+   * 渡されたテキスト内の改行用タグを削除した文字列を返す
+   * @param {string} text
+   * @return {string}
+   */
   Window_Base.prototype.killWordWrapTags = function (text) {
     return text.replace(/<(?:BR|line break|WordWrap|wrap)>/gi, '');
   };
@@ -141,6 +155,7 @@
   const _Window_Base_processNormalCharacter = Window_Base.prototype.processNormalCharacter;
   Window_Base.prototype.processNormalCharacter = function (textState) {
     if (this.checkWordWrap(textState)) {
+      // 改行が挟まる分、1つだけテキストを戻す
       textState.index -= 1;
       if (this instanceof Window_Message) {
         $gameMessage.wordWrap();
@@ -150,6 +165,11 @@
     _Window_Base_processNormalCharacter.call(this, textState);
   };
 
+  /**
+   * 自動改行すべき状態であるかどうか
+   * @param {MV.TextState} textState
+   * @return {boolean}
+   */
   Window_Base.prototype.checkWordWrap = function (textState) {
     if (!textState || textState.index === 0) return false;
     if (!this.wordWrapEnabled()) return false;
@@ -233,6 +253,63 @@
     // 選択肢リストウィンドウは選択肢幅によってウィンドウサイズを決めるため、折り返し不可
     this._ignoreWordWrap = true;
   }
+
+  const _Window_BattleLog_initialize = Window_BattleLog.prototype.initialize;
+  Window_BattleLog.prototype.initialize = function() {
+    /**
+     * 各テキストの改行の数
+     * @type {number[]}
+     */
+    this._newLines = [];
+    _Window_BattleLog_initialize.call(this);
+  };
+
+  const _Window_BattleLog_clear = Window_BattleLog.prototype.clear;
+  Window_BattleLog.prototype.clear = function () {
+    _Window_BattleLog_clear.call(this);
+    this._newLines = [];
+  };
+
+  const _Window_BattleLog_refresh = Window_BattleLog.prototype.refresh;
+  Window_BattleLog.prototype.refresh = function () {
+    _Window_BattleLog_refresh.call(this);
+    this._newLines = [];
+  };
+
+  const _Window_BattleLog_addText = Window_BattleLog.prototype.addText;
+  Window_BattleLog.prototype.addText = function (text) {
+    this._newLines.push(0);
+    _Window_BattleLog_addText.call(this, text);
+  };
+
+  const _Window_BattleLog_numLines = Window_BattleLog.prototype.numLines;
+  Window_BattleLog.prototype.numLines = function () {
+    return _Window_BattleLog_numLines.call(this)
+      + this._newLines.reduce((prev, current) => prev + current, 0);
+  };
+
+  const _Window_BattleLog_drawLineText = Window_BattleLog.prototype.drawLineText;
+  Window_BattleLog.prototype.drawLineText = function (index) {
+    /**
+     * 描画中のindex
+     * @type {number}
+     */
+    this._currentIndex = index;
+    _Window_BattleLog_drawLineText.call(this, index);
+  };
+
+  const _Window_BattleLog_processNewLine = Window_BattleLog.prototype.processNewLine;
+  Window_BattleLog.prototype.processNewLine = function (textState) {
+    _Window_BattleLog_processNewLine.call(this, textState);
+    this._newLines[this._currentIndex]++;
+  };
+
+  const _Window_BattleLog_itemRectForText = Window_BattleLog.prototype.itemRectForText;
+  Window_BattleLog.prototype.itemRectForText = function (index) {
+    const rect = _Window_BattleLog_itemRectForText.call(this, index);
+    rect.y += this._newLines.slice(0, index+1).reduce((prev, current) => prev + current, 0) * this.lineHeight();
+    return rect;
+  };
 
   const _Game_Message_clear = Game_Message.prototype.clear;
   Game_Message.prototype.clear = function () {
