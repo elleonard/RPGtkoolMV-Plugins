@@ -4,7 +4,8 @@
 // http://opensource.org/licenses/mit-license.php
 
 /**
- * 2020/05/28 1.3.0 戦闘中のログに対応
+ * 2020/05/28 1.3.1 リファクタ
+ *            1.3.0 戦闘中のログに対応
  * 2020/05/08 1.2.0 自動改行を無効にするウィンドウの設定項目追加
  * 2020/04/29 1.1.5 文字を小さくするとメッセージウィンドウ下部にゴミが表示される不具合を修正
  * 2020/04/04 1.1.4 戦闘結果の改ページが二重になる不具合を修正
@@ -99,7 +100,7 @@
    * @return {boolean}
    */
   Window_Base.prototype.isIgnoreWordwrapWindow = function () {
-    return settings.ignoreWordwrapWindows.includes(this.constructor.name) || this._ignoreWordWrap;
+    return settings.ignoreWordwrapWindows.includes(this.constructor.name);
   };
 
   /**
@@ -187,14 +188,28 @@
     return false;
   };
 
+  /**
+   * 行末禁則文字かどうか
+   * @param {string} character
+   * @return {boolean}
+   */
   Window_Base.prototype.isProhibitLineBreakBefore = function (character) {
     return settings.prohibitLineBreakBefore.includes(character);
   };
 
+  /**
+   * 行頭禁則文字かどうか
+   * @param {string} character
+   * @return {boolean}
+   */
   Window_Base.prototype.isProhibitLineBreakAfter = function (character) {
     return settings.prohibitLineBreakAfter.includes(character);
   };
 
+  /**
+   * 折返し幅
+   * @return {number}
+   */
   Window_Base.prototype.wordwrapWidth = function () {
     return this.contentsWidth();
   };
@@ -234,6 +249,8 @@
    * 
    * drawTextExはフォント設定込みの表示テキスト幅を返す
    * ただし、フォント設定をリセットしてしまうため、一時的に退避しておく必要がある
+   * @param {string} text
+   * @return {number}
    */
   Window_Base.prototype.textWidthExCheck = function (text) {
     const wordWrap = this._wordWrap;
@@ -247,12 +264,14 @@
     return value;
   };
 
-  const _Window_ChoiceList_initialize = Window_ChoiceList.prototype.initialize;
-  Window_ChoiceList.prototype.initialize = function(messageWindow) {
-    _Window_ChoiceList_initialize.call(this, messageWindow);
-    // 選択肢リストウィンドウは選択肢幅によってウィンドウサイズを決めるため、折り返し不可
-    this._ignoreWordWrap = true;
-  }
+  /**
+   * Window_ChoiceList は選択肢幅によってウィンドウサイズが変わる
+   * そのため、自動折返しの対象外とする
+   * @return {boolean}
+   */
+  Window_ChoiceList.prototype.wordWrapEnabled = function() {
+    return false;
+  };
 
   const _Window_BattleLog_initialize = Window_BattleLog.prototype.initialize;
   Window_BattleLog.prototype.initialize = function() {
@@ -315,21 +334,39 @@
   Game_Message.prototype.clear = function () {
     _Game_Message_clear.call(this);
     this._currentLine = 0;
-    this._wordWrapCount = [0, 0, 0];  // TextLog用 行中の折り返しの数
+    /**
+     * TODO: 3行しか想定されていないのをなんとかする
+     */
+    this._wordWrapCount = [0, 0, 0];
   }
 
+  /**
+   * Window_Message で改行したときに呼ぶもの
+   */
   Game_Message.prototype.newLine = function () {
     this._currentLine++;
   };
 
+  /**
+   * Window_Message で折り返したときに呼ぶもの
+   */
   Game_Message.prototype.wordWrap = function () {
     this._wordWrapCount[this._currentLine]++;
   };
 
+  /**
+   * 行中の折返し数を返す
+   * @return {number[]}
+   */
   Game_Message.prototype.wordWrapCounts = function () {
     return this._wordWrapCount;
   };
 
+  /**
+   * 指定した名前のプラグインが有効であるかどうか
+   * @param {string} name プラグインの名前
+   * @return {boolean}
+   */
   PluginManager.isLoadedPlugin = function (name) {
     return $plugins.some(plugin => plugin.name === name && plugin.status);
   };
