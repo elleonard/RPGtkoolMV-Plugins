@@ -4,6 +4,7 @@
 // http://opensource.org/licenses/mit-license.php
 
 /**
+ * 2020/05/30 1.3.2 リファクタ
  * 2020/05/28 1.3.1 リファクタ
  *            1.3.0 戦闘中のログに対応
  * 2020/05/08 1.2.0 自動改行を無効にするウィンドウの設定項目追加
@@ -158,9 +159,6 @@
     if (this.checkWordWrap(textState)) {
       // 改行が挟まる分、1つだけテキストを戻す
       textState.index -= 1;
-      if (this instanceof Window_Message) {
-        $gameMessage.wordWrap();
-      }
       return this.processNewLine(textState);
     }
     _Window_Base_processNormalCharacter.call(this, textState);
@@ -328,38 +326,6 @@
     const rect = _Window_BattleLog_itemRectForText.call(this, index);
     rect.y += this._newLines.slice(0, index+1).reduce((prev, current) => prev + current, 0) * this.lineHeight();
     return rect;
-  };
-
-  const _Game_Message_clear = Game_Message.prototype.clear;
-  Game_Message.prototype.clear = function () {
-    _Game_Message_clear.call(this);
-    this._currentLine = 0;
-    /**
-     * TODO: 3行しか想定されていないのをなんとかする
-     */
-    this._wordWrapCount = [0, 0, 0];
-  }
-
-  /**
-   * Window_Message で改行したときに呼ぶもの
-   */
-  Game_Message.prototype.newLine = function () {
-    this._currentLine++;
-  };
-
-  /**
-   * Window_Message で折り返したときに呼ぶもの
-   */
-  Game_Message.prototype.wordWrap = function () {
-    this._wordWrapCount[this._currentLine]++;
-  };
-
-  /**
-   * 行中の折返し数を返す
-   * @return {number[]}
-   */
-  Game_Message.prototype.wordWrapCounts = function () {
-    return this._wordWrapCount;
   };
 
   /**
