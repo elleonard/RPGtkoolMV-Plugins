@@ -4,6 +4,10 @@
 // http://opensource.org/licenses/mit-license.php
 
 /**
+ * 2020/05/30 1.8.0 ログから戻った際に最後のメッセージを再表示しない設定を追加
+ *                  スクロールテキストをログに含める設定を追加
+ *                  選択肢をログに含める設定を追加
+ *                  高さ計算ロジックを整理
  * 2020/05/09 1.7.3 ログ表示/スクロール処理を軽量化
  *            1.7.2 ログ保存イベント数を超えるとログが壊れる不具合を修正
  * 2020/05/08 1.7.1 軽微なリファクタ
@@ -105,7 +109,7 @@
  * @param Line Spacing
  * @desc ログ表示時の行間
  * @text ログの行間
- * @default 8
+ * @default 0
  * @type number
  *
  * @param Message Spacing
@@ -144,6 +148,47 @@
  * @default true
  * @type boolean
  *
+ * @param Include Scroll Text In Log
+ * @desc スクロールテキストをログに含めるかどうか
+ * @text スクロールテキストをログに含む
+ * @default false
+ * @type boolean
+ *
+ * @param Include Choice In Log
+ * @desc 選んだ選択肢をログに含めるかどうか
+ * @text 選んだ選択肢をログに含む
+ * @default true
+ * @type boolean
+ *
+ * @param Choice Format
+ * @desc ログに表示する選択肢のフォーマット。{choice} は選んだ選択肢に変換される
+ * @text 選択肢フォーマット
+ * @default 選択肢:{choice}
+ * @type string
+ *
+ * @param Choice Color
+ * @desc ログに表示する選択肢の色。色番号で指定できる他、適切なプラグインで拡張すれば#つきカラーコードで指定可能
+ * @text 選択肢カラー
+ * @default 17
+ *
+ * @param Include Choice Cancel In Log
+ * @desc 選択肢をキャンセルした際のログを含めるかどうか。選択肢をログに含むが真の場合のみ有効
+ * @text キャンセルをログに含む
+ * @default true
+ * @type boolean
+ *
+ * @param Choice Cancel Text In Log
+ * @desc 選択肢をキャンセルした際にログに記録する内容。キャンセルをログに含むが真の場合のみ有効
+ * @text キャンセルログ
+ * @default キャンセル
+ * @type string
+ *
+ * @param Smooth Back From Log
+ * @desc ログシーンから戻った際にテキストを再度表示し直さない（ヘルプに要注意事項）
+ * @text テキスト再表示なし
+ * @default true
+ * @type boolean
+ *
  * @help
  *  イベントのテキストログを表示します
  * 
@@ -151,10 +196,18 @@
  *  イベント会話中はそのイベントの直前までのログを表示します
  *  ログは上下キーでスクロールすることができます
  *  キャンセルキーやログ開閉キーでログから抜け、イベントやマップに戻ります
- *  イベントに戻る際、最後のメッセージをもう一度最初から流してしまう仕様になっています
+ *
+ *  注意: テキスト再表示なしを真にしている場合、
+ *  Scene_Map.prototype.createMessageWindow 及び
+ *  Scene_Map.prototype.createScrollTextWindow の処理を上書きします。
+ *  これらの関数に処理を加えているプラグインとは競合する恐れがありますので、
+ *  それらよりも下にこのプラグインを追加してください
+ *  この設定が偽になっている場合、
+ *  イベントに戻る際、最後のメッセージをもう一度最初から流します
  * 
  *  YEP_MessageCore.jsに対応しています
- *    ツクール公式から配布されているv1.02は古いので必ず本家から最新を落として利用するようにしてください
+ *    ツクール公式から配布されているv1.02は古いので
+ *    必ず本家から最新を落として利用するようにしてください
  * 
  *  YEP_MainMenuManager.jsに対応しています
  *    適切に設定すればステータスメニューからログを開くことができます
@@ -165,15 +218,18 @@
  * 
  *  プラグインコマンド showTextLog から開くことも可能です
  *
- *  プラグインコマンド insertLogSplitter を使用することで、イベントログに区切り線を追加できます
- *  自動イベント区切り線 設定をONにしておくことで、イベントごとに自動で区切り線を挿入させることもできます
+ *  プラグインコマンド insertLogSplitter を使用することで、
+ *  イベントログに区切り線を追加できます
+ *  自動イベント区切り線 設定をONにしておくことで、
+ *  イベントごとに自動で区切り線を挿入させることもできます
  * 
  *  操作方法（デフォルト）
  *   pageupキー（L2ボタン） : ログを表示する
  *   上下キー/マウススクロール : ログをスクロールする
  *   キャンセルキー/右クリック : ログから抜ける
  * 
- *  マウスドラッグやスワイプでもログをスクロールできますが、環境差異に関して未検証なのでおためし版です
+ *  マウスドラッグやスワイプでもログをスクロールできますが、
+ *  環境差異に関して未検証なのでおためし版です
  *  しばらく使われて問題が報告されなければ正式版とします
  */
 
@@ -197,7 +253,14 @@
     logMessageCount: Number(pluginParameters['Log Event Message Count'] || 0),
     eventLogSplitter: String(pluginParameters['Event Log Splitter'] || '-------------------------------'),
     autoEventLogSplit: String(pluginParameters['Auto Event Split'] || 'true') === 'true',
-    includeName: String(pluginParameters['Include Name In Log'] || 'true') === 'true'
+    includeName: String(pluginParameters['Include Name In Log'] || 'true') === 'true',
+    includeScrollText: String(pluginParameters['Include Scroll Text In Log']) === 'true',
+    includeChoice: String(pluginParameters['Include Choice In Log']) === 'true',
+    choiceFormat: String(pluginParameters['Choice Format']),
+    choiceColor: String(pluginParameters['Choice Color']).startsWith("#") ? String(pluginParameters['Choice Color']) : Number(pluginParameters['Choice Color']),
+    includeChoiceCancel: String(pluginParameters['Include Choice Cancel In Log'] || 'true') === 'true',
+    choiceCancelText: String(pluginParameters['Choice Cancel Text In Log'] || 'キャンセル'),
+    smoothBackFromLog: String(pluginParameters['Smooth Back From Log'] || 'true') === 'true',
   };
 
   class EventTextLog {
@@ -211,7 +274,7 @@
     }
 
     /**
-     * @return {LogText[]}
+     * @return {LogMessage[]}
      */
     get messages() {
       return this._messages;
@@ -227,10 +290,9 @@
     /**
      * ログを追加する
      * @param {string} text テキスト
-     * @param {number[]} wordwrapCounts 折返し数リスト
      */
-    addMessageLog(text, wordwrapCounts) {
-      this._messages.push(new LogText(text, wordwrapCounts));
+    addMessageLog(text) {
+      this._messages.push(new LogMessage(text));
       if (settings.logMessageCount > 0 && this._messages.length > settings.logMessageCount) {
         this._messages.splice(0, this._messages.length - settings.logMessageCount);
       }
@@ -238,16 +300,15 @@
   }
 
   /**
-   * ログテキスト
+   * ログメッセージ
    */
-  class LogText {
+  class LogMessage {
     /**
      * @param {string} text テキスト
-     * @param {number[]} wordwrapCounts 折り返し数リスト
      */
-    constructor(text, wordwrapCounts) {
+    constructor(text) {
       this._text = text;
-      this._wordwrapCounts = wordwrapCounts;
+      this._height = 0;
     }
 
     /**
@@ -258,10 +319,16 @@
     }
 
     /**
-     * @return {number[]}
+     * ログウィンドウに表示する際の高さを記録する
+     * （再計算の処理が重いため、一度だけ計算する）
+     * @param {number} height 表示高さ
      */
-    get wordWraps() {
-      return this._wordwrapCounts;
+    setHeight(height) {
+      this._height = height;
+    }
+
+    get height() {
+      return this._height;
     }
   }
 
@@ -317,6 +384,9 @@
 
     initialize() {
       super.initialize(0, 0, Graphics.boxWidth, Graphics.boxHeight);
+      /**
+       * @type {LogMessage[]}
+       */
       this._viewTexts = [];
       if (pastEventLog.length > 0) {
         this._viewTexts = pastEventLog.map(pastLog => pastLog.messages).reverse()
@@ -390,8 +460,8 @@
       let height = 0;
       for (let i = this.cursor(); i < size; i++) {
         const text = this._viewTexts[i].text;
-        const wordWraps = this._viewTexts[i].wordWraps;
-        height += this.calcMessageHeight(text, wordWraps);
+        const textHeight = this._viewTexts[i].height;
+        height += textHeight === 0 ? this.calcMessageHeight(text) : textHeight;
         if (height > Graphics.boxHeight - this.lineHeight()) {
           return false;
         }
@@ -447,7 +517,7 @@
      */
     isCancelTriggered() {
       return Input.isRepeated('cancel') || Input.isTriggered('ok') ||
-      Input.isTriggered(openLogKey) || TouchInput.isCancelled();
+        Input.isTriggered(openLogKey) || TouchInput.isCancelled();
     }
 
     update() {
@@ -478,15 +548,19 @@
       for (let i = this.cursor(); i < this.cursor() + this._maxViewCount; i++) {
         if (i < this._viewTexts.length) {
           const text = this._viewTexts[i].text;
-          const wordWraps = this._viewTexts[i].wordWraps;
+          const textHeight = this._viewTexts[i].height;
           this.drawTextEx(text, 0, height);
-          height += this.calcMessageHeight(text, wordWraps);
+          if (textHeight === 0) {
+            this._viewTexts[i].setHeight(this.calcMessageHeight(text));
+          }
+          height += this._viewTexts[i].height;
           if (height > Graphics.boxHeight) {
             break;
           }
         }
       }
     }
+
 
     /**
      * デフォルトのスクロール位置を計算する
@@ -497,8 +571,9 @@
       var size = this._viewTexts.length;
       for (var i = 0; i < size; i++) {
         const text = this._viewTexts[size - 1 - i].text;
-        const wordWraps = this._viewTexts[size - 1 - i].wordWraps;
-        height += this.calcMessageHeight(text, wordWraps);
+        this._viewTexts[size - 1 - i].setHeight(this.calcMessageHeight(text));
+        const textHeight = this._viewTexts[size - 1 - i].height;
+        height += textHeight;
         if (height > Graphics.boxHeight - this.lineHeight()) {
           return (i > 0) ? size - i : size - 1;
         }
@@ -516,40 +591,82 @@
     /**
      * メッセージの表示高さを計算する
      * @param {string} text テキスト
-     * @param {number[]} wordWraps 折返し数一覧
      * @return {number}
      */
-    calcMessageHeight(text, wordWraps) {
+    calcMessageHeight(text) {
+      this._calcMode = true;
       let height = 0;
       const lines = text.split('\n');
-      for (let i = 0; i < lines.length; i++) {
-        let maxFontSize = this.contents.fontSize;
-        let regExp = /x1b[\{\}]/g;
-        for (; ;) {
-          let array = regExp.exec(lines[i]);
-          if (array) {
-            if (array[0] === '\x1b{' && maxFontSize <= 96) {
-              maxFontSize += 12;
-            }
-            if (array[0] === '\x1b}' && maxFontSize >= 24) {
-              maxFontSize -= 12;
-            }
-          } else {
-            break;
-          }
-        }
-        height += (maxFontSize + settings.lineSpacing) * ((wordWraps.length > 0 && i < 3 ? wordWraps[i] : 0) + 1);
-      }
+      lines.forEach(line => {
+        this._lineNumber = 1;
+        this.drawTextEx(line, 0, 0);
+        height += (this._textHeight + settings.lineSpacing) * this._lineNumber;
+      });
+      this._calcMode = false;
       return height + settings.messageSpacing;
+    }
+
+    /**
+     * テキストを描画し、その幅を返す
+     * @param {string} text テキスト
+     * @param {number} x X座標
+     * @param {number} y Y座標
+     * @return {number}
+     */
+    drawTextEx(text, x, y) {
+      if (this._calcMode) {
+        /**
+         * 計算モード時には描画しない
+         */
+        let drawFunction = this.contents.drawText;
+        this.contents.drawText = function(){};
+        const value = super.drawTextEx(text, x, y);
+        this.contents.drawText = drawFunction;
+        return value;
+      } else {
+        return super.drawTextEx(text, x, y);
+      }
+    }
+
+    /**
+     * テキストの高さを計算する
+     * @param {MV.textState} textState テキストの状態
+     * @param {boolean} all 全文を対象とするか
+     * @return {number}
+     */
+    calcTextHeight(textState, all) {
+      /**
+       * 計算モード用
+       */
+      this._textHeight = super.calcTextHeight(textState, all);
+      return this._textHeight;
+    }
+
+    /**
+     * 改行する
+     * @param {MV.textState} textState テキストの状態
+     */
+    processNewLine(textState) {
+      super.processNewLine(textState);
+      if (this._calcMode) {
+        this._lineNumber++;
+      }
     }
   }
 
-  // Window_Message.terminateMessageから呼ぶ
-  function addTextLog (text, wordWraps) {
-    currentEventLog.addMessageLog(text, wordWraps);
+
+  /**
+   * テキストログを追加する
+   * @param {string} text ログに追加する文字列
+   */
+  function addTextLog(text) {
+    currentEventLog.addMessageLog(text);
   };
 
-  function moveToPrevLog () {
+  /**
+   * 現在のイベントのログを過去のイベントのログに移動する
+   */
+  function moveToPrevLog() {
     // 文章を表示しないイベントは無視する
     if (currentEventLog.messageLength === 0) {
       return;
@@ -564,22 +681,60 @@
     initializeCurrentEventLog();
   };
 
-  function initializeCurrentEventLog () {
+  /**
+   * 現在のイベントのログを初期化する
+   */
+  function initializeCurrentEventLog() {
     currentEventLog = new EventTextLog();
   };
 
-  // テキストログを表示できるかどうか
-  // A ログが１行以上ある
-  // B 空のログウィンドウを表示するフラグがtrue
-  // C スイッチで禁止されていない
-  // (A || B) && C
-  function isTextLogEnabled () {
+  /**テキストログを表示できるかどうか
+   * A ログが１行以上ある
+   * B 空のログウィンドウを表示するフラグがtrue
+   * C スイッチで禁止されていない
+   * (A || B) && C
+   * @return {boolean}
+   */
+  function isTextLogEnabled() {
     return (showLogWindowWithoutText ||
       (currentEventLog.messageLength > 0 ||
         pastEventLog.length > 0)) &&
       (disableShowLogSwitch === 0 ||
         !$gameSwitches.value(disableShowLogSwitch));
   };
+
+  /**
+   * Scene_Mapのメッセージウィンドウを退避しておくクラス
+   */
+  class EvacuatedMessageWindows {
+    /**
+     * @param {Window_Message} messageWindow メッセージウィンドウ
+     * @param {Window_ScrollText} scrollTextWindow スクロールテキストウィンドウ
+     */
+    constructor(messageWindow, scrollTextWindow) {
+      this._messageWindow = messageWindow;
+      this._scrollTextWindow = scrollTextWindow;
+    }
+
+    /**
+     * @return {Window_Message}
+     */
+    get messageWindow() {
+      return this._messageWindow;
+    }
+
+    /**
+     * @return {Window_ScrollText}
+     */
+    get scrollTextWindow() {
+      return this._scrollTextWindow;
+    }
+  }
+
+  /**
+   * @type {EvacuatedMessageWindows}
+   */
+  let evacuatedMessageWindow = null;
 
   // Scene_Mapの拡張
   const _Scene_Map_start = Scene_Map.prototype.start;
@@ -597,6 +752,37 @@
       this.updateCallTextLog();
     }
     _Scene_Map_update.call(this);
+  };
+
+  const _Scene_Map_createMessageWindow = Scene_Map.prototype.createMessageWindow;
+  Scene_Map.prototype.createMessageWindow = function () {
+    /**
+     * ログシーンからスムーズに戻るために、処理を上書きして
+     * Windowインスタンスを新しく作らないようにする
+     */
+    if (settings.smoothBackFromLog && evacuatedMessageWindow) {
+      this._messageWindow = evacuatedMessageWindow.messageWindow;
+      this.addWindow(this._messageWindow);
+      this._messageWindow.subWindows().forEach(function (window) {
+        this.addWindow(window);
+      }, this);
+    } else {
+      _Scene_Map_createMessageWindow.call(this);
+    }
+  };
+
+  const _Scene_Map_createScrollTextWindow = Scene_Map.prototype.createScrollTextWindow;
+  Scene_Map.prototype.createScrollTextWindow = function () {
+    /**
+     * ログシーンからスムーズに戻るために、処理を上書きして
+     * Windowインスタンスを新しく作らないようにする
+     */
+    if (settings.smoothBackFromLog && evacuatedMessageWindow) {
+      this._scrollTextWindow = evacuatedMessageWindow.scrollTextWindow;
+      this.addWindow(this._scrollTextWindow);
+    } else {
+      _Scene_Map_createScrollTextWindow.call(this);
+    }
   };
 
   Scene_Map.prototype.updateCallTextLog = function () {
@@ -630,9 +816,31 @@
   };
 
   Scene_Map.prototype.callTextLog = function () {
+    evacuatedMessageWindow = new EvacuatedMessageWindows(
+      this._messageWindow,
+      this._scrollTextWindow
+    );
     SoundManager.playCursor();
     SceneManager.push(Scene_TextLog);
     $gameTemp.clearDestination();
+  };
+
+  /**
+   * Window_ScrollText
+   */
+  const _Window_ScrollText_terminateMessage = Window_ScrollText.prototype.terminateMessage;
+  Window_ScrollText.prototype.terminateMessage = function () {
+    if (settings.includeScrollText &&
+      (disableLoggingSwitch === 0 ||
+        !$gameSwitches.value(disableLoggingSwitch)) &&
+      $gameMessage.hasText()) {
+      let message = {
+        text: ""
+      };
+      message.text += this.convertEscapeCharacters($gameMessage.allText());
+      addTextLog(message.text);
+    }
+    _Window_ScrollText_terminateMessage.call(this);
   };
 
   // Window_Messageの拡張
@@ -643,22 +851,21 @@
       !$gameSwitches.value(disableLoggingSwitch)) &&
       $gameMessage.hasText()) {
       let message = {
-        text: "",
-        wordWraps: []
+        text: ""
       };
       // YEP_MessageCore.js or DarkPlasma_NameWindow.js のネーム表示ウィンドウに対応
       if (this.hasNameWindow() && this._nameWindow.active && settings.includeName) {
         const nameColor = this.nameColorInLog(this._nameWindow._text);
-        message.text += "\x1bC[" + nameColor + "]" + this._nameWindow._text + "\n\x1bC[0]";
+        message.text += `\x1bC[${nameColor}]${this._nameWindow._text}\n\x1bC[0]`;
       }
       message.text += this.convertEscapeCharacters($gameMessage.allText());
-      if (PluginManager.isLoadedPlugin('DarkPlasma_WordWrapForJapanese')) {
-        message.wordWraps = $gameMessage.wordWrapCounts();
+      addTextLog(message.text);
+      if ($gameMessage.isChoice()) {
+        this._choiceWindow.addToLog();
       }
-      addTextLog(message.text, message.wordWraps);
     }
     _Window_Message_terminateMessage.call(this);
-  }
+  };
 
   // YEP_MessageCore.js や DarkPlasma_NameWindow のネーム表示ウィンドウを使用しているかどうか
   Window_Message.prototype.hasNameWindow = function () {
@@ -686,7 +893,54 @@
     return _Window_ChoiceList_windowWidth.call(this);
   };
 
-  // イベント終了時にそのイベントのログを直前のイベントのログとして保持する
+  /**
+   * 選択した内容をログに記録する
+   */
+  Window_ChoiceList.prototype.addToLog = function () {
+    const chosenIndex = $gameMessage.chosenIndex();
+    if (settings.includeChoice &&
+      (disableLoggingSwitch === 0 ||
+        !$gameSwitches.value(disableLoggingSwitch)) &&
+      $gameMessage.hasText()) {
+      let text = "";
+      if (chosenIndex < 0) {
+        if (!settings.includeChoiceCancel) {
+          return;
+        }
+        text = settings.choiceCancelText;
+      } else {
+        text = $gameMessage.choices()[this.index()];
+      }
+      let message = {
+        text: settings.choiceFormat.replace(/{choice}/gi, `\x1bC[${settings.choiceColor}]${text}\x1bC[0]`)
+      };
+      addTextLog(message.text);
+    }
+  };
+
+  const _Game_Message_clear = Game_Message.prototype.clear;
+  Game_Message.prototype.clear = function () {
+    _Game_Message_clear.call(this);
+    this._chosenIndex = null;
+  };
+
+  const _Game_Message_onChoice = Game_Message.prototype.onChoice;
+  Game_Message.prototype.onChoice = function (index) {
+    _Game_Message_onChoice.call(this, index);
+    this._chosenIndex = index;
+  };
+
+  /**
+   * 選択肢で選んだ番号を返す
+   * @return {number|null}
+   */
+  Game_Message.prototype.chosenIndex = function () {
+    return this._chosenIndex;
+  };
+
+  /**
+   * イベント終了時にそのイベントのログを直前のイベントのログとして保持する
+   */
   const _Game_Interpreter_terminate = Game_Interpreter.prototype.terminate;
   Game_Interpreter.prototype.terminate = function () {
     // 以下の場合はリセットしない
@@ -695,6 +949,10 @@
     //  - 並列イベント終了時
     if (!this.isCommonOrBattleEvent() && !this.isParallelEvent()) {
       moveToPrevLog();
+      /**
+       * イベント終了時に退避しておいたメッセージウィンドウも破棄する
+       */
+      evacuatedMessageWindow = null;
     }
     _Game_Interpreter_terminate.call(this);
   };
