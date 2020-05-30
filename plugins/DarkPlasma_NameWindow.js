@@ -4,6 +4,7 @@
 // http://opensource.org/licenses/mit-license.php
 
 /**
+ * 2020/05/30 1.3.1 DarkPlasma_TextLog.js と併用した時、名前なしテキストに名前をつけてしまうことがある不具合を修正
  * 2020/05/08 1.3.0 閉じるアニメーションの設定項目を追加
  * 2020/04/20 1.2.1 自動名前ウィンドウ以外でアクター名色付けが機能していない不具合を修正
  * 2020/04/18 1.2.0 MessageWindowHidden.js との競合を修正
@@ -223,6 +224,7 @@
      */
     startClose() {
       this._startClose = this.isOpen();
+      this.deactivate();
     }
 
     /**
