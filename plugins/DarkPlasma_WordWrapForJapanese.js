@@ -4,6 +4,7 @@
 // http://opensource.org/licenses/mit-license.php
 
 /**
+ * 2020/06/01 1.3.3 改行を含む文章を表示する際にエラーが発生する不具合を修正
  * 2020/05/30 1.3.2 リファクタ
  * 2020/05/28 1.3.1 リファクタ
  *            1.3.0 戦闘中のログに対応
@@ -135,14 +136,6 @@
   Window_Base.prototype.killWordWrapTags = function (text) {
     return text.replace(/<(?:BR|line break|WordWrap|wrap)>/gi, '');
   };
-
-  const _Window_Message_processCharacter = Window_Message.prototype.processCharacter;
-  Window_Message.prototype.processCharacter = function (textState) {
-    if (textState.text[textState.index] === '\n') {
-      $gameMessage.newLine();
-    }
-    _Window_Message_processCharacter.call(this, textState);
-  }
 
   const _Window_Message_processNewPage = Window_Message.prototype.processNewPage;
   Window_Message.prototype.processNewPage = function (textState) {
