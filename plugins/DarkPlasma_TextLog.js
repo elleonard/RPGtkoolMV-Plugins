@@ -4,7 +4,8 @@
 // http://opensource.org/licenses/mit-license.php
 
 /**
- * 2020/06/03 1.8.1 NobleMushroom.js と併用した際に、ポーズメニューでフリーズする不具合を修正
+ * 2020/06/03 1.8.2 NobleMushroom.js と併用した際に、セーブ・ロード画面でログを開ける不具合を修正
+ *            1.8.1 NobleMushroom.js と併用した際に、ポーズメニューでフリーズする不具合を修正
  *                  タイトルに戻ってニューゲーム/ロードした際に、直前のデータのログを引き継ぐ不具合を修正
  * 2020/05/30 1.8.0 ログから戻った際に最後のメッセージを再表示しない設定を追加
  *                  スクロールテキストをログに含める設定を追加
@@ -860,17 +861,29 @@
     }
   };
 
-  // どういうタイミングでバックログを開いても良いか
-  //  A マップを移動中（メニューを開ける間）
-  //  B イベント中かつ、メッセージウィンドウが開いている
-  //  C 表示すべきログが１行以上ある
-  //  D ログ表示禁止スイッチがOFF
-  //  (A || B) && C && D
+  /**
+   * どういうタイミングでバックログを開いても良いか
+   *  A マップを移動中（メニューを開ける間）
+   *  B イベント中かつ、メッセージウィンドウが開いている
+   *  C 表示すべきログが１行以上ある
+   *  D ログ表示禁止スイッチがOFF
+   *  E NobleMushroom.js でセーブ・ロード画面を開いていない
+   *  (A || B) && C && D && E
+   */
   Scene_Map.prototype.isTextLogEnabled = function () {
     return ($gameSystem.isMenuEnabled() ||
       $gameMap.isEventRunning() &&
       !this._messageWindow.isClosed()) &&
-      isTextLogEnabled();
+      isTextLogEnabled() &&
+      !this.isFileListWindowActive();
+  };
+
+  /**
+   * NobleMushroom.js でセーブ・ロード画面を開いているかどうか
+   * @return {boolean}
+   */
+  Scene_Map.prototype.isFileListWindowActive = function() {
+    return this._fileListWindow && this._fileListWindow.isOpenAndActive();
   };
 
   Scene_Map.prototype.isTextLogCalled = function () {
