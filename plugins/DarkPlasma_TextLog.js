@@ -4,6 +4,8 @@
 // http://opensource.org/licenses/mit-license.php
 
 /**
+ * 2020/06/03 1.8.1 NobleMushroom.js と併用した際に、ポーズメニューでフリーズする不具合を修正
+ *                  タイトルに戻ってニューゲーム/ロードした際に、直前のデータのログを引き継ぐ不具合を修正
  * 2020/05/30 1.8.0 ログから戻った際に最後のメッセージを再表示しない設定を追加
  *                  スクロールテキストをログに含める設定を追加
  *                  選択肢をログに含める設定を追加
@@ -619,7 +621,7 @@
          * 計算モード時には描画しない
          */
         let drawFunction = this.contents.drawText;
-        this.contents.drawText = function(){};
+        this.contents.drawText = function () { };
         const value = super.drawTextEx(text, x, y);
         this.contents.drawText = drawFunction;
         return value;
@@ -688,6 +690,13 @@
     currentEventLog = new EventTextLog();
   };
 
+  /**
+   * 過去のイベントのログを初期化する
+   */
+  function initializePastEventLog() {
+    pastEventLog = [];
+  }
+
   /**テキストログを表示できるかどうか
    * A ログが１行以上ある
    * B 空のログウィンドウを表示するフラグがtrue
@@ -710,10 +719,12 @@
     /**
      * @param {Window_Message} messageWindow メッセージウィンドウ
      * @param {Window_ScrollText} scrollTextWindow スクロールテキストウィンドウ
+     * @param {Window_PauseMenu} pauseWindow ポーズメニューウィンドウ（NobleMushroom.js 用）
      */
-    constructor(messageWindow, scrollTextWindow) {
+    constructor(messageWindow, scrollTextWindow, pauseWindow) {
       this._messageWindow = messageWindow;
       this._scrollTextWindow = scrollTextWindow;
+      this._pauseWindow = pauseWindow;
     }
 
     /**
@@ -728,6 +739,13 @@
      */
     get scrollTextWindow() {
       return this._scrollTextWindow;
+    }
+
+    /**
+     * @return {Window_PauseMenu}
+     */
+    get pauseWindow() {
+      return this._pauseWindow;
     }
   }
 
@@ -785,6 +803,50 @@
     }
   };
 
+  if (PluginManager.isLoadedPlugin('NobleMushroom')) {
+    /**
+     * ハンドラを更新する
+     */
+    Scene_Map.prototype.refreshPauseWindowHandlers = function () {
+      this._pauseWindow.setHandler(Scene_Map.symbolSave, this.callSave.bind(this));
+      this._pauseWindow.setHandler(Scene_Map.symbolLoad, this.callLoad.bind(this));
+      this._pauseWindow.setHandler('quickSave', this.callQuickSave.bind(this));
+      this._pauseWindow.setHandler('quickLoad', this.callQuickLoad.bind(this));
+      this._pauseWindow.setHandler('toTitle', this.callToTitle.bind(this));
+      this._pauseWindow.setHandler('cancel', this.offPause.bind(this));
+    };
+    /**
+      * NobleMushroom.js のほうが上に読み込まれている場合
+      */
+    if (Scene_Map.prototype.createPauseWindow) {
+      const _Scene_Map_createPauseWindow = Scene_Map.prototype.createPauseWindow;
+      Scene_Map.prototype.createPauseWindow = function () {
+        /**
+          * ログシーンからスムーズに戻るために、処理を上書きして
+          * Windowインスタンスを新しく作らないようにする
+          */
+        if (settings.smoothBackFromLog && evacuatedMessageWindow) {
+          this._pauseWindow = evacuatedMessageWindow.pauseWindow;
+          this.refreshPauseWindowHandlers();
+          this.addWindow(this._pauseWindow);
+        } else {
+          _Scene_Map_createPauseWindow.call(this);
+        }
+      };
+    } else {
+      const _Scene_Map_onMapLoaded = Scene_Map.prototype.onMapLoaded;
+      Scene_Map.prototype.onMapLoaded = function() {
+        _Scene_Map_onMapLoaded.call(this);
+        if (settings.smoothBackFromLog && evacuatedMessageWindow) {
+          this._windowLayer.removeChild(this._pauseWindow);
+          this._pauseWindow = evacuatedMessageWindow.pauseWindow;
+          this.refreshPauseWindowHandlers();
+          this.addWindow(this._pauseWindow);
+        }
+      };
+    }
+  }
+
   Scene_Map.prototype.updateCallTextLog = function () {
     if (this.isTextLogEnabled()) {
       if (this.isTextLogCalled()) {
@@ -818,7 +880,8 @@
   Scene_Map.prototype.callTextLog = function () {
     evacuatedMessageWindow = new EvacuatedMessageWindows(
       this._messageWindow,
-      this._scrollTextWindow
+      this._scrollTextWindow,
+      this._pauseWindow
     );
     SoundManager.playCursor();
     SceneManager.push(Scene_TextLog);
@@ -938,6 +1001,22 @@
     return this._chosenIndex;
   };
 
+  const _Game_System_initialize = Game_System.prototype.initialize;
+  Game_System.prototype.initialize = function () {
+    _Game_System_initialize.call(this);
+    initializeCurrentEventLog();
+    initializePastEventLog();
+    evacuatedMessageWindow = null;
+  };
+
+  const _Game_System_onAfterLoad = Game_System.prototype.onAfterLoad;
+  Game_System.prototype.onAfterLoad = function () {
+    _Game_System_onAfterLoad.call(this);
+    initializeCurrentEventLog();
+    initializePastEventLog();
+    evacuatedMessageWindow = null;
+  };
+
   /**
    * イベント終了時にそのイベントのログを直前のイベントのログとして保持する
    */
@@ -1042,4 +1121,3 @@
     return $plugins.some(plugin => plugin.name === name && plugin.status);
   };
 })();
-
