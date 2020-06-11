@@ -312,6 +312,10 @@ PromptlyPopup.js における連続攻撃や全体攻撃のダメージ/回避SE
 
 オプションから戻るメニューを追加するプラグイン
 
+## DarkPlasma_SaveEventLocations.js
+
+イベントの位置を記録するプラグイン
+
 ## DarkPlasma_ShiftCommandPersonal.js
 
 アクター選択メニューをアクター選択中に切り替えられるプラグイン
