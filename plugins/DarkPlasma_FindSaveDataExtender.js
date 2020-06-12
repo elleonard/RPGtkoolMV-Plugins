@@ -4,6 +4,7 @@
 // http://opensource.org/licenses/mit-license.php
 
 /**
+ * 2020/06/12 1.0.3 Game_Character, Game_CharacterBaseを扱えるよう修正
  * 2020/05/22 1.0.2 関数ブロックより内側の別ブロックで定義された変数を正しく検出できない不具合を修正
  * 2020/05/17 1.0.1 セーブデータの1層目にデータを追加するプラグインを検出できない不具合の修正
  *            1.0.0 公開
@@ -54,7 +55,6 @@
   });
   const pluginParameters = PluginManager.parameters(pluginName);
 
-
   const GLOBAL_DATA = {
     Game_System: "$gameSystem",
     Game_Timer: "$gameTimer",
@@ -68,29 +68,30 @@
     Game_Screen: "$gameScreen"
   };
 
-  // TODO: Game_Character, Game_CharacterBaseの扱いについて検討する
   const SAVE_DATA_CLASS = {
-    Game_Actors: "actors",
-    Game_Actor: "actor",
-    Game_Battler: "actor",  // 継承されるため
-    Game_BattlerBase: "actor",  // 継承されるため
-    Game_Map: "map",
-    Game_Interpreter: "interpreter",
-    Game_Event: "event",
-    Game_CommonEvent: "commonEvent",
-    Game_Vehicle: "vehicle",
-    Game_Party: "party",
-    Game_Player: "player",
-    Game_Item: "item",
-    Game_Followers: "followers",
-    Game_Follower: "follower",
-    Game_Screen: "screen",
-    Game_Picture: "picture",
-    Game_SelfSwitches: "selfSwitches",
-    Game_Switches: "switches",
-    Game_System: "system",
-    Game_Timer: "timer",
-    Game_Variables: "variables",
+    Game_Actors: ["actors"],
+    Game_Actor: ["actor"],
+    Game_Battler: ["actor"],  // 継承されるため
+    Game_BattlerBase: ["actor"],  // 継承されるため
+    Game_Map: ["map"],
+    Game_Interpreter: ["interpreter"],
+    Game_Event: ["event"],
+    Game_Character: ["event", "player", "vehicle", "follower"],  // 継承されるため
+    Game_CharacterBase: ["event", "player", "vehicle", "follower"], // 継承されるため
+    Game_CommonEvent: ["commonEvent"],
+    Game_Vehicle: ["vehicle"],
+    Game_Party: ["party"],
+    Game_Player: ["player"],
+    Game_Item: ["item"],
+    Game_Followers: ["followers"],
+    Game_Follower: ["follower"],
+    Game_Screen: ["screen"],
+    Game_Picture: ["picture"],
+    Game_SelfSwitches: ["selfSwitches"],
+    Game_Switches: ["switches"],
+    Game_System: ["system"],
+    Game_Timer: ["timer"],
+    Game_Variables: ["variables"],
   };
 
   // デフォルトのセーブデータ構造
@@ -553,8 +554,8 @@
       this._extraKeysInFollower = [];
 
       this._found = {};
-      Object.values(SAVE_DATA_CLASS).forEach(type => {
-        this._found[type] = [];
+      Object.values(SAVE_DATA_CLASS).forEach(types => {
+        types.forEach(type => this._found[type] = []);
       });
       this._found.base = [];
     }
@@ -587,11 +588,11 @@
         .filter(key => !this._found.base || !this._found.base.includes(key))
         .map(key => `セーブデータ ${key}`).concat(
           Object.keys(SAVE_DATA_CLASS).map(dataClass => {
-            const type = SAVE_DATA_CLASS[dataClass];
-            return this.extraKeysFromType(type)
+            const types = SAVE_DATA_CLASS[dataClass];
+            return types.map(type => this.extraKeysFromType(type)
               .filter(key => !this._found[type] || !this._found[type].includes(key))
-              .map(key => `${dataClass} ${key}`)
-          })).flat().filter((x, i, self) => self.indexOf(x) === i);
+              .map(key => `${dataClass} ${key}`))
+          })).flat(2).filter((x, i, self) => self.indexOf(x) === i);
     }
 
     /**
@@ -959,12 +960,15 @@
              * this.XXX = hoge で代入されている連中
              */
             Object.keys(SAVE_DATA_CLASS).forEach(dataClass => {
-              if (saveDataStructure.isExtraKeysIn(SAVE_DATA_CLASS[dataClass], path.node.property.name) && isInDataClass(path, dataClass)) {
-                if (!saveDataStructure.isAlreadyFound(SAVE_DATA_CLASS[dataClass], path.node.property.name)) {
-                  console.log(`${dataClass} に ${path.node.property.name} を追加 by ${pluginPath}`);
-                  saveDataStructure.findInPlugin(SAVE_DATA_CLASS[dataClass], path.node.property.name);
+              const types = SAVE_DATA_CLASS[dataClass];
+              types.forEach(type => {
+                if (saveDataStructure.isExtraKeysIn(type, path.node.property.name) && isInDataClass(path, dataClass)) {
+                  if (!saveDataStructure.isAlreadyFound(type, path.node.property.name)) {
+                    console.log(`${dataClass} に ${path.node.property.name} を追加 by ${pluginPath}`);
+                    saveDataStructure.findInPlugin(type, path.node.property.name);
+                  }
                 }
-              }
+              })
             });
           }
           /**
@@ -983,10 +987,13 @@
            */
           Object.keys(GLOBAL_DATA).forEach(dataClass => {
             if (isSubstituteInGameData(path, GLOBAL_DATA[dataClass])) {
-              if (!saveDataStructure.isAlreadyFound(SAVE_DATA_CLASS[dataClass], path.node.property.name)) {
-                console.log(`${dataClass} に ${path.node.property.name} を追加 by ${pluginPath}`);
-                saveDataStructure.findInPlugin(SAVE_DATA_CLASS[dataClass], path.node.property.name);
-              }
+              const types = SAVE_DATA_CLASS[dataClass];
+              types.forEach(type => {
+                if (!saveDataStructure.isAlreadyFound(type, path.node.property.name)) {
+                  console.log(`${dataClass} に ${path.node.property.name} を追加 by ${pluginPath}`);
+                  saveDataStructure.findInPlugin(type, path.node.property.name);
+                }
+              });
             }
           });
 
