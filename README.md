@@ -17,6 +17,12 @@ RPGツクールMVのプラグイン管理から読み込んでください
 
 スキルの概念がない特殊アクターや、装備画面を開けなくするステートなどを実現できます
 
+## DarkPlasma_ActSeq2PatchForExtendWeaponImageConfig.js
+
+YEP_X_ActSeqPack2.js のパッチプラグイン
+
+ExtendWeaponImageConfig.js のスキルに関する記述をアクションシーケンスで利用できます。
+
 ## DarkPlasma_AddElementToSkillType.js
 
 装備やステートによって特定のスキルタイプに属性を追加するプラグイン
