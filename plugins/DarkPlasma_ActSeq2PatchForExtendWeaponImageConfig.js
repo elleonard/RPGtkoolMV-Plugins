@@ -4,7 +4,8 @@
 // http://opensource.org/licenses/mit-license.php
 
 /**
- * 2020/06/13 1.0.0 公開
+ * 2020/06/13 1.0.1 リファクタ
+ *            1.0.0 公開
  */
 
 /*:
@@ -19,7 +20,14 @@
  * スキル使用時の <WeaponNumber:X> と <MotionType:Y> を有効にします。
  * 上記メモタグについて、詳細は ExtendWeaponImageConfig.js を参照してください。
  *
- * また、対象スキルのアクションシーケンス内に motion skill: user と記述してください。
+ * また、対象スキルのアクションシーケンス内に
+ * motion skill: user
+ * と記述してください。
+ *
+ * アクションシーケンスに motion skill が指定されたスキルにおいて、
+ * WeaponNumber を省略した場合、0（素手）になります。
+ * MotionType を省略した場合、魔法攻撃なら詠唱、
+ * それ以外のスキルなら汎用スキルモーションになります。
  *
  * ExtendWeaponImageConfig.js
  * http://respawnfromhere.blog.fc2.com/blog-entry-6.html
@@ -46,11 +54,7 @@
    * @return {number}
    */
   function getSkillWeaponNumber(skill) {
-    const weaponNumber = skill.meta.WeaponNumber;
-    if (weaponNumber === undefined) {
-      return null;
-    }
-    return Number(weaponNumber);
+    return Number(skill.meta.WeaponNumber || 0);
   }
 
   /**
@@ -84,8 +88,7 @@
         } else {
           mover.forceMotion(MOTION_TYPE[motionType]);
         }
-        const weaponImageId = getSkillWeaponNumber(this._action.item());
-        mover.startWeaponAnimation(weaponImageId);
+        mover.startWeaponAnimation(getSkillWeaponNumber(this._action.item()));
       });
       return false;
     }
