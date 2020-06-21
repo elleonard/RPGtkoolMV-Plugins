@@ -4,6 +4,7 @@
 // http://opensource.org/licenses/mit-license.php
 
 /**
+ * 2020/06/21 2.2.1 シーンクラスを外部公開
  * 2020/04/30 2.2.0 戦闘中にワンボタンで図鑑を開く機能を追加
  *            2.1.0 縦型レイアウトに対応
  *            2.0.1 リファクタ
@@ -460,6 +461,8 @@
       this._enemyBookWindows = new EnemyBookWindows(this.popScene.bind(this), this._windowLayer);
     }
   }
+
+  window[Scene_EnemyBook.name] = Scene_EnemyBook;
 
   class EnemyBookWindows {
     constructor(cancelHandler, parentLayer) {
