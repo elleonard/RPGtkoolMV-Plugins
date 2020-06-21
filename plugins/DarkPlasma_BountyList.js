@@ -4,6 +4,8 @@
 // http://opensource.org/licenses/mit-license.php
 
 /**
+ * 2020/06/21 1.0.2 リファクタ
+ *                  シーンクラスを外部公開
  * 2019/06/24 1.0.1 公開
  */
 
@@ -77,8 +79,8 @@
  * 
  *  <isBounty>
  *  <bountyShowSwitch:xx> スイッチxx番がONなら表示する
- * 
- *  賞金首リストには、<isBounty>が設定されており、なおかつ以下のいずれかを満たす敵キャラが表示されます。
+ *
+ * 賞金首リストには、<isBounty>が設定されており、なおかつ以下のいずれかを満たす敵キャラが表示されます。
  *  - 倒したことがある
  *  - <bountyShowSwitch:xx>を指定しており、スイッチxx番がONである
  *
@@ -96,38 +98,38 @@
  *  BountyList complete # リストを完成させる
  *  BountyList clear    # リストを白紙にする
 */
-(function(){
+(function () {
   'use strict';
-  var pluginName = 'DarkPlasma_BountyList';
-  var pluginPrameters = PluginManager.parameters(pluginName);
+  const pluginName = 'DarkPlasma_BountyList';
+  const pluginPrameters = PluginManager.parameters(pluginName);
 
-  var _extractMetadata = DataManager.extractMetadata;
+  const _extractMetadata = DataManager.extractMetadata;
   DataManager.extractMetadata = function (data) {
     _extractMetadata.call(this, data);
-    if (data.meta.isBounty !== undefined) {
+    if (data.meta.isBounty) {
       data.isBounty = true;
-      if (data.meta.bountyShowSwitch !== undefined) {
+      if (data.meta.bountyShowSwitch) {
         data.bountyShowSwitch = Number(data.meta.bountyShowSwitch);
       }
-      if (data.meta.bountyRequest !== undefined) {
+      if (data.meta.bountyRequest) {
         data.bountyRequest = String(data.meta.bountyRequest);
       }
-      if (data.meta.bountyWhere !== undefined) {
+      if (data.meta.bountyWhere) {
         data.bountyWhere = String(data.meta.bountyWhere);
       }
-      if (data.meta.bountyReward !== undefined) {
+      if (data.meta.bountyReward) {
         data.bountyReward = String(data.meta.bountyReward);
       }
-      if (data.meta.bountyDifficulty !== undefined) {
+      if (data.meta.bountyDifficulty) {
         data.bountyDifficulty = String(data.meta.bountyDifficulty);
       }
-      if (data.meta.bountyDescription !== undefined) {
+      if (data.meta.bountyDescription) {
         data.bountyDescription = String(data.meta.bountyDescription);
       }
     }
   };
 
-  var settings = {
+  const settings = {
     requestText: String(pluginPrameters['Request Text'] || '依頼内容'),
     whereText: String(pluginPrameters['Where Text'] || '出現場所'),
     rewardText: String(pluginPrameters['Reward Text'] || '討伐報酬'),
@@ -141,57 +143,57 @@
   };
 
   var _Game_Interpreter_pluginCommand =
-            Game_Interpreter.prototype.pluginCommand;
-    Game_Interpreter.prototype.pluginCommand = function(command, args) {
-        _Game_Interpreter_pluginCommand.call(this, command, args);
-        if (command === 'BountyList') {
-            switch (args[0]) {
-            case 'open':
-                SceneManager.push(Scene_BountyList);
-                break;
-            case 'add':
-                $gameSystem.addToBountyList(Number(args[1]));
-                break;
-            case 'remove':
-                $gameSystem.removeFromBountyList(Number(args[1]));
-                break;
-            case 'complete':
-                $gameSystem.completeBountyList();
-                break;
-            case 'clear':
-                $gameSystem.clearBountyList();
-                break;
-            }
-        }
-    };
+    Game_Interpreter.prototype.pluginCommand;
+  Game_Interpreter.prototype.pluginCommand = function (command, args) {
+    _Game_Interpreter_pluginCommand.call(this, command, args);
+    if (command === 'BountyList') {
+      switch (args[0]) {
+        case 'open':
+          SceneManager.push(Scene_BountyList);
+          break;
+        case 'add':
+          $gameSystem.addToBountyList(Number(args[1]));
+          break;
+        case 'remove':
+          $gameSystem.removeFromBountyList(Number(args[1]));
+          break;
+        case 'complete':
+          $gameSystem.completeBountyList();
+          break;
+        case 'clear':
+          $gameSystem.clearBountyList();
+          break;
+      }
+    }
+  };
 
-  Game_System.prototype.addToBountyList = function(enemyId) {
+  Game_System.prototype.addToBountyList = function (enemyId) {
     if (!this._bountyKillFlags) {
       this.clearBountyList();
     }
-    if ($dataEnemies[enemyId].isBounty){
+    if ($dataEnemies[enemyId].isBounty) {
       this._bountyKillFlags[enemyId] = true;
     }
   };
 
-  Game_System.prototype.removeFromBountyList = function(enemyId) {
+  Game_System.prototype.removeFromBountyList = function (enemyId) {
     if (this._bountyKillFlags) {
       this._bountyKillFlags[enemyId] = false;
     }
   };
 
-  Game_System.prototype.completeBountyList = function() {
+  Game_System.prototype.completeBountyList = function () {
     this.clearBountyList();
-    $dataEnemies.filter(enemy => enemy && enemy.isBounty).foreach(function(enemy){
+    $dataEnemies.filter(enemy => enemy && enemy.isBounty).foreach(function (enemy) {
       this._bountyKillFlags[enemy.id] = true;
     }, this);
   };
 
-  Game_System.prototype.clearBountyList = function() {
+  Game_System.prototype.clearBountyList = function () {
     this._bountyKillFlags = [];
   };
 
-  Game_System.prototype.isInBountyList = function(enemy) {
+  Game_System.prototype.isInBountyList = function (enemy) {
     if (!this._bountyKillFlags) {
       this.clearBountyList();
     }
@@ -210,7 +212,7 @@
     return false;
   };
 
-  Game_System.prototype.isKilledBounty = function(enemy) {
+  Game_System.prototype.isKilledBounty = function (enemy) {
     if (!this._bountyKillFlags) {
       this.clearBountyList();
     }
@@ -224,7 +226,7 @@
   };
 
   var _Game_Enemy_performCollapse = Game_Enemy.prototype.performCollapse;
-  Game_Enemy.prototype.performCollapse = function() {
+  Game_Enemy.prototype.performCollapse = function () {
     _Game_Enemy_performCollapse.call(this);
     $gameSystem.addToBountyList(this.enemy().id);
   };
@@ -232,201 +234,233 @@
   /**
    *  賞金首シーン
    */
-  function Scene_BountyList() {
-    this.initialize.apply(this, arguments);
+  class Scene_BountyList extends Scene_MenuBase {
+    constructor() {
+      super();
+      this.initialize();
+    }
+
+    initialize() {
+      super.initialize();
+    }
+
+    create() {
+      super.create();
+      this._indexWindow = new Window_BountyListIndex(0, 0);
+      this._indexWindow.setHandler('cancel', this.popScene.bind(this));
+      const detailsWindowY = this._indexWindow.height;
+      this._detailsWindow = new Window_BountyListDetails(
+        0,
+        detailsWindowY,
+        Graphics.boxWidth,
+        Graphics.boxHeight - detailsWindowY
+      );
+      this.addWindow(this._indexWindow);
+      this.addWindow(this._detailsWindow);
+      this._indexWindow.setDetailsWindow(this._detailsWindow);
+    }
   }
 
-  Scene_BountyList.prototype = Object.create(Scene_MenuBase.prototype);
-  Scene_BountyList.prototype.construct = Scene_BountyList;
-
-  Scene_BountyList.prototype.initialize = function() {
-    Scene_MenuBase.prototype.initialize.call(this);
-  };
-
-  Scene_BountyList.prototype.create = function() {
-    Scene_MenuBase.prototype.create.call(this);
-    this._indexWindow = new Window_BountyListIndex(0, 0);
-    this._indexWindow.setHandler('cancel', this.popScene.bind(this));
-    var wy = this._indexWindow.height;
-    var ww = Graphics.boxWidth;
-    var wh = Graphics.boxHeight - wy;
-    this._detailsWindow = new Window_BountyListDetails(0, wy, ww, wh);
-    this.addWindow(this._indexWindow);
-    this.addWindow(this._detailsWindow);
-    this._indexWindow.setDetailsWindow(this._detailsWindow);
-  };
+  window[Scene_BountyList.name] = Scene_BountyList;
 
   /**
    * 賞金首リスト表示
    */
-  function Window_BountyListIndex() {
-    this.initialize.apply(this, arguments);
-  }
+  class Window_BountyListIndex extends Window_Selectable {
+    constructor() {
+      super();
+      this.initialize.apply(this, arguments);
+    }
 
-  Window_BountyListIndex.prototype = Object.create(Window_Selectable.prototype);
-  Window_BountyListIndex.prototype.constructor = Window_BountyListIndex;
+    /**
+     * @param {number} x X座標
+     * @param {number} y Y座標
+     */
+    initialize(x, y) {
+      const width = Graphics.boxWidth;
+      const height = this.fittingHeight(6);
+      super.initialize(x, y, width, height);
+      this.refresh();
+      this.setTopRow(Window_BountyListIndex.lastTopRow);
+      this.select(Window_BountyListIndex.lastIndex);
+      this.activate();
+    }
+
+    maxCols() {
+      return 3;
+    }
+
+    maxItems() {
+      return this._list ? this._list.length : 0;
+    }
+
+    /**
+     * @param {Window_BountyListDetails} detailsWindow 詳細ウィンドウ
+     */
+    setDetailsWindow(detailsWindow) {
+      this._detailsWindow = detailsWindow;
+      this.updateDetails();
+    }
+
+    update() {
+      super.update();
+      this.updateDetails();
+    }
+
+    updateDetails() {
+      if (this._detailsWindow) {
+        const enemy = this._list[this.index()];
+        this._detailsWindow.setEnemy(enemy);
+      }
+    }
+
+    refresh() {
+      this._list = $dataEnemies.filter(enemy => enemy && enemy.isBounty);
+      this.createContents();
+      this.drawAllItems();
+    }
+
+    /**
+     * @param {number} index インデックス
+     */
+    drawItem(index) {
+      const enemy = this._list[index];
+      const rect = this.itemRectForText(index);
+      const name = $gameSystem.isInBountyList(enemy) ? enemy.name : settings.unknownName;
+      if ($gameSystem.isKilledBounty(enemy)) {
+        this.changeTextColor(this.textColor(settings.textColorKilled));
+      } else {
+        this.changeTextColor(this.textColor(settings.textColorNormal));
+      }
+      this.drawText(name, rect.x, rect.y, rect.width);
+      this.resetTextColor();
+    }
+
+    processCancel() {
+      super.processCancel();
+      Window_BountyListIndex.lastTopRow = this.topRow();
+      Window_BountyListIndex.lastIndex = this.index();
+    }
+  }
 
   Window_BountyListIndex.lastTopRow = 0;
   Window_BountyListIndex.lastIndex = 0;
 
-  Window_BountyListIndex.prototype.initialize = function(x, y) {
-    var width = Graphics.boxWidth;
-    var height = this.fittingHeight(6);
-    Window_Selectable.prototype.initialize.call(this, x, y, width, height);
-    this.refresh();
-    this.setTopRow(Window_BountyListIndex.lastTopRow);
-    this.select(Window_BountyListIndex.lastIndex);
-    this.activate();
-  };
-
-  Window_BountyListIndex.prototype.maxCols = function() {
-    return 3;
-  };
-
-  Window_BountyListIndex.prototype.maxItems = function() {
-    return this._list ? this._list.length : 0;
-  };
-
-  Window_BountyListIndex.prototype.setDetailsWindow = function(detailsWindow) {
-    this._detailsWindow = detailsWindow;
-    this.updateDetails();
-  };
-
-  Window_BountyListIndex.prototype.update = function() {
-    Window_Selectable.prototype.update.call(this);
-    this.updateDetails();
-  };
-
-  Window_BountyListIndex.prototype.updateDetails = function() {
-    if (this._detailsWindow) {
-      var enemy = this._list[this.index()];
-      this._detailsWindow.setEnemy(enemy);
-    }
-  };
-
-  Window_BountyListIndex.prototype.refresh = function() {
-    this._list = $dataEnemies.filter(enemy => enemy && enemy.isBounty);
-    this.createContents();
-    this.drawAllItems();
-  };
-
-  Window_BountyListIndex.prototype.drawItem = function(index) {
-    var enemy = this._list[index];
-    var rect = this.itemRectForText(index);
-    var name;
-    if ($gameSystem.isInBountyList(enemy)) {
-      name = enemy.name;
-    } else {
-      name = settings.unknownName;
-    }
-    if ($gameSystem.isKilledBounty(enemy)) {
-      this.changeTextColor(this.textColor(settings.textColorKilled));
-    } else {
-      this.changeTextColor(this.textColor(settings.textColorNormal));
-    }
-    this.drawText(name, rect.x, rect.y, rect.width);
-    this.resetTextColor();
-  };
-
-  Window_BountyListIndex.prototype.processCancel = function() {
-    Window_Selectable.prototype.processCancel.call(this);
-    Window_BountyListIndex.lastTopRow = this.topRow();
-    Window_BountyListIndex.lastIndex = this.index();
-  };
-
   /**
    * 賞金首詳細表示
    */
-  function Window_BountyListDetails() {
-    this.initialize.apply(this, arguments);
-  }
+  class Window_BountyListDetails extends Window_Base {
+    constructor() {
+      super();
+      this.initialize.apply(this, arguments);
+    }
 
-  Window_BountyListDetails.prototype = Object.create(Window_Base.prototype);
-  Window_BountyListDetails.prototype.constructor = Window_BountyListDetails;
-
-  Window_BountyListDetails.prototype.initialize = function(x, y, width, height) {
-    Window_Base.prototype.initialize.call(this, x, y, width, height);
-    this._enemy = null;
-    this._enemySprite = new Sprite();
-    this._enemySprite.anchor.x = 0.5;
-    this._enemySprite.anchor.y = 0.5;
-    this._enemySprite.x = width / 4 - 20;
-    this._enemySprite.y = height / 2;
-    this.addChildToBack(this._enemySprite);
-    this.refresh();
-  };
-
-  Window_BountyListDetails.prototype.setEnemy = function(enemy) {
-    if (this._enemy !== enemy) {
-      this._enemy = enemy;
+    /**
+     * @param {number} x X座標
+     * @param {number} y Y座標
+     * @param {number} width 横幅
+     * @param {number} height 高さ
+     */
+    initialize(x, y, width, height) {
+      super.initialize(x, y, width, height);
+      this._enemy = null;
+      this._enemySprite = new Sprite();
+      this._enemySprite.anchor.x = 0.5;
+      this._enemySprite.anchor.y = 0.5;
+      this._enemySprite.x = width / 4 - 20;
+      this._enemySprite.y = height / 2;
+      this.addChildToBack(this._enemySprite);
       this.refresh();
     }
-  };
 
-  Window_BountyListDetails.prototype.update = function() {
-    Window_Base.prototype.update.call(this);
-    if (this._enemySprite.bitmap) {
-      var bitmapHeight = this._enemySprite.bitmap.height;
-      var contentsHeight = this.contents.height;
-      var scale = 1;
-      if (bitmapHeight > contentsHeight) {
-        scale = contentsHeight / bitmapHeight;
+    /**
+     * @param {RPG.Enemy} enemy 敵データ
+     */
+    setEnemy(enemy) {
+      if (this._enemy !== enemy) {
+        this._enemy = enemy;
+        this.refresh();
       }
-      this._enemySprite.scale.x = scale;
-      this._enemySprite.scale.y = scale;
-    }
-  };
-
-  Window_BountyListDetails.prototype.refresh = function() {
-    var enemy = this._enemy;
-    var x = 0;
-    var y = 0;
-    var lineHeight = this.lineHeight();
-
-    this.contents.clear();
-
-    if (!enemy || !$gameSystem.isInBountyList(enemy)) {
-      this._enemySprite.bitmap = null;
-      return;
     }
 
-    var name = enemy.battlerName;
-    var hue = enemy.battlerHue;
-    var bitmap;
-    if ($gameSystem.isSideView()) {
-      bitmap = ImageManager.loadSvEnemy(name, hue);
-    } else {
-      bitmap = ImageManager.loadEnemy(name, hue);
+    update() {
+      super.update();
+      if (this._enemySprite.bitmap) {
+        const bitmapHeight = this._enemySprite.bitmap.height;
+        const contentsHeight = this.contents.height;
+        const scale = (bitmapHeight > contentsHeight) ? contentsHeight / bitmapHeight : 1;
+        this._enemySprite.scale.x = scale;
+        this._enemySprite.scale.y = scale;
+      }
     }
-    this._enemySprite.bitmap = bitmap;
 
-    this.resetTextColor();
-    this.drawText(enemy.name, x, y);
+    refresh() {
+      const enemy = this._enemy;
+      const lineHeight = this.lineHeight();
+      const NAME_X = 0;
+      const NAME_Y = 0;
 
-    var detailsWidth = 480;
-    x = this.contents.width - detailsWidth + settings.textOffsetX;
-    y = lineHeight + this.textPadding() + settings.textOffsetY;
+      this.contents.clear();
 
-    var lineCount = 0;
+      if (!enemy || !$gameSystem.isInBountyList(enemy)) {
+        this._enemySprite.bitmap = null;
+        return;
+      }
 
-    if (enemy.bountyRequest) {
-      this.drawTextEx(settings.requestText + ":" + enemy.bountyRequest, x, y + lineHeight * 0, detailsWidth);
-      lineCount++;
+      const name = enemy.battlerName;
+      const hue = enemy.battlerHue;
+      this._enemySprite.bitmap = $gameSystem.isSideView() ?
+        ImageManager.loadSvEnemy(name, hue) :
+        ImageManager.loadEnemy(name, hue);
+
+      this.resetTextColor();
+      this.drawText(enemy.name, NAME_X, NAME_Y);
+
+      const detailsWidth = 480;
+      const x = this.contents.width - detailsWidth + settings.textOffsetX;
+      const y = lineHeight + this.textPadding() + settings.textOffsetY;
+
+      let lineCount = 0;
+
+      if (enemy.bountyRequest) {
+        this.drawTextEx(
+          `${settings.requestText}:${enemy.bountyRequest}`,
+          x,
+          y + lineHeight * 0,
+          detailsWidth
+        );
+        lineCount++;
+      }
+      if (enemy.bountyWhere) {
+        this.drawTextEx(
+          `${settings.whereText}:${enemy.bountyWhere}`,
+          x,
+          y + lineHeight * lineCount,
+          detailsWidth
+        );
+        lineCount++;
+      }
+      if (enemy.bountyReward) {
+        this.drawTextEx(
+          `${settings.rewardText}:${enemy.bountyReward}`,
+          x,
+          y + lineHeight * lineCount,
+          detailsWidth
+        );
+        lineCount++;
+      }
+      if (enemy.bountyDifficulty) {
+        this.drawTextEx(
+          `${settings.difficultyText}:${enemy.bountyDifficulty}`,
+          x,
+          y + lineHeight * lineCount,
+          detailsWidth
+        );
+        lineCount++;
+      }
+      if (enemy.bountyDescription) {
+        this.drawTextEx(enemy.bountyDescription, x, y + lineHeight * lineCount, detailsWidth);
+      }
     }
-    if (enemy.bountyWhere) {
-      this.drawTextEx(settings.whereText + ":" + enemy.bountyWhere, x, y + lineHeight * lineCount, detailsWidth);
-      lineCount++;
-    }
-    if (enemy.bountyReward) {
-      this.drawTextEx(settings.rewardText + ":" + enemy.bountyReward, x, y + lineHeight * lineCount, detailsWidth);
-      lineCount++;
-    }
-    if (enemy.bountyDifficulty) {
-      this.drawTextEx(settings.difficultyText + ":" + enemy.bountyDifficulty, x, y + lineHeight * lineCount, detailsWidth);
-      lineCount++;
-    }
-    if (enemy.bountyDescription) {
-      this.drawTextEx(enemy.bountyDescription, x, y + lineHeight * lineCount, detailsWidth);
-    }
-  };
+  }
 })();
