@@ -4,6 +4,9 @@
 // http://opensource.org/licenses/mit-license.php
 
 /**
+ * 2020/06/22 2.3.0 表示から除外するステート設定を追加
+ *                  同一属性/ステートに複数の有効度が指定された場合に最初の設定以外用いられない不具合を修正
+ *                  弱体有効度の表示設定を追加
  * 2020/06/21 2.2.1 シーンクラスを外部公開
  * 2020/04/30 2.2.0 戦闘中にワンボタンで図鑑を開く機能を追加
  *            2.1.0 縦型レイアウトに対応
@@ -173,18 +176,189 @@
  * @parent Detail Mode
  *
  * @param Weak Element And State Label
- * @desc 弱点属性/ステートのラベルを設定します
+ * @desc 弱点属性/ステート/弱体のラベルを設定します
  * @text 弱点ラベル
  * @type string
- * @default 弱点属性/ステート
+ * @default 弱点属性/ステート/弱体
  * @parent Detail Mode
  *
  * @param Resist Element And State Label
- * @desc 耐性属性/ステートのラベルを設定します
+ * @desc 耐性属性/ステート/弱体のラベルを設定します
  * @text 耐性ラベル
  * @type string
- * @default 耐性属性/ステート
+ * @default 耐性属性/ステート/弱体
  * @parent Detail Mode
+ *
+ * @param Exclude Weak States
+ * @desc 弱点ステートに表示しないステートを設定します
+ * @text 弱点表示しないステート
+ * @type state[]
+ * @default []
+ * @parent Detail Mode
+ *
+ * @param Exclude Resist States
+ * @desc 耐性ステートに表示しないステートを設定します
+ * @text 耐性表示しないステート
+ * @type state[]
+ * @default []
+ * @parent Detail Mode
+ *
+ * @param Debuff Status
+ * @text 弱体有効度の表示
+ *
+ * @param Display Debuff Status
+ * @desc 有効なステータス弱体、耐性のあるステータス弱体を表示するかどうか
+ * @text 有効弱体/耐性弱体を表示
+ * @type boolean
+ * @default true
+ * @parent Debuff Status
+ *
+ * @param Debuff Status Icons
+ * @text 弱体ステータスアイコン
+ *
+ * @param Debuff Status Icon MHP Small
+ * @desc 最大HPの弱体ステータスアイコン
+ * @text 最大HP（小）
+ * @type number
+ * @default 48
+ * @parent Debuff Status Icons
+ *
+ * @param Debuff Status Icon MHP Large
+ * @desc 最大HPの弱体ステータスアイコン
+ * @text 最大HP（大）
+ * @type number
+ * @default 56
+ * @parent Debuff Status Icons
+ *
+ * @param Debuff Status Icon MMP Small
+ * @desc 最大MPの弱体ステータスアイコン
+ * @text 最大MP（小）
+ * @type number
+ * @default 49
+ * @parent Debuff Status Icons
+ *
+ * @param Debuff Status Icon MMP Large
+ * @desc 最大MPの弱体ステータスアイコン
+ * @text 最大MP（大）
+ * @type number
+ * @default 57
+ * @parent Debuff Status Icons
+ *
+ * @param Debuff Status Icon ATK Small
+ * @desc 攻撃力の弱体ステータスアイコン
+ * @text 攻撃力（小）
+ * @type number
+ * @default 50
+ * @parent Debuff Status Icons
+ *
+ * @param Debuff Status Icon ATK Large
+ * @desc 攻撃力の弱体ステータスアイコン
+ * @text 攻撃力（大）
+ * @type number
+ * @default 58
+ * @parent Debuff Status Icons
+ *
+ * @param Debuff Status Icon DEF Small
+ * @desc 防御力の弱体ステータスアイコン
+ * @text 防御力（小）
+ * @type number
+ * @default 51
+ * @parent Debuff Status Icons
+ *
+ * @param Debuff Status Icon DEF Large
+ * @desc 防御力の弱体ステータスアイコン
+ * @text 防御力（大）
+ * @type number
+ * @default 59
+ * @parent Debuff Status Icons
+ *
+ * @param Debuff Status Icon MAT Small
+ * @desc 魔法力の弱体ステータスアイコン
+ * @text 魔法力（小）
+ * @type number
+ * @default 52
+ * @parent Debuff Status Icons
+ *
+ * @param Debuff Status Icon MAT Large
+ * @desc 魔法力の弱体ステータスアイコン
+ * @text 魔法力（大）
+ * @type number
+ * @default 60
+ * @parent Debuff Status Icons
+ *
+ * @param Debuff Status Icon MDF Small
+ * @desc 魔法防御力の弱体ステータスアイコン
+ * @text 魔法防御力（小）
+ * @type number
+ * @default 53
+ * @parent Debuff Status Icons
+ *
+ * @param Debuff Status Icon MDF Large
+ * @desc 魔法防御力の弱体ステータスアイコン
+ * @text 魔法防御力（大）
+ * @type number
+ * @default 61
+ * @parent Debuff Status Icons
+ *
+ * @param Debuff Status Icon AGI Small
+ * @desc 敏捷性の弱体ステータスアイコン
+ * @text 敏捷性（小）
+ * @type number
+ * @default 54
+ * @parent Debuff Status Icons
+ *
+ * @param Debuff Status Icon AGI Large
+ * @desc 敏捷性の弱体ステータスアイコン
+ * @text 敏捷性（大）
+ * @type number
+ * @default 62
+ * @parent Debuff Status Icons
+ *
+ * @param Debuff Status Icon LUK Small
+ * @desc 運の弱体ステータスアイコン
+ * @text 運（小）
+ * @type number
+ * @default 55
+ * @parent Debuff Status Icons
+ *
+ * @param Debuff Status Icon LUK Large
+ * @desc 運の弱体ステータスアイコン
+ * @text 運（大）
+ * @type number
+ * @default 63
+ * @parent Debuff Status Icons
+ *
+ * @param Debuff Status Threshold
+ * @text 弱体の有効度の閾値
+ * @parent Debuff Status
+ *
+ * @param Debuff Status Threshold Weak Small
+ * @desc 弱点弱体の（小）アイコン表示判定の閾値。有効度がこの値より大なら小アイコンを弱点弱体に表示
+ * @text 弱点（小）
+ * @type number
+ * @default 100
+ * @parent Debuff Status Threshold
+ *
+ * @param Debuff Status Threshold Weak Large
+ * @desc 弱点弱体の（大）アイコン表示判定の閾値。有効度がこの値より大なら大アイコンを弱点弱体に表示
+ * @text 弱点（大）
+ * @type number
+ * @default 150
+ * @parent Debuff Status Threshold
+ *
+ * @param Debuff Status Threshold Resist Small
+ * @desc 耐性弱体の（小）アイコン表示判定の閾値。有効度がこの値より小なら小アイコンを耐性弱体に表示
+ * @text 耐性（小）
+ * @type number
+ * @default 100
+ * @parent Debuff Status Threshold
+ *
+ * @param Debuff Status Threshold Resist Large
+ * @desc 耐性弱体の（大）アイコン表示判定の閾値。有効度がこの値より小なら大アイコンを耐性弱体に表示
+ * @text 耐性（大）
+ * @type number
+ * @default 50
+ * @parent Debuff Status Threshold
  *
  * @param Vertical Layout
  * @desc ウィンドウ配置を縦型に変更する
@@ -237,6 +411,17 @@
   const parameters = PluginManager.parameters(pluginName);
   const unknownData = String(parameters['Unknown Data'] || '??????');
 
+  const STATUS_NAMES = [
+    'mhp',
+    'mmp',
+    'atk',
+    'def',
+    'mat',
+    'mdf',
+    'agi',
+    'luk'
+  ];
+
   const settings = {
     unknownData: String(parameters['Unknown Data'] || '??????'),
     grayOutUnknown: String(parameters['Gray out Unknown']) === 'true',
@@ -248,6 +433,53 @@
     elementIcons: JSON.parse(parameters['Element Icons']).map(icon => Number(icon)),
     weakLabel: String(parameters['Weak Element And State Label'] || 'Weak'),
     resistLabel: String(parameters['Resist Element And State Label'] || 'Resist'),
+    excludeWeakStates: JSON.parse(parameters['Exclude Weak States'] || '[]').map(state => Number(state)),
+    excludeResistStates: JSON.parse(parameters['Exclude Resist States'] || '[]').map(state => Number(state)),
+    displayDebuffStatus: String(parameters['Display Debuff Status'] || 'true') === 'true',
+    debuffStatusIcons: {
+      mhp: {
+        small: Number(parameters['Debuff Status Icon MHP Small'] || 48),
+        large: Number(parameters['Debuff Status Icon MHP Large'] || 56),
+      },
+      mmp: {
+        small: Number(parameters['Debuff Status Icon MMP Small'] || 49),
+        large: Number(parameters['Debuff Status Icon MMP Large'] || 57),
+      },
+      atk: {
+        small: Number(parameters['Debuff Status Icon ATK Small'] || 50),
+        large: Number(parameters['Debuff Status Icon ATK Large'] || 58),
+      },
+      def: {
+        small: Number(parameters['Debuff Status Icon DEF Small'] || 51),
+        large: Number(parameters['Debuff Status Icon DEF Large'] || 59),
+      },
+      mat: {
+        small: Number(parameters['Debuff Status Icon MAT Small'] || 52),
+        large: Number(parameters['Debuff Status Icon MAT Large'] || 60),
+      },
+      mdf: {
+        small: Number(parameters['Debuff Status Icon MDF Small'] || 53),
+        large: Number(parameters['Debuff Status Icon MDF Large'] || 61),
+      },
+      agi: {
+        small: Number(parameters['Debuff Status Icon AGI Small'] || 54),
+        large: Number(parameters['Debuff Status Icon AGI Large'] || 62),
+      },
+      luk: {
+        small: Number(parameters['Debuff Status Icon LUK Small'] || 55),
+        large: Number(parameters['Debuff Status Icon LUK Large'] || 63),
+      },
+    },
+    debuffStatusThreshold: {
+      weak: {
+        small: Number(parameters['Debuff Status Threshold Weak Small'] || 100),
+        large: Number(parameters['Debuff Status Threshold Weak Large'] || 150),
+      },
+      resist: {
+        small: Number(parameters['Debuff Status Threshold Resist Small'] || 100),
+        large: Number(parameters['Debuff Status Threshold Resist Large'] || 50),
+      },
+    },
     verticalLayout: String(parameters['Vertical Layout'] || 'false') === 'true',
     enableInBattle: String(parameters['Enable In Battle'] || 'true') === 'true',
     openKeyInBattle: String(parameters['Open Key In Battle'] || 'pagedown'),
@@ -560,6 +792,10 @@
       this.initialize.apply(this, arguments);
     }
 
+    /**
+     * @param {number} x X座標
+     * @param {number} y Y座標
+     */
     initialize(x, y) {
       const width = settings.verticalLayout ? Math.floor(Graphics.boxWidth / 3) : Graphics.boxWidth;
       const height = settings.verticalLayout ? Graphics.boxHeight - this.fittingHeight(2) : this.fittingHeight(4);
@@ -570,14 +806,23 @@
       this.activate();
     }
 
+    /**
+     * @return {number}
+     */
     maxCols() {
       return settings.verticalLayout ? 1 : 3;
     }
 
+    /**
+     * @return {number}
+     */
     maxItems() {
       return this._list ? this._list.length : 0;
     }
 
+    /**
+     * @param {WIndow_EnemyBookStatus} statusWindow ステータスウィンドウ
+     */
     setStatusWindow(statusWindow) {
       this._statusWindow = statusWindow;
       this.updateStatus();
@@ -610,15 +855,25 @@
       this.drawAllItems();
     }
 
+    /**
+     * @return {boolean}
+     */
     isCurrentItemEnabled() {
       return this.isEnabled(this.index());
     }
 
+    /**
+     * @param {number} index インデックス
+     * @return {boolean}
+     */
     isEnabled(index) {
       const enemy = this._list[index];
       return $gameSystem.isInEnemyBook(enemy);
     }
 
+    /**
+     * @param {number} index インデックス
+     */
     drawItem(index) {
       const enemy = this._list[index];
       const rect = this.itemRectForText(index);
@@ -658,6 +913,10 @@
       Window_EnemyBookIndex.lastIndex = this.index();
     }
 
+    /**
+     * 詳細モードを切り替える
+     * @param {boolean} mode 詳細モードONかOFFか
+     */
     setDetailMode(mode) {
       this.height = this.fittingHeight(mode ? 1 : 4);
       this.setTopRow(this.row());
@@ -813,6 +1072,11 @@
       this.drawTextEx(enemy.meta.desc2, this.contentsWidth() - descWidth, this.textPadding() + lineHeight * 8, descWidth);
     }
 
+    /**
+     * レベルを描画する
+     * @param {number} x X座標
+     * @param {number} y Y座標
+     */
     drawLevel(x, y) {
       const enemy = this._enemy;
       if (enemy.level) {
@@ -823,6 +1087,11 @@
       }
     }
 
+    /**
+     * ステータスを描画する
+     * @param {number} x X座標
+     * @param {number} y Y座標
+     */
     drawStatus(x, y) {
       const lineHeight = this.lineHeight();
       const enemy = this._enemy;
@@ -835,6 +1104,11 @@
       }
     }
 
+    /**
+     * 経験値とゴールドを描画する
+     * @param {number} x X座標
+     * @param {number} y Y座標
+     */
     drawExpAndGold(x, y) {
       const enemy = this._enemy;
       if (!settings.verticalLayout) {
@@ -863,6 +1137,12 @@
       }
     }
 
+    /**
+     * ドロップアイテムを描画する
+     * @param {number} x X座標
+     * @param {number} y Y座標
+     * @param {number} rewardsWidth 報酬欄の横幅
+     */
     drawDropItems(x, y, rewardsWidth) {
       const enemy = this._enemy;
       const lineHeight = this.lineHeight();
@@ -891,6 +1171,13 @@
       });
     }
 
+    /**
+     * ドロップ率を描画する
+     * @param {number} denominator 確率
+     * @param {number} x X座標
+     * @param {number} y Y座標
+     * @param {number} width 横幅
+     */
     drawDropRate(denominator, x, y, width) {
       if (!settings.displayDropRate && !this._detailMode || !denominator) {
         return;
@@ -899,58 +1186,141 @@
       this.drawText(`${dropRate}％`, x, y, width, 'right');
     }
 
+    /**
+     * 指定した属性の有効度を返す
+     * @param {number} elementId 属性ID
+     * @return {number}
+     */
     elementRate(elementId) {
-      const trait = this._enemy.traits
-        .filter(trait => trait.code === Game_BattlerBase.TRAIT_ELEMENT_RATE && trait.dataId === elementId);
-      return trait[0] ? trait[0].value : 1;
+      return this._enemy.traits
+        .filter(trait => trait.code === Game_BattlerBase.TRAIT_ELEMENT_RATE && trait.dataId === elementId)
+        .reduce((r, trait) => r * trait.value, 1);
     }
 
+    /**
+     * 指定したステートの有効度を返す
+     * @param {number} stateId ステートID
+     * @return {number}
+     */
     stateRate(stateId) {
       const isNoEffect = this._enemy.traits
         .find(trait => trait.code === Game_BattlerBase.TRAIT_STATE_RESIST && trait.dataId === stateId);
       if (isNoEffect) {
         return 0;
       }
-      const trait = this._enemy.traits
-        .filter(trait => trait.code === Game_BattlerBase.TRAIT_STATE_RATE && trait.dataId === stateId);
-      return trait[0] ? trait[0].value : 1;
+      return this._enemy.traits
+        .filter(trait => trait.code === Game_BattlerBase.TRAIT_STATE_RATE && trait.dataId === stateId)
+        .reduce((r, trait) => r * trait.value, 1);
+    }
+
+    /**
+     * 指定したステータスの弱体有効度を返す
+     * @param {number} statusId ステータスID
+     * @return {number}
+     */
+    debuffRate(statusId) {
+      return this._enemy.traits
+        .filter(trait => trait.code === Game_BattlerBase.TRAIT_DEBUFF_RATE && trait.dataId === statusId)
+        .reduce((r, trait) => r * trait.value, 1)*100;
     }
 
     maxIconsPerLine() {
       return settings.verticalLayout ? 16 : 8;
     }
 
+    /**
+     * @param {number} x X座標
+     * @param {number} y Y座標
+     * @param {number} width 横幅
+     */
     drawWeakElementsAndStates(x, y, width) {
       const targetIcons = $dataSystem.elements
         .map((_, index) => index)
         .filter(elementId => this.elementRate(elementId) > 1)
         .map(elementId => settings.elementIcons[elementId])
         .concat($dataStates
-          .filter(state => state && this.stateRate(state.id) > 1)
-          .map(state => state.iconIndex));
+          .filter(state => state && this.stateRate(state.id) > 1 && !this.isExcludedWeakState(state.id))
+          .map(state => state.iconIndex))
+        .concat(STATUS_NAMES
+          .filter((_, index) => {
+            return settings.displayDebuffStatus &&
+              this.debuffRate(index) > settings.debuffStatusThreshold.weak.large;
+          })
+          .map(statusName => settings.debuffStatusIcons[statusName].large))
+        .concat(STATUS_NAMES
+          .filter((_, index) => {
+            const debuffRate = this.debuffRate(index);
+            return settings.displayDebuffStatus &&
+              debuffRate <= settings.debuffStatusThreshold.weak.large &&
+              debuffRate > settings.debuffStatusThreshold.weak.small;
+          })
+          .map(statusName => settings.debuffStatusIcons[statusName].small));
       this.changeTextColor(this.systemColor());
       this.drawText(settings.weakLabel, x, y, width);
-      y += this.lineHeight();
+
+      const iconBaseY = y + this.lineHeight();
       targetIcons.forEach((icon, index) => {
-        this.drawIcon(icon, x + 32 * (index % this.maxIconsPerLine()), y + 32 * Math.floor(index / this.maxIconsPerLine()))
+        this.drawIcon(icon,
+          x + 32 * (index % this.maxIconsPerLine()),
+          iconBaseY + 32 * Math.floor(index / this.maxIconsPerLine()));
       });
       this._weakLines = Math.floor(targetIcons.length / this.maxIconsPerLine()) + 1;
     }
 
+    /**
+     * 弱点に表示しないステートかどうか
+     * @param {number} stateId ステートID
+     * @return {boolean}
+     */
+    isExcludedWeakState(stateId) {
+      return settings.excludeWeakStates.includes(stateId);
+    }
+
+    /**
+     * @param {number} x X座標
+     * @param {number} y Y座標
+     * @param {number} width 横幅
+     */
     drawResistElementsAndStates(x, y, width) {
       const targetIcons = $dataSystem.elements
         .map((_, index) => index)
         .filter(elementId => this.elementRate(elementId) < 1)
         .map(elementId => settings.elementIcons[elementId])
         .concat($dataStates
-          .filter(state => state && this.stateRate(state.id) < 1)
-          .map(state => state.iconIndex));
+          .filter(state => state && this.stateRate(state.id) < 1 && !this.isExcludedResistState(state.id))
+          .map(state => state.iconIndex))
+        .concat(STATUS_NAMES
+          .filter((_, index) => {
+            return settings.displayDebuffStatus &&
+              this.debuffRate(index) < settings.debuffStatusThreshold.resist.large;
+          })
+          .map(statusName => settings.debuffStatusIcons[statusName].large))
+        .concat(STATUS_NAMES
+          .filter((_, index) => {
+            const debuffRate = this.debuffRate(index);
+            return settings.displayDebuffStatus &&
+              debuffRate >= settings.debuffStatusThreshold.resist.large &&
+              debuffRate < settings.debuffStatusThreshold.resist.small;
+          })
+          .map(statusName => settings.debuffStatusIcons[statusName].small));;
       this.changeTextColor(this.systemColor());
       this.drawText(settings.resistLabel, x, y, width);
-      y += this.lineHeight();
+
+      const iconBaseY = y + this.lineHeight();
       targetIcons.forEach((icon, index) => {
-        this.drawIcon(icon, x + 32 * (index % this.maxIconsPerLine()), y + 32 * Math.floor(index / this.maxIconsPerLine()))
+        this.drawIcon(icon,
+          x + 32 * (index % this.maxIconsPerLine()),
+          iconBaseY + 32 * Math.floor(index / this.maxIconsPerLine()));
       });
+    }
+
+    /**
+     * 耐性リストに表示しないステートかどうか
+     * @param {number} stateId ステートID
+     * @return {boolean}
+     */
+    isExcludedResistState(stateId) {
+      return settings.excludeResistStates.includes(stateId);
     }
 
     setDetailMode(mode) {
