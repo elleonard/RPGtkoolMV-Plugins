@@ -4,6 +4,7 @@
 // http://opensource.org/licenses/mit-license.php
 
 /**
+ * 2020/06/22 2.0.0 設定周りを改修。以前の設定を使いまわせません
  * 2020/06/21 1.0.2 リファクタ
  *                  シーンクラスを外部公開
  * 2019/06/24 1.0.1 公開
@@ -13,30 +14,12 @@
  * @plugindesc 賞金首リストを表示します
  * @author DarkPlasma
  * @license MIT
- * 
- * @param Request Text
- * @text 依頼内容のテキスト
- * @desc ゲーム中で表示する依頼内容のテキスト
- * @default 依頼内容
- * @type string
- * 
- * @param Where Text
- * @text 出現場所のテキスト
- * @desc ゲーム中で表示する出現場所のテキスト
- * @default 出現場所
- * @type string
- * 
- * @param ReWard Text
- * @text 討伐報酬のテキスト
- * @desc ゲーム中で表示する討伐報酬のテキスト
- * @default 討伐報酬
- * @type string
- * 
- * @param Difficulty Text
- * @text 討伐難度のテキスト
- * @desc ゲーム中で表示する討伐難度のテキスト
- * @default 討伐難度
- * @type string
+ *
+ * @param Bounty Informations
+ * @text 賞金首情報
+ * @desc 賞金首リストに表示する情報。このリストの順番どおりに表示します
+ * @type struct<BountyInformation>[]
+ * @default ["{\"Meta Tag\":\"bountyRequest\",\"Text\":\"依頼内容\"}","{\"Meta Tag\":\"bountyWhere\",\"Text\":\"出現場所\"}","{\"Meta Tag\":\"bountyReward\",\"Text\":\"討伐報酬\"}","{\"Meta Tag\":\"bountyDifficulty\",\"Text\":\"討伐難度\"}","{\"Meta Tag\":\"bountyDescription\",\"Text\":\"\"}"]
  * 
  * @param Unknown Name
  * @text 未表示名
@@ -73,35 +56,101 @@
  * @desc リスト内の倒した敵の文字色
  * @default 7
  * @type number
- * 
+ *
  * @help
  *  賞金首に指定したいエネミーのメモ欄に以下の記述をしてください。
- * 
+ *
  *  <isBounty>
  *  <bountyShowSwitch:xx> スイッチxx番がONなら表示する
  *
- * 賞金首リストには、<isBounty>が設定されており、なおかつ以下のいずれかを満たす敵キャラが表示されます。
+ * 賞金首リストには、<isBounty>が設定されており、
+ * なおかつ以下のいずれかを満たす敵キャラが表示されます。
  *  - 倒したことがある
  *  - <bountyShowSwitch:xx>を指定しており、スイッチxx番がONである
  *
- *  また、表示したい情報があれば、以下を記述してください。
+ *  また、表示したい情報があれば、
+ *  賞金首情報を設定した上で、以下のように記述してください。
+ *  （以下はデフォルト設定時の例です。賞金首情報設定で適宜追加することができます）
+ *
  *  <bountyRequest:賞金首の依頼内容>
  *  <bountyWhere:賞金首の出現場所>
  *  <bountyReward:賞金首の報酬>
  *  <bountyDifficulty:賞金首の討伐難度>
  *  <bountyDescription:賞金首の説明>
- * 
+ *
  * プラグインコマンド:
  *  BountyList open     # 賞金首リストを開く
  *  BountyList add 3    # 敵キャラ3番をリストに追加
  *  BountyList remoe 4  # 敵キャラ4番をリストから削除
  *  BountyList complete # リストを完成させる
  *  BountyList clear    # リストを白紙にする
-*/
+ *
+ *  プログラムから開く:
+ *  SceneManager.push(Scene_BountyList);
+ */
+/*~struct~BountyInformation:
+ *
+ * @param Meta Tag
+ * @desc メタタグ。<(指定した名前):hoge> をエネミーのメモ欄に記入する
+ * @text メタタグ
+ * @type string
+ *
+ * @param Text
+ * @desc 表示上のテキスト
+ * @text テキスト
+ * @type string
+ */
 (function () {
   'use strict';
   const pluginName = 'DarkPlasma_BountyList';
   const pluginPrameters = PluginManager.parameters(pluginName);
+
+  class BountyInformationSetting {
+    /**
+     * @param {string} tag メタタグ
+     * @param {string} text テキスト
+     */
+    constructor(tag, text) {
+      this._tag = tag;
+      this._text = text;
+    }
+
+    /**
+     * @param {object} json パースしたJSONオブジェクト
+     * @return {BountyInformationSetting}
+     */
+    static fromJson(json) {
+      const parsed = JSON.parse(json);
+      return new BountyInformationSetting(
+        String(parsed["Meta Tag"]),
+        String(parsed["Text"])
+      );
+    }
+
+    /**
+     * @return {string}
+     */
+    get tag() {
+      return this._tag;
+    }
+
+    /**
+     * @return {string}
+     */
+    get text() {
+      return this._text;
+    }
+  }
+
+  const settings = {
+    unknownName: String(pluginPrameters['Unkwnon Name'] || '？？？？？？'),
+    bountyInformations: JSON.parse(pluginPrameters['Bounty Informations']).map(info => BountyInformationSetting.fromJson(info)),
+    showKilledBounty: String(pluginPrameters['Show Killed Bounty']) !== 'false',
+    textOffsetX: Number(pluginPrameters['Text Offset X']) || 0,
+    textOffsetY: Number(pluginPrameters['Text Offset Y']) || 0,
+    textColorNormal: Number(pluginPrameters['Text Color Normal']) || 0,
+    textColorKilled: Number(pluginPrameters['Text Color Killed']) || 7,
+  };
 
   const _extractMetadata = DataManager.extractMetadata;
   DataManager.extractMetadata = function (data) {
@@ -111,39 +160,16 @@
       if (data.meta.bountyShowSwitch) {
         data.bountyShowSwitch = Number(data.meta.bountyShowSwitch);
       }
-      if (data.meta.bountyRequest) {
-        data.bountyRequest = String(data.meta.bountyRequest);
-      }
-      if (data.meta.bountyWhere) {
-        data.bountyWhere = String(data.meta.bountyWhere);
-      }
-      if (data.meta.bountyReward) {
-        data.bountyReward = String(data.meta.bountyReward);
-      }
-      if (data.meta.bountyDifficulty) {
-        data.bountyDifficulty = String(data.meta.bountyDifficulty);
-      }
-      if (data.meta.bountyDescription) {
-        data.bountyDescription = String(data.meta.bountyDescription);
-      }
+      settings.bountyInformations.forEach(info => {
+        if (data.meta[info.tag]) {
+          data[info.tag] = String(data.meta[info.tag]);
+        }
+      });
     }
   };
 
-  const settings = {
-    requestText: String(pluginPrameters['Request Text'] || '依頼内容'),
-    whereText: String(pluginPrameters['Where Text'] || '出現場所'),
-    rewardText: String(pluginPrameters['Reward Text'] || '討伐報酬'),
-    difficultyText: String(pluginPrameters['Difficulty Text'] || '討伐難度'),
-    unknownName: String(pluginPrameters['Unkwnon Name'] || '？？？？？？'),
-    showKilledBounty: String(pluginPrameters['Show Killed Bounty']) !== 'false',
-    textOffsetX: Number(pluginPrameters['Text Offset X']) || 0,
-    textOffsetY: Number(pluginPrameters['Text Offset Y']) || 0,
-    textColorNormal: Number(pluginPrameters['Text Color Normal']) || 0,
-    textColorKilled: Number(pluginPrameters['Text Color Killed']) || 7,
-  };
 
-  var _Game_Interpreter_pluginCommand =
-    Game_Interpreter.prototype.pluginCommand;
+  const _Game_Interpreter_pluginCommand = Game_Interpreter.prototype.pluginCommand;
   Game_Interpreter.prototype.pluginCommand = function (command, args) {
     _Game_Interpreter_pluginCommand.call(this, command, args);
     if (command === 'BountyList') {
@@ -225,7 +251,7 @@
     return false;
   };
 
-  var _Game_Enemy_performCollapse = Game_Enemy.prototype.performCollapse;
+  const _Game_Enemy_performCollapse = Game_Enemy.prototype.performCollapse;
   Game_Enemy.prototype.performCollapse = function () {
     _Game_Enemy_performCollapse.call(this);
     $gameSystem.addToBountyList(this.enemy().id);
@@ -422,45 +448,17 @@
 
       let lineCount = 0;
 
-      if (enemy.bountyRequest) {
-        this.drawTextEx(
-          `${settings.requestText}:${enemy.bountyRequest}`,
-          x,
-          y + lineHeight * 0,
-          detailsWidth
-        );
-        lineCount++;
-      }
-      if (enemy.bountyWhere) {
-        this.drawTextEx(
-          `${settings.whereText}:${enemy.bountyWhere}`,
-          x,
-          y + lineHeight * lineCount,
-          detailsWidth
-        );
-        lineCount++;
-      }
-      if (enemy.bountyReward) {
-        this.drawTextEx(
-          `${settings.rewardText}:${enemy.bountyReward}`,
-          x,
-          y + lineHeight * lineCount,
-          detailsWidth
-        );
-        lineCount++;
-      }
-      if (enemy.bountyDifficulty) {
-        this.drawTextEx(
-          `${settings.difficultyText}:${enemy.bountyDifficulty}`,
-          x,
-          y + lineHeight * lineCount,
-          detailsWidth
-        );
-        lineCount++;
-      }
-      if (enemy.bountyDescription) {
-        this.drawTextEx(enemy.bountyDescription, x, y + lineHeight * lineCount, detailsWidth);
-      }
+      settings.bountyInformations.forEach(info => {
+        if (enemy[info.tag]) {
+          this.drawTextEx(
+            info.text ? `${info.text}:${enemy[info.tag]}` : enemy[info.tag],
+            x,
+            y + lineHeight * lineCount,
+            detailsWidth
+          );
+          lineCount++;
+        }
+      });
     }
   }
 })();
