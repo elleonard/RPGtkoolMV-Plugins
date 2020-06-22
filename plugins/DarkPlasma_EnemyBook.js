@@ -4,7 +4,8 @@
 // http://opensource.org/licenses/mit-license.php
 
 /**
- * 2020/06/22 2.3.0 表示から除外するステート設定を追加
+ * 2020/06/22 2.3.1 除外ステートや弱体有効度を英語対応
+ *            2.3.0 表示から除外するステート設定を追加
  *                  同一属性/ステートに複数の有効度が指定された場合に最初の設定以外用いられない不具合を修正
  *                  弱体有効度の表示設定を追加
  * 2020/06/21 2.2.1 シーンクラスを外部公開
@@ -76,6 +77,153 @@
  * @type string
  * @default Resist
  * @parent Detail Mode
+ *
+ * @param Exclude Weak States
+ * @desc List for states not to display as weak states.
+ * @type state[]
+ * @default []
+ * @parent Detail Mode
+ *
+ * @param Exclude Resist States
+ * @desc List for states not to display as resist states.
+ * @type state[]
+ * @default []
+ * @parent Detail Mode
+ *
+ * @param Debuff Status
+ * @text Debuff Status
+ *
+ * @param Display Debuff Status
+ * @desc Display debuff status.
+ * @type boolean
+ * @default true
+ * @parent Debuff Status
+ *
+ * @param Debuff Status Icons
+ * @text Debuff status icons.
+ *
+ * @param Debuff Status Icon MHP Small
+ * @desc Debuff status icon of max hp Lv1.
+ * @type number
+ * @default 48
+ * @parent Debuff Status Icons
+ *
+ * @param Debuff Status Icon MHP Large
+ * @desc Debuff status icon of max hp Lv2.
+ * @type number
+ * @default 56
+ * @parent Debuff Status Icons
+ *
+ * @param Debuff Status Icon MMP Small
+ * @desc Debuff status icon of max mp Lv1.
+ * @type number
+ * @default 49
+ * @parent Debuff Status Icons
+ *
+ * @param Debuff Status Icon MMP Large
+ * @desc Debuff status icon of max mp Lv2.
+ * @type number
+ * @default 57
+ * @parent Debuff Status Icons
+ *
+ * @param Debuff Status Icon ATK Small
+ * @desc Debuff status icon of attack Lv1.
+ * @type number
+ * @default 50
+ * @parent Debuff Status Icons
+ *
+ * @param Debuff Status Icon ATK Large
+ * @desc Debuff status icon of attack Lv2.
+ * @type number
+ * @default 58
+ * @parent Debuff Status Icons
+ *
+ * @param Debuff Status Icon DEF Small
+ * @desc Debuff status icon of defense Lv1.
+ * @type number
+ * @default 51
+ * @parent Debuff Status Icons
+ *
+ * @param Debuff Status Icon DEF Large
+ * @desc Debuff status icon of defense Lv2.
+ * @type number
+ * @default 59
+ * @parent Debuff Status Icons
+ *
+ * @param Debuff Status Icon MAT Small
+ * @desc Debuff status icon of magical attack Lv1.
+ * @type number
+ * @default 52
+ * @parent Debuff Status Icons
+ *
+ * @param Debuff Status Icon MAT Large
+ * @desc Debuff status icon of magical attack Lv2.
+ * @type number
+ * @default 60
+ * @parent Debuff Status Icons
+ *
+ * @param Debuff Status Icon MDF Small
+ * @desc Debuff status icon of magical defense Lv1.
+ * @type number
+ * @default 53
+ * @parent Debuff Status Icons
+ *
+ * @param Debuff Status Icon MDF Large
+ * @desc Debuff status icon of magical defense Lv2.
+ * @type number
+ * @default 61
+ * @parent Debuff Status Icons
+ *
+ * @param Debuff Status Icon AGI Small
+ * @desc Debuff status icon of agility Lv1.
+ * @type number
+ * @default 54
+ * @parent Debuff Status Icons
+ *
+ * @param Debuff Status Icon AGI Large
+ * @desc Debuff status icon of agility Lv2.
+ * @type number
+ * @default 62
+ * @parent Debuff Status Icons
+ *
+ * @param Debuff Status Icon LUK Small
+ * @desc Debuff status icon of luck Lv1.
+ * @type number
+ * @default 55
+ * @parent Debuff Status Icons
+ *
+ * @param Debuff Status Icon LUK Large
+ * @desc Debuff status icon of luck Lv2.
+ * @type number
+ * @default 63
+ * @parent Debuff Status Icons
+ *
+ * @param Debuff Status Threshold
+ * @parent Debuff Status
+ *
+ * @param Debuff Status Threshold Weak Small
+ * @desc Display debuff status icon Lv1 as weak if debuff rate of the enemy is larger than this value.
+ * @type number
+ * @default 100
+ * @parent Debuff Status Threshold
+ *
+ * @param Debuff Status Threshold Weak Large
+ * @desc Display debuff status icon Lv2 as weak if debuff rate of the enemy is larger than this value.
+ * @type number
+ * @default 150
+ * @parent Debuff Status Threshold
+ *
+ * @param Debuff Status Threshold Resist Small
+ * @desc Display debuff status icon Lv1 as resist if debuff rate of the enemy is smaller than this value.
+ * @type number
+ * @default 100
+ * @parent Debuff Status Threshold
+ *
+ * @param Debuff Status Threshold Resist Large
+ * @desc Display debuff status icon Lv2 as resist if debuff rate of the enemy is smaller than this value.
+ * @type number
+ * @default 50
+ * @parent Debuff Status Threshold
  *
  * @param Vertical Layout
  * @desc Window layout to vertical
