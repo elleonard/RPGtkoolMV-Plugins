@@ -4,6 +4,8 @@
 // http://opensource.org/licenses/mit-license.php
 
 /**
+ * 2020/06/23 1.9.0 プラグインコマンドでログを追加する機能を追加
+ *                  外部向けログ追加インターフェース公開
  * 2020/06/23 1.8.3 DarkPlasma_WordWrapForJapanese.js 等と併用しないとエラーになる不具合を修正
  * 2020/06/03 1.8.2 NobleMushroom.js と併用した際に、セーブ・ロード画面でログを開ける不具合を修正
  *            1.8.1 NobleMushroom.js と併用した際に、ポーズメニューでフリーズする不具合を修正
@@ -226,7 +228,10 @@
  *  イベントログに区切り線を追加できます
  *  自動イベント区切り線 設定をONにしておくことで、
  *  イベントごとに自動で区切り線を挿入させることもできます
- * 
+ *
+ *  プラグ井コマンド insertTextLog XXXX を使用することで、
+ *  イベントログに任意のログを追加できます
+ *
  *  操作方法（デフォルト）
  *   pageupキー（L2ボタン） : ログを表示する
  *   上下キー/マウススクロール : ログをスクロールする
@@ -235,13 +240,14 @@
  *  マウスドラッグやスワイプでもログをスクロールできますが、
  *  環境差異に関して未検証なのでおためし版です
  *  しばらく使われて問題が報告されなければ正式版とします
+ *
+ *  外部向けインターフェース
+ *  $gameSystem.insertTextLog(text): ログに文字列 text を追加します
  */
 
 (function () {
   'use strict';
   const pluginName = 'DarkPlasma_TextLog';
-
-  // パラメータ取得
   const pluginParameters = PluginManager.parameters(pluginName);
   const maxViewCount = Number(pluginParameters['Max View Count']);
   const overflowBuzzer = String(pluginParameters['Overflow Buzzer']) === 'true';
@@ -267,6 +273,11 @@
     smoothBackFromLog: String(pluginParameters['Smooth Back From Log'] || 'true') === 'true',
   };
 
+  /**
+   * プラグインがロードされているかどうか
+   * @param {string} name プラグインの名前
+   * @return {boolean}
+   */
   PluginManager.isLoadedPlugin = function (name) {
     return $plugins.some(plugin => plugin.name === name && plugin.status);
   };
@@ -278,7 +289,6 @@
 
     initialize() {
       this._messages = [];
-      this._eventId = 0;
     }
 
     /**
@@ -340,7 +350,6 @@
     }
   }
 
-  // 必要変数初期化
   /**
    * @type {EventTextLog}
    */
@@ -1036,6 +1045,14 @@
   };
 
   /**
+   * ログにテキストを記録する
+   * @param {string} text ログに記録したいテキスト
+   */
+  Game_System.prototype.insertTextLog = function(text) {
+    addTextLog(text);
+  };
+
+  /**
    * イベント終了時にそのイベントのログを直前のイベントのログとして保持する
    */
   const _Game_Interpreter_terminate = Game_Interpreter.prototype.terminate;
@@ -1069,7 +1086,6 @@
     return this._eventId !== 0 && this.isOnCurrentMap() && $gameMap.event(this._eventId).isTriggerIn([4]);
   };
 
-  // プラグインコマンド showTextLog
   const _Game_Interpreter_pluginCommand = Game_Interpreter.prototype.pluginCommand;
   Game_Interpreter.prototype.pluginCommand = function (command, args) {
     _Game_Interpreter_pluginCommand.call(this, command, args);
@@ -1081,6 +1097,9 @@
         break;
       case 'insertLogSplitter':
         addTextLog(settings.eventLogSplitter, []);
+        break;
+      case 'insertTextLog':
+        addTextLog(args[0]);
         break;
     }
   }
