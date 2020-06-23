@@ -4,6 +4,7 @@
 // http://opensource.org/licenses/mit-license.php
 
 /**
+ * 2020/06/23 1.8.3 DarkPlasma_WordWrapForJapanese.js 等と併用しないとエラーになる不具合を修正
  * 2020/06/03 1.8.2 NobleMushroom.js と併用した際に、セーブ・ロード画面でログを開ける不具合を修正
  *            1.8.1 NobleMushroom.js と併用した際に、ポーズメニューでフリーズする不具合を修正
  *                  タイトルに戻ってニューゲーム/ロードした際に、直前のデータのログを引き継ぐ不具合を修正
