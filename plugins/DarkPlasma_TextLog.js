@@ -266,6 +266,10 @@
     smoothBackFromLog: String(pluginParameters['Smooth Back From Log'] || 'true') === 'true',
   };
 
+  PluginManager.isLoadedPlugin = function (name) {
+    return $plugins.some(plugin => plugin.name === name && plugin.status);
+  };
+
   class EventTextLog {
     constructor() {
       this.initialize();
@@ -1130,7 +1134,4 @@
     return this._deltaY > 0 && this._pressedTime % 10 === 0;
   };
 
-  PluginManager.isLoadedPlugin = function (name) {
-    return $plugins.some(plugin => plugin.name === name && plugin.status);
-  };
 })();
