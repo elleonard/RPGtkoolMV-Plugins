@@ -4,6 +4,7 @@
 // http://opensource.org/licenses/mit-license.php
 
 /**
+ * 2020/06/24 2.4.0 無効属性/ステート/弱体を耐性属性/ステート/弱体と分けて表示する設定を追加
  * 2020/06/22 2.3.1 除外ステートや弱体有効度を英語対応
  *            2.3.0 表示から除外するステート設定を追加
  *                  同一属性/ステートに複数の有効度が指定された場合に最初の設定以外用いられない不具合を修正
@@ -76,6 +77,18 @@
  * @desc Label for resist elements and states.
  * @type string
  * @default Resist
+ * @parent Detail Mode
+ *
+ * @param Devide Resist And No Effect
+ * @desc Display no effect elements and states apart from the resists.
+ * @type boolean
+ * @default false
+ * @parent Detail Mode
+ *
+ * @param No Effect Element And State Label
+ * @desc Label for no effect elements and states.
+ * @type string
+ * @default No Effect
  * @parent Detail Mode
  *
  * @param Exclude Weak States
@@ -337,6 +350,20 @@
  * @default 耐性属性/ステート/弱体
  * @parent Detail Mode
  *
+ * @param Devide Resist And No Effect
+ * @desc 耐性属性/ステート/弱体と無効属性/ステート/弱体を分けて表示します
+ * @text 耐性と無効を分ける
+ * @type boolean
+ * @default false
+ * @parent Detail Mode
+ *
+ * @param No Effect Element And State Label
+ * @desc 無効属性/ステート/弱体のラベルを設定します
+ * @text 無効ラベル
+ * @type string
+ * @default 無効属性/ステート/弱体
+ * @parent Detail Mode
+ *
  * @param Exclude Weak States
  * @desc 弱点ステートに表示しないステートを設定します
  * @text 弱点表示しないステート
@@ -345,7 +372,7 @@
  * @parent Detail Mode
  *
  * @param Exclude Resist States
- * @desc 耐性ステートに表示しないステートを設定します
+ * @desc 耐性/無効ステートに表示しないステートを設定します
  * @text 耐性表示しないステート
  * @type state[]
  * @default []
@@ -581,6 +608,8 @@
     elementIcons: JSON.parse(parameters['Element Icons']).map(icon => Number(icon)),
     weakLabel: String(parameters['Weak Element And State Label'] || 'Weak'),
     resistLabel: String(parameters['Resist Element And State Label'] || 'Resist'),
+    devideResistAndNoEffect: String(parameters['Devide Resist And No Effect'] || 'true') === 'true',
+    noEffectLabel: String(parameters['No Effect Element And State Label'] || 'No Effect'),
     excludeWeakStates: JSON.parse(parameters['Exclude Weak States'] || '[]').map(state => Number(state)),
     excludeResistStates: JSON.parse(parameters['Exclude Resist States'] || '[]').map(state => Number(state)),
     displayDebuffStatus: String(parameters['Display Debuff Status'] || 'true') === 'true',
@@ -1171,14 +1200,41 @@
 
       this.drawDropItems(0, lineHeight * 6 + this.textPadding(), dropItemWidth);
 
-      const weakAndResistWidth = 280;
+      const weakAndResistWidth = this.contentsWidth() / 2;
       this._weakLines = 1;
-      this.drawWeakElementsAndStates(0, lineHeight * 10 + this.textPadding(), weakAndResistWidth);
-      this.drawResistElementsAndStates(0, lineHeight * (11 + this._weakLines) + this.textPadding(), weakAndResistWidth);
+      this._resistLines = 1;
+      this.drawWeakElementsAndStates(0,
+        lineHeight * 10 + this.textPadding(),
+        weakAndResistWidth
+      );
+      this.drawResistElementsAndStates(
+        0,
+        lineHeight * (11 + this._weakLines) + this.textPadding(),
+        weakAndResistWidth
+      );
+      if (settings.devideResistAndNoEffect) {
+        this.drawNoEffectElementsAndStates(
+          0,
+          lineHeight * (12 + this._weakLines + this._resistLines) + this.textPadding(),
+          weakAndResistWidth
+        );
+      }
 
+      const descX = settings.devideResistAndNoEffect ?
+        this.contentsWidth() / 2 + this.standardPadding() / 2 : 0;
       const descWidth = 480;
-      this.drawTextEx(enemy.meta.desc1, 0, this.textPadding() + lineHeight * 14, descWidth);
-      this.drawTextEx(enemy.meta.desc2, 0, this.textPadding() + lineHeight * 15, descWidth);
+      this.drawTextEx(
+        enemy.meta.desc1,
+        descX,
+        this.textPadding() + lineHeight * 14,
+        descWidth
+      );
+      this.drawTextEx(
+        enemy.meta.desc2,
+        descX,
+        this.textPadding() + lineHeight * 15,
+        descWidth
+      );
     }
 
     drawPageWithDetailMode() {
@@ -1195,8 +1251,24 @@
 
       const weakAndResistWidth = 280;
       this._weakLines = 1;
-      this.drawWeakElementsAndStates(this.contentsWidth() - weakAndResistWidth, lineHeight + this.textPadding(), weakAndResistWidth);
-      this.drawResistElementsAndStates(this.contentsWidth() - weakAndResistWidth, lineHeight * (2 + this._weakLines), weakAndResistWidth);
+      this._resistLines = 1;
+      this.drawWeakElementsAndStates(
+        this.contentsWidth() - weakAndResistWidth,
+        lineHeight + this.textPadding(),
+        weakAndResistWidth
+      );
+      this.drawResistElementsAndStates(
+        this.contentsWidth() - weakAndResistWidth,
+        lineHeight * (2 + this._weakLines),
+        weakAndResistWidth
+      );
+      if (settings.devideResistAndNoEffect) {
+        this.drawNoEffectElementsAndStates(
+          this.contentsWidth() - weakAndResistWidth,
+          lineHeight * (3 + this._weakLines + this._resistLines),
+          weakAndResistWidth
+        );
+      }
 
       const descWidth = 480;
       this.drawTextEx(enemy.meta.desc1, this.contentsWidth() - descWidth, this.textPadding() + lineHeight * 10, descWidth);
@@ -1412,7 +1484,7 @@
           x + 32 * (index % this.maxIconsPerLine()),
           iconBaseY + 32 * Math.floor(index / this.maxIconsPerLine()));
       });
-      this._weakLines = Math.floor(targetIcons.length / this.maxIconsPerLine()) + 1;
+      this._weakLines = Math.floor((targetIcons.length - 1) / this.maxIconsPerLine()) + 1;
     }
 
     /**
@@ -1432,15 +1504,28 @@
     drawResistElementsAndStates(x, y, width) {
       const targetIcons = $dataSystem.elements
         .map((_, index) => index)
-        .filter(elementId => this.elementRate(elementId) < 1)
+        .filter(elementId => {
+          const elementRate = this.elementRate(elementId);
+          return elementRate < 1 && (!settings.devideResistAndNoEffect || elementRate > 0);
+        })
         .map(elementId => settings.elementIcons[elementId])
         .concat($dataStates
-          .filter(state => state && this.stateRate(state.id) < 1 && !this.isExcludedResistState(state.id))
+          .filter(state => {
+            if (!state) {
+              return false;
+            }
+            const stateRate = this.stateRate(state.id);
+            return stateRate < 1 &&
+              !this.isExcludedResistState(state.id) &&
+              (!settings.devideResistAndNoEffect || stateRate > 0);
+          })
           .map(state => state.iconIndex))
         .concat(STATUS_NAMES
           .filter((_, index) => {
+            const debuffRate = this.debuffRate(index);
             return settings.displayDebuffStatus &&
-              this.debuffRate(index) < settings.debuffStatusThreshold.resist.large;
+              debuffRate < settings.debuffStatusThreshold.resist.large &&
+              (!settings.devideResistAndNoEffect || debuffRate > 0);
           })
           .map(statusName => settings.debuffStatusIcons[statusName].large))
         .concat(STATUS_NAMES
@@ -1450,9 +1535,39 @@
               debuffRate >= settings.debuffStatusThreshold.resist.large &&
               debuffRate < settings.debuffStatusThreshold.resist.small;
           })
-          .map(statusName => settings.debuffStatusIcons[statusName].small));;
+          .map(statusName => settings.debuffStatusIcons[statusName].small));
       this.changeTextColor(this.systemColor());
       this.drawText(settings.resistLabel, x, y, width);
+
+      const iconBaseY = y + this.lineHeight();
+      targetIcons.forEach((icon, index) => {
+        this.drawIcon(icon,
+          x + 32 * (index % this.maxIconsPerLine()),
+          iconBaseY + 32 * Math.floor(index / this.maxIconsPerLine()));
+      });
+      this._resistLines = Math.floor((targetIcons.length - 1) / this.maxIconsPerLine()) + 1;
+    }
+
+    /**
+     * @param {number} x X座標
+     * @param {number} y Y座標
+     * @param {number} width 横幅
+     */
+    drawNoEffectElementsAndStates(x, y, width) {
+      const targetIcons = $dataSystem.elements
+        .map((_, index) => index)
+        .filter(elementId => this.elementRate(elementId) <= 0)
+        .map(elementId => settings.elementIcons[elementId])
+        .concat($dataStates
+          .filter(state => state && this.stateRate(state.id) <= 0 && !this.isExcludedResistState(state.id))
+          .map(state => state.iconIndex))
+        .concat(STATUS_NAMES
+          .filter((_, index) => {
+            return settings.displayDebuffStatus && this.debuffRate(index) <= 0;
+          })
+          .map(statusName => settings.debuffStatusIcons[statusName].large));
+      this.changeTextColor(this.systemColor());
+      this.drawText(settings.noEffectLabel, x, y, width);
 
       const iconBaseY = y + this.lineHeight();
       targetIcons.forEach((icon, index) => {
