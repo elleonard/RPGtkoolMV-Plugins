@@ -5,6 +5,7 @@
 
 /**
  * 2020/06/24 2.4.0 無効属性/ステート/弱体を耐性属性/ステート/弱体と分けて表示する設定を追加
+ *            2.4.1 レイアウト崩れを修正
  * 2020/06/22 2.3.1 除外ステートや弱体有効度を英語対応
  *            2.3.0 表示から除外するステート設定を追加
  *                  同一属性/ステートに複数の有効度が指定された場合に最初の設定以外用いられない不具合を修正
@@ -1265,7 +1266,7 @@
       if (settings.devideResistAndNoEffect) {
         this.drawNoEffectElementsAndStates(
           this.contentsWidth() - weakAndResistWidth,
-          lineHeight * (3 + this._weakLines + this._resistLines),
+          lineHeight * (4 + this._weakLines + this._resistLines),
           weakAndResistWidth
         );
       }
@@ -1484,7 +1485,7 @@
           x + 32 * (index % this.maxIconsPerLine()),
           iconBaseY + 32 * Math.floor(index / this.maxIconsPerLine()));
       });
-      this._weakLines = Math.floor((targetIcons.length - 1) / this.maxIconsPerLine()) + 1;
+      this._weakLines = Math.floor(targetIcons.length / (this.maxIconsPerLine() + 1)) + 1;
     }
 
     /**
@@ -1545,7 +1546,7 @@
           x + 32 * (index % this.maxIconsPerLine()),
           iconBaseY + 32 * Math.floor(index / this.maxIconsPerLine()));
       });
-      this._resistLines = Math.floor((targetIcons.length - 1) / this.maxIconsPerLine()) + 1;
+      this._resistLines = Math.floor(targetIcons.length/ (this.maxIconsPerLine() + 1)) + 1;
     }
 
     /**
