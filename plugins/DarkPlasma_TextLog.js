@@ -4,6 +4,7 @@
 // http://opensource.org/licenses/mit-license.php
 
 /**
+ * 2020/08/05 1.9.1 MPP_ChoiceEx.js との競合を解消
  * 2020/06/23 1.9.0 プラグインコマンドでログを追加する機能を追加
  *                  外部向けログ追加インターフェース公開
  * 2020/06/23 1.8.3 DarkPlasma_WordWrapForJapanese.js 等と併用しないとエラーになる不具合を修正
@@ -993,13 +994,16 @@
         !$gameSwitches.value(disableLoggingSwitch)) &&
       $gameMessage.hasText()) {
       let text = "";
-      if (chosenIndex < 0) {
+      // MPP_ChoiceEx.js は choiceCancelType を-1ではなく選択肢配列のサイズにする。
+      // 競合回避のため、 choiceCancelType を -1 に限定しない判定を行う。
+      if (chosenIndex === $gameMessage.choiceCancelType() &&
+        (chosenIndex < 0 || $gameMessage.choices().length <= chosenIndex)) {
         if (!settings.includeChoiceCancel) {
           return;
         }
         text = settings.choiceCancelText;
       } else {
-        text = $gameMessage.choices()[this.index()];
+        text = $gameMessage.choices()[chosenIndex];
       }
       let message = {
         text: settings.choiceFormat.replace(/{choice}/gi, `\x1bC[${settings.choiceColor}]${text}\x1bC[0]`)
