@@ -4,6 +4,7 @@
 // http://opensource.org/licenses/mit-license.php
 
 /**
+ * 2020/08/07 1.10.0 テキストログウィンドウ拡張用インターフェースを公開
  * 2020/08/05 1.9.1 MPP_ChoiceEx.js との競合を解消
  * 2020/06/23 1.9.0 プラグインコマンドでログを追加する機能を追加
  *                  外部向けログ追加インターフェース公開
@@ -71,7 +72,10 @@
  * @plugindesc イベントのテキストログを表示する
  * @author DarkPlasma
  * @license MIT
- * 
+ *
+ * @target MV
+ * @url https://github.com/elleonard/RPGtkoolMV-Plugins
+ *
  * @param Max View Count
  * @desc １画面に表示する最大のメッセージ数
  * @text 1画面のメッセージ数上限
@@ -230,7 +234,7 @@
  *  自動イベント区切り線 設定をONにしておくことで、
  *  イベントごとに自動で区切り線を挿入させることもできます
  *
- *  プラグ井コマンド insertTextLog XXXX を使用することで、
+ *  プラグインコマンド insertTextLog XXXX を使用することで、
  *  イベントログに任意のログを追加できます
  *
  *  操作方法（デフォルト）
@@ -244,6 +248,10 @@
  *
  *  外部向けインターフェース
  *  $gameSystem.insertTextLog(text): ログに文字列 text を追加します
+ *
+ *  拡張プラグインを書くことで、テキストログウィンドウの
+ *  エスケープ文字の挙動を定義できます
+ *  詳細は https://github.com/elleonard/RPGtkoolMV-Plugins/blob/master/plugins/DarkPlasma_TextLogExtensionExample.js
  */
 
 (function () {
@@ -328,6 +336,7 @@
     constructor(text) {
       this._text = text;
       this._height = 0;
+      this._offsetY = 0;
     }
 
     /**
@@ -348,6 +357,18 @@
 
     get height() {
       return this._height;
+    }
+
+    /**
+     * 表示開始Y座標を調整したいとき用
+     * @param {number} offsetY Yオフセット
+     */
+    setOffsetY(offsetY) {
+      this._offsetY = offsetY;
+    }
+
+    get offsetY() {
+      return this._offsetY;
     }
   }
 
@@ -567,7 +588,8 @@
         if (i < this._viewTexts.length) {
           const text = this._viewTexts[i].text;
           const textHeight = this._viewTexts[i].height;
-          this.drawTextEx(text, 0, height);
+          const offsetY = this._viewTexts[i].offsetY;
+          this.drawTextEx(text, 0, height + offsetY);
           if (textHeight === 0) {
             this._viewTexts[i].setHeight(this.calcMessageHeight(text));
           }
@@ -671,6 +693,8 @@
       }
     }
   }
+
+  window[Window_TextLog.name] = Window_TextLog;
 
 
   /**

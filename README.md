@@ -428,7 +428,12 @@ DarkPlasma_ShopStock.js 及び DarkPlasma_ShopBuyByCategory.js の利用を検�
 イベントのテキストログを表示するプラグイン
 
 pageupキー（L2ボタン）でログを表示し、上下キーでスクロール、キャンセルキーで戻ります
-YEP_MessageCore.jsに対応しています（v1.18で動作確認済み）
+
+## DarkPlasma_TextLogExtensionExample.js
+
+テキストログ表示プラグインの拡張プラグインの例
+
+ログ中のエスケープ文字に対する挙動を定義する際の例となるプラグインです
 
 ## DarkPlasma_TinyMedal.js
 
