@@ -4,6 +4,7 @@
 // http://opensource.org/licenses/mit-license.php
 
 /**
+ * 2020/08/09 1.10.1 NobleMushroom.js と併用した際に、場所移動後にウィンドウが表示され続ける不具合を修正
  * 2020/08/07 1.10.0 テキストログウィンドウ拡張用インターフェースを公開
  * 2020/08/05 1.9.1 MPP_ChoiceEx.js との競合を解消
  * 2020/06/23 1.9.0 プラグインコマンドでログを追加する機能を追加
@@ -1054,6 +1055,16 @@
    */
   Game_Message.prototype.chosenIndex = function () {
     return this._chosenIndex;
+  };
+
+  const _Game_Player_reserveTransfer = Game_Player.prototype.reserveTransfer;
+  Game_Player.prototype.reserveTransfer = function (mapId, x, y, d, fadeType) {
+    _Game_Player_reserveTransfer.call(this, mapId, x, y, d, fadeType);
+    /**
+     * 場所移動時に退避したメッセージウィンドウを初期化する
+     * そうしないと、ログウィンドウから戻ったものと判定され、場所移動後にメッセージウィンドウが表示されっぱなしになるケースがある
+     */
+    evacuatedMessageWindow = null;
   };
 
   const _Game_System_initialize = Game_System.prototype.initialize;
