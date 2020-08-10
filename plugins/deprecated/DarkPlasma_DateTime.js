@@ -3,13 +3,25 @@
 // This software is released under the MIT license.
 // http://opensource.org/licenses/mit-license.php
 
+/**
+ * 2020/08/11 1.0.1 deprecated宣言
+ */
 
 /*:
  * @plugindesc スクリプト呼び出しで日時を簡単に扱う
  * @author DarkPlasma
  * @license MIT
  *
+ * @deprecated このプラグインは利用を推奨しません。
+ *
+ * @target MV
+ * @url https://github.com/elleonard/RPGtkoolMV-Plugins
+ *
  * @help
+ * このプラグインは下記理由により、利用を推奨しません。
+ * - コード内容が古く、作者にメンテナンスの意思がない。
+ * - リアルタイムを絡めたゲーム内要素はプレイヤーフレンドリーでない。
+ *
  * このスクリプトにパラメータ設定はありません
  * MVのイベントエディタ上の条件分岐などで、日時を扱いやすくするためのプラグインです
  * 例えば、isTodaysDate('12/25') とすれば、クリスマスのみ入る分岐を作れます

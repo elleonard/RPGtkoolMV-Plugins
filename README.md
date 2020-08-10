@@ -106,16 +106,6 @@ Trb_TextColor.js を採用している場合は色番号ではなくカラーコ
 
 スイッチや変数の値ごとに、アイテムの売却価格を変動させたい場合にどうぞ
 
-## DarkPlasma_DateTime.js
-
-リアル日時を扱うプラグイン
-イベントの期間限定分岐や曜日限定分岐等にどうぞ
-例えば、条件分岐のスクリプト欄に
-
-`DarkPlasma.DateTime.isTodaysDate('12/25')`
-
-と入力すればクリスマスの日のみその分岐に入ることができます
-
 ## DarkPlasma_DeathStateMessage.js
 
 即死成功時のメッセージをスキルごとに設定できるプラグイン
