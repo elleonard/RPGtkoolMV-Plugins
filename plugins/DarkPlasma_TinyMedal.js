@@ -4,6 +4,7 @@
 // http://opensource.org/licenses/mit-license.php
 
 /**
+ * 2020/08/25 1.2.3 複数の報酬を受け取った際にメッセージが正しく表示できない不具合を修正
  * 2020/04/30 1.2.2 報酬を受け取れなかった際にエラーになる不具合を修正
  * 2020/04/27 1.2.1 報酬受取時のメッセージ処理を軽量化
  * 2020/04/22 1.2.0 報酬受取時のメッセージ設定機能を追加
@@ -15,6 +16,9 @@
  * @plugindesc ちいさなメダルシステムを実現するプラグイン
  * @author DarkPlasma
  * @license MIT
+ *
+ * @target MV
+ * @url https://github.com/elleonard/RPGtkoolMV-Plugins
  *
  * @param Medal Item
  * @desc メダルアイテム
@@ -155,6 +159,10 @@
   };
 
   let autoIncrementRewardId = 0;
+
+  /**
+   * @type {RewardMessage[]}
+   */
   let reservedRewardMessages = [];
 
   class RewardItem {
@@ -219,7 +227,9 @@
     complete() {
       $gameParty.gainItem(this.itemData, 1);
       $gameSystem.completeMedalReward(this._rewardId);
-      settings.rewardMessages.forEach(message => message.showOrReserve(this.itemData.name));
+      settings.rewardMessages.map(message => {
+        return new RewardMessage(this.itemData.name, message);
+      }).forEach(message => message.reserve());
     }
 
     /**
@@ -231,41 +241,53 @@
   }
 
   class RewardMessage {
-    constructor(message, faceFile, faceIndex) {
-      this._message = message;
-      this._faceFile = faceFile;
-      this._faceIndex = faceIndex;
-      this._itemName = '';
-    }
-
-    static fromJson(json) {
-      const parsed = JsonEx.parse(json);
-      return new RewardMessage(
-        String(parsed['Message']),
-        String(parsed['Face File']),
-        Number(parsed['Face Index'])
-      );
+    /**
+     * @param {string} itemName アイテム名
+     * @param {RewardMessageStatic} staticMessage 固定部分
+     */
+    constructor(itemName, staticMessage) {
+      this._itemName = itemName;
+      this._staticMessage = staticMessage;
     }
 
     reserve() {
       reservedRewardMessages.push(this);
     }
 
-    showOrReserve(itemName) {
-      this._itemName = itemName;
-      if (!$gameMessage.isBusy()) {
-        this.reserve();
-      } else {
-        this.show();
-      }
-    }
-
     /**
      * アイテムを入手した際の報酬メッセージを表示する
      */
     show() {
+      this._staticMessage.show(this._itemName);
+    }
+  }
+
+  /**
+   * 報酬メッセージの固定部分
+   */
+  class RewardMessageStatic {
+    constructor(message, faceFile, faceIndex) {
+      this._message = message;
+      this._faceFile = faceFile;
+      this._faceIndex = faceIndex;
+    }
+
+    static fromJson(json) {
+      const parsed = JsonEx.parse(json);
+      return new RewardMessageStatic(
+        String(parsed['Message']),
+        String(parsed['Face File']),
+        Number(parsed['Face Index'])
+      );
+    }
+
+    /**
+     * アイテムを入手した際の報酬メッセージを表示する
+     * @param {string} itemName アイテム名
+     */
+    show(itemName) {
       this.showFace();
-      const message = this._message.replace(/\$\{itemName\}/gi, this._itemName);
+      const message = this._message.replace(/\$\{itemName\}/gi, itemName);
       $gameMessage.add(message);
     }
 
@@ -291,7 +313,7 @@
           .map(json => RewardItem.fromJson(json, ITEM_KIND.ARMOR))
       ),
     rewardMessages: JsonEx.parse(pluginParameters['Reward Messages'] || '[]')
-        .map(json => RewardMessage.fromJson(json))
+        .map(json => RewardMessageStatic.fromJson(json))
   };
 
   class Scene_TinyMedal extends Scene_Base {
@@ -505,6 +527,18 @@
         this.processReservedRewardMessages();
         break;
     }
+  };
+
+  const _Game_Interpreter_executeCommand = Game_Interpreter.prototype.executeCommand;
+  Game_Interpreter.prototype.executeCommand = function () {
+    /**
+     * 報酬メッセージがあればそれを先に処理する
+     */
+    if (reservedRewardMessages.length > 0) {
+      this.processReservedRewardMessages();
+      return true;
+    }
+    _Game_Interpreter_executeCommand.call(this);
   };
 
   /**
