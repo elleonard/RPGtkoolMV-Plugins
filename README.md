@@ -201,6 +201,12 @@ FTKR_ExEscapeCharactersPatch.js のパッチプラグイン
 
 メニュー画面のキャラクターステータスウィンドウを非表示にするプラグイン
 
+## DarkPlasma_HIME_EquipSlotCorePatch.js
+
+HIME_EquipSlotCore.js のパッチプラグイン
+
+HIME_EquipSlotCore.js と、装備欄でアクター切り替えを可能とするプラグイン（TMOmitEquipCommand.jsなど）との競合を修正します
+
 ## DarkPlasma_HiME_MenuMusicPatch.js
 
 HiME_MenuMusic.js のパッチプラグイン
