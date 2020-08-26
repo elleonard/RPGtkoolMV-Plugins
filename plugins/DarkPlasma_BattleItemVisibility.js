@@ -4,6 +4,7 @@
 // http://opensource.org/licenses/mit-license.php
 
 /**
+ * 2020/08/27 1.0.1 使用不能な隠しアイテムが表示できない不具合を修正
  * 2019/08/19 1.0.0 公開
  */
 
@@ -11,6 +12,9 @@
  * @plugindesc 戦闘中のアイテムリストに表示するものを制御する
  * @author DarkPlasma
  * @license MIT
+ *
+ * @target MV
+ * @url https://github.com/elleonard/RPGtkoolMV-Plugins
  *
  * @param Show Only Menu Items
  * @text メニュー画面アイテムを表示
@@ -70,18 +74,20 @@
 
 (function () {
   'use strict';
-  var pluginName = 'DarkPlasma_BattleItemVisibility';
-  var pluginParameters = PluginManager.parameters(pluginName);
+  const pluginName = document.currentScript.src.replace(/^.*\/(.*).js$/, function () {
+    return arguments[1];
+  });
+  const pluginParameters = PluginManager.parameters(pluginName);
 
-  var _extractMetadata = DataManager.extractMetadata;
+  const _DataManager_extractMetadata = DataManager.extractMetadata;
   DataManager.extractMetadata = function (data) {
-    _extractMetadata.call(this, data);
+    _DataManager_extractMetadata.call(this, data);
     if (data.meta.VisibleInBattle !== undefined) {
       data.visibleInBattle = true;
     }
   };
 
-  var settings = {
+  const settings = {
     showOnlyMenuItems: String(pluginParameters['Show Only Menu Items']) === 'true',
     showUnusableItems: String(pluginParameters['Show Unusable Items']) === 'true',
     showWeapons: String(pluginParameters['Show Weapons']) === 'true',
@@ -92,14 +98,14 @@
     showUnusableSecretItemsB: String(pluginParameters['Show Unusable Secret Items B']) === 'true',
   };
 
-  var _Window_BattleItem_includes = Window_BattleItem.prototype.includes;
+  const _Window_BattleItem_includes = Window_BattleItem.prototype.includes;
   Window_BattleItem.prototype.includes = function(item) {
-    var usableSecretItemCondition = settings.showUsableSecretItems || (item.itypeId !== 3 && item.itypeId !== 4);
+    const usableSecretItemCondition = settings.showUsableSecretItems || (item.itypeId !== 3 && item.itypeId !== 4);
     return _Window_BattleItem_includes.call(this, item) && usableSecretItemCondition ||
       (settings.showOnlyMenuItems && DataManager.isItem(item) && item.itypeId === 1 && item.occasion === 2) ||
       (settings.showUnusableItems && DataManager.isItem(item) && item.itypeId === 1 && item.occasion === 3) ||
-      (settings.showUnusableSecretItemsA && DataManager.isItem(item) && item.itypeId === 3 && (item.occasion === 2 || item.occation === 3)) ||
-      (settings.showUnusableSecretItemsB && DataManager.isItem(item) && item.itypeId === 4 && (item.occasion === 2 || item.occation === 3)) ||
+      (settings.showUnusableSecretItemsA && DataManager.isItem(item) && item.itypeId === 3 && (item.occasion === 2 || item.occasion === 3)) ||
+      (settings.showUnusableSecretItemsB && DataManager.isItem(item) && item.itypeId === 4 && (item.occasion === 2 || item.occasion === 3)) ||
       (settings.showWeapons && DataManager.isWeapon(item)) ||
       (settings.showArmors && DataManager.isArmor(item)) ||
       (item && item.visibleInBattle);
