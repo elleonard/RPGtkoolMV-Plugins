@@ -4,6 +4,7 @@
 // http://opensource.org/licenses/mit-license.php
 
 /**
+ * 2020/08/28 1.2.1 次のターンへ移行するオプションが常に有効であった不具合を修正
  * 2019/06/28 1.2.0 強制入れ替え時に次のターンへ移行するオプションを追加
  *            1.1.0 強制入れ替え時にコモンイベントを実行する機能を追加
  */
@@ -12,6 +13,9 @@
  * @plugindesc 全滅時に後衛と強制的に入れ替える
  * @author DarkPlasma
  * @license MIT
+ *
+ * @target MV
+ * @url https://github.com/elleonard/RPGtkoolMV-Plugins
  *
  * @param Force Formation Message
  * @text 強制入れ替えのメッセージ
@@ -40,13 +44,15 @@
  */
 (function () {
   'use strict';
-  var pluginName = 'DarkPlasma_ForceFormation';
-  var pluginParameters = PluginManager.parameters(pluginName);
+  const pluginName = document.currentScript.src.replace(/^.*\/(.*).js$/, function () {
+    return arguments[1];
+  });
+  const pluginParameters = PluginManager.parameters(pluginName);
 
-  var settings = {
+  const settings = {
     message: String(pluginParameters['Force Formation Message']) || "倒れた前衛に代わって後衛が戦闘に加わった！",
     commonEvent: Number(pluginParameters['Force Formation Common Event']) || 0,
-    turnChange: String(pluginParameters['Force Turn Change'] === "true") || false,
+    turnChange: String(pluginParameters['Force Turn Change'] || 'false') === "true" || false,
   };
 
   // Window_BattleLog
@@ -60,7 +66,7 @@
   };
 
   // BattleManager
-  var _BattleManager_checkBattleEnd = BattleManager.checkBattleEnd;
+  const _BattleManager_checkBattleEnd = BattleManager.checkBattleEnd;
   BattleManager.checkBattleEnd = function () {
     if (_BattleManager_checkBattleEnd.call(this)) {
       return true;
@@ -95,7 +101,6 @@
   /**
    * 前衛後衛両方とも全滅しているかどうか
    */
-  var _GameParty_isAllDead = Game_Party.prototype.isAllDead;
   Game_Party.prototype.isAllDead = function () {
     return this.allMembers().filter(function (member) {
       return member.isAlive();
@@ -108,7 +113,7 @@
    */
   Game_Party.prototype.forceFormation = function () {
     this.battleMembers().forEach(function (deadMember) {
-      var aliveTarget = this.allMembers().find(function (member) {
+      const aliveTarget = this.allMembers().find(function (member) {
         return !member.isBattleMember() && member.isAlive();
       }, this);
       if (aliveTarget) {
