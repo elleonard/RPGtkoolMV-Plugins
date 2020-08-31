@@ -395,6 +395,10 @@ HPを消費する, HPを割合で消費する, MPを割合で消費する, ア�
 
 戦闘不能になっても解除されないステートを作るプラグイン
 
+## DarkPlasma_StoreItemGetCount.js
+
+アイテムの入手数を記録するプラグイン
+
 ## DarkPlasma_SubtractMode.js
 
 ピクチャの合成方法「減算」をサポートするプラグイン
