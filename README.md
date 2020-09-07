@@ -2,10 +2,10 @@
 
 RPGツクールMV 1.6系で動作するプラグインです。
 RPGツクールMZにおける動作は保証しません。
-RPGツクールMZ用プラグインは[こちら](https://github.com/elleonard/RPGtkoolMZ-Plugins)
+RPGツクールMZ用プラグインは[こちら](https://github.com/elleonard/DarkPlasma-MZ-Plugins/tree/release)
 
 There are plugins working with RMMV 1.6.x or later.
-[RMMZ plugins](https://github.com/elleonard/RPGtkoolMZ-Plugins).
+[RMMZ plugins](https://github.com/elleonard/DarkPlasma-MZ-Plugins/tree/release).
 
 ## 使い方
 
