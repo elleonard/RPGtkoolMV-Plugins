@@ -99,9 +99,13 @@ Trb_TextColor.js を採用している場合は色番号ではなくカラーコ
 パーティメンバーから抜けた際に、自動で抜けたメンバーの装備をすべてはずすプラグインパラメータを提供します
 任意の名前のメンバーの装備をはずすプラグインコマンドを提供します
 
-## DarkPlasma_CommonDroPItem.js
+## DarkPlasma_CommonDropItem.js
 
 全戦闘で共通のドロップアイテムを設定するプラグイン
+
+## DarkPlasma_ConsumeItemImmediately.js
+
+戦闘中、アイテム消費を入力後即座に反映するプラグイン
 
 ## DarkPlasma_CustomSellingPrice.js
 
