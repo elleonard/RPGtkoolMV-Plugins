@@ -4,7 +4,8 @@
 // http://opensource.org/licenses/mit-license.php
 
 /**
- * 2020/09/11 1.1.0 アイテムやゴールドの消費スキルを選択した際、後続のメンバーが参照するアイテム数/ゴールド数を消費後のものにする機能追加
+ * 2020/09/11 1.1.1 攻撃/防御時にエラーになる不具合を修正
+ *            1.1.0 アイテムやゴールドの消費スキルを選択した際、後続のメンバーが参照するアイテム数/ゴールド数を消費後のものにする機能追加
  * 2019/08/20 1.0.0 公開
  */
 
@@ -184,7 +185,7 @@
   Scene_Battle.prototype.selectNextCommand = function () {
     const action = BattleManager.inputtingAction();
     if (action && action.isSkill()) {
-      const skill = this._skillWindow.item();
+      const skill = action.item();
       this._lastInputIsSkill = true;
       BattleManager.reserveSkill(skill);
     } else {
