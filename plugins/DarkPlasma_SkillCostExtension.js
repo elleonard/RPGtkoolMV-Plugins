@@ -4,7 +4,8 @@
 // http://opensource.org/licenses/mit-license.php
 
 /**
- * 2020/09/11 1.2.0 入力後、消費数を反映する機能をオプション化
+ * 2020/09/11 1.2.1 DarkPlasma_ConsumeItemImmediatelyに対応
+ *            1.2.0 入力後、消費数を反映する機能をオプション化
  *                  スキル->アイテムと入力するとキャンセルしても個数が戻らない不具合を修正
  *                  入力でアイテムが減った場合も使用可能条件で参照する個数が減っていない不具合を修正
  *            1.1.2 入力中に Game_Party.prototype.gainItem を呼ぶプラグインとの競合を修正
@@ -17,6 +18,8 @@
  * @plugindesc スキルコストを拡張するプラグイン
  * @author DarkPlasma
  * @license MIT
+ *
+ * @orderAfter DarkPlasma_ConsumeItemImmediately
  *
  * @param consumeImmediately
  * @text 入力時に消費反映
@@ -43,6 +46,13 @@
  *     item:1:1
  *     item:2:1
  *   >
+ *
+ * アイテム選択時に消費をアイテム数へ反映する機能について
+ * 本プラグインではスキルによる消費数の反映のみ行っています。
+ * アイテムを直接使用した場合の消費数の反映については、
+ * DarkPlasma_ConsumeItemImmediately をご利用ください。
+ * 本プラグインと併用する場合、DarkPlasma_ConsumeItemImmediatelyよりも
+ * 本プラグインを下に配置してください。
  */
 
 (function () {
@@ -129,6 +139,13 @@
 
   BattleManager.cancelSkill = function () {
     this._reservedSkills.cancel();
+  };
+
+  const _BattleManager_reservedItemCount = BattleManager.reservedItemCount;
+  BattleManager.reservedItemCount = function (item) {
+    return _BattleManager_reservedItemCount ?
+      _BattleManager_reservedItemCount.call(this, item) + this.reservedSkillCostItemCount(item) :
+      this.reservedSkillCostItemCount(item);
   };
 
   /**
@@ -298,7 +315,7 @@
    */
   Game_Party.prototype.numItemsForDisplay = function (item) {
     return this.inBattle() && BattleManager.isInputting() && settings.consumeImmediately ?
-      this.numItems(item) - BattleManager.reservedSkillCostItemCount(item) :
+      this.numItems(item) - BattleManager.reservedItemCount(item) :
       this.numItems(item);
   };
 
