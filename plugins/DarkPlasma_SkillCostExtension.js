@@ -4,7 +4,8 @@
 // http://opensource.org/licenses/mit-license.php
 
 /**
- * 2020/09/11 1.1.1 攻撃/防御時にエラーになる不具合を修正
+ * 2020/09/11 1.1.2 入力中に Game_Party.prototype.gainItem を呼ぶプラグインとの競合を修正
+ *            1.1.1 攻撃/防御時にエラーになる不具合を修正
  *            1.1.0 アイテムやゴールドの消費スキルを選択した際、後続のメンバーが参照するアイテム数/ゴールド数を消費後のものにする機能追加
  * 2019/08/20 1.0.0 公開
  */
@@ -273,11 +274,16 @@
     _Game_BattlerBase_paySkillCost.call(this, skill);
   };
 
-  const _Game_Party_numItems = Game_Party.prototype.numItems;
-  Game_Party.prototype.numItems = function (item) {
+  /**
+   * アイテムの表示上の個数を返す
+   * numItemsはgainItemの挙動に影響してしまうため、類似の別メソッドが必要
+   * @param {MV.item} item アイテムデータ
+   * @return {number}
+   */
+  Game_Party.prototype.numItemsForDisplay = function (item) {
     return this.inBattle() && BattleManager.isInputting() ?
-      _Game_Party_numItems.call(this, item) - BattleManager.reservedSkillCostItemCount(item) :
-      _Game_Party_numItems.call(this, item);
+      this.numItems(item) - BattleManager.reservedSkillCostItemCount(item) :
+      this.numItems(item);
   };
 
   const _Game_Party_gold = Game_Party.prototype.gold;
@@ -285,6 +291,19 @@
     return this.inBattle() && BattleManager.isInputting() ?
       _Game_Party_gold.call(this) - BattleManager.reservedSkillCostGold() :
       _Game_Party_gold.call(this);
+  };
+
+  /**
+   * 戦闘中のアイテムの個数表示
+   * 表示上の個数と実際の個数がズレる上、numItemsはgainItemの挙動に影響してしまうため、
+   * まるごと上書きしてしまう。
+   * @param {MV.item} item アイテムデータ
+   */
+  Window_BattleItem.prototype.drawItemNumber = function (item, x, y, width) {
+    if (this.needsNumber()) {
+      this.drawText(':', x, y, width - this.textWidth('00'), 'right');
+      this.drawText($gameParty.numItemsForDisplay(item), x, y, width, 'right');
+    }
   };
 
   if (!Array.prototype.flat) {
