@@ -4,40 +4,58 @@
 // http://opensource.org/licenses/mit-license.php
 
 /**
- * 2020/09/11 1.1.2 入力中に Game_Party.prototype.gainItem を呼ぶプラグインとの競合を修正
+ * 2020/09/11 1.2.0 入力後、消費数を反映する機能をオプション化
+ *                  スキル->アイテムと入力するとキャンセルしても個数が戻らない不具合を修正
+ *                  入力でアイテムが減った場合も使用可能条件で参照する個数が減っていない不具合を修正
+ *            1.1.2 入力中に Game_Party.prototype.gainItem を呼ぶプラグインとの競合を修正
  *            1.1.1 攻撃/防御時にエラーになる不具合を修正
  *            1.1.0 アイテムやゴールドの消費スキルを選択した際、後続のメンバーが参照するアイテム数/ゴールド数を消費後のものにする機能追加
  * 2019/08/20 1.0.0 公開
  */
 
 /*:
-* @plugindesc スキルコストを拡張するプラグイン
-* @author DarkPlasma
-* @license MIT
-*
-* @help
-*   スキルのメモ欄に以下のように記述するとコストを追加できます。
-* 
-*   <SkillCost:
-*     hp:（消費HP 固定値）
-*     hpRate:（消費HP 最大値に対する割合）
-*     mpRate:（消費MP 最大値に対する割合）
-*     item:（アイテムID）:（個数）
-*     gold:（お金）
-*   >
-* 
-*   指定する項目はどれか一つでもよく また、itemについては複数指定が可能です。
-* 
-*   例1: アイテムID1とアイテムID2を一つずつ消費するスキル
-* 
-*   <SkillCost:
-*     item:1:1
-*     item:2:1
-*   >
-*/
+ * @plugindesc スキルコストを拡張するプラグイン
+ * @author DarkPlasma
+ * @license MIT
+ *
+ * @param consumeImmediately
+ * @text 入力時に消費反映
+ * @desc アイテムやゴールドを消費するスキルを選択した際、後続のメンバーが参照するアイテム数/ゴールドを消費後のものにする
+ * @type boolean
+ * @default true
+ *
+ * @help
+ *   スキルのメモ欄に以下のように記述するとコストを追加できます。
+ *
+ *   <SkillCost:
+ *     hp:（消費HP 固定値）
+ *     hpRate:（消費HP 最大値に対する割合）
+ *     mpRate:（消費MP 最大値に対する割合）
+ *     item:（アイテムID）:（個数）
+ *     gold:（お金）
+ *   >
+ *
+ *   指定する項目はどれか一つでもよく また、itemについては複数指定が可能です。
+ *
+ *   例1: アイテムID1とアイテムID2を一つずつ消費するスキル
+ *
+ *   <SkillCost:
+ *     item:1:1
+ *     item:2:1
+ *   >
+ */
 
 (function () {
   'use strict';
+
+  const pluginName = document.currentScript.src.replace(/^.*\/(.*).js$/, function () {
+    return arguments[1];
+  });
+  const pluginParameters = PluginManager.parameters(pluginName);
+
+  const settings = {
+    consumeImmediately: String(pluginParameters.consumeImmediately || 'true') === 'true'
+  };
 
   /**
    * ターン中に選択したスキル
@@ -187,20 +205,18 @@
     const action = BattleManager.inputtingAction();
     if (action && action.isSkill()) {
       const skill = action.item();
-      this._lastInputIsSkill = true;
       BattleManager.reserveSkill(skill);
-    } else {
-      this._lastInputIsSkill = false;
     }
     _Scene_Battle_selectNextCommand.call(this);
   };
 
   const _Scene_Battle_selectPreviousCommand = Scene_Battle.prototype.selectPreviousCommand;
   Scene_Battle.prototype.selectPreviousCommand = function () {
-    if (this._lastInputIsSkill) {
+    _Scene_Battle_selectPreviousCommand.call(this);
+    const action = BattleManager.inputtingAction();
+    if (action && action.isSkill()) {
       BattleManager.cancelSkill();
     }
-    _Scene_Battle_selectPreviousCommand.call(this);
   };
 
   const _Scene_Boot_start = Scene_Boot.prototype.start;
@@ -250,7 +266,7 @@
 
   Game_BattlerBase.prototype.canPaySkillItemCost = function (skill) {
     return !this.skillItemCosts(skill)
-      .some(item => $gameParty.numItems($dataItems[item.id]) < item.num);
+      .some(item => $gameParty.numItemsForDisplay($dataItems[item.id]) < item.num);
   };
 
   const _Game_BattlerBase_canPaySkillCost = Game_BattlerBase.prototype.canPaySkillCost;
@@ -281,7 +297,7 @@
    * @return {number}
    */
   Game_Party.prototype.numItemsForDisplay = function (item) {
-    return this.inBattle() && BattleManager.isInputting() ?
+    return this.inBattle() && BattleManager.isInputting() && settings.consumeImmediately ?
       this.numItems(item) - BattleManager.reservedSkillCostItemCount(item) :
       this.numItems(item);
   };
