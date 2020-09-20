@@ -4,6 +4,7 @@
 // http://opensource.org/licenses/mit-license.php
 
 /**
+ * 2020/09/20 1.1.2 同じピクチャIDを使いまわした際に意図しない立ち絵が表示されることがある不具合を修正
  * 2020/08/11 1.1.1 リファクタ
  */
 
@@ -172,6 +173,7 @@
      * @param {string} name ピクチャの画像ファイル名
      */
     add(id, name) {
+      this.remove(id);
       this._pictures.push(new StandPicture(id, name));
     }
 
@@ -183,7 +185,7 @@
     remove(id) {
       const target = this.find(id);
       if (target) {
-        this._pictures.filter(picture => picture !== target);
+        this._pictures = this._pictures.filter(picture => picture !== target);
       }
     }
 
