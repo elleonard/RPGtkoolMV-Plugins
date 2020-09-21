@@ -4,6 +4,7 @@
 // http://opensource.org/licenses/mit-license.php
 
 /**
+ * 2020/09/21 1.0.1 セーブデータをロードした後にNPCが動くとエラーになる不具合を修正
  * 2020/05/07 1.0.0 公開
  */
 
@@ -38,7 +39,6 @@
   const pluginName = document.currentScript.src.replace(/^.*\/(.*).js$/, function () {
     return arguments[1];
   });
-  const pluginParameters = PluginManager.parameters(pluginName);
 
   let playerIsFollower = false;
 
@@ -147,6 +147,8 @@
       }, this);
     }
   }
+
+  window[Game_NPCsFollowers.name] = Game_NPCsFollowers;
 
   const _Game_Event_initialize = Game_Event.prototype.initialize;
   Game_Event.prototype.initialize = function (mapId, eventId) {
