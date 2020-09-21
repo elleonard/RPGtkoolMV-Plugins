@@ -4,6 +4,7 @@
 // http://opensource.org/licenses/mit-license.php
 
 /**
+ * 2020/09/21 1.3.2 メッセージウィンドウの透明設定を引き継ぐよう修正
  * 2020/05/30 1.3.1 DarkPlasma_TextLog.js と併用した時、名前なしテキストに名前をつけてしまうことがある不具合を修正
  * 2020/05/08 1.3.0 閉じるアニメーションの設定項目を追加
  * 2020/04/20 1.2.1 自動名前ウィンドウ以外でアクター名色付けが機能していない不具合を修正
@@ -255,6 +256,11 @@
       this._closeDelayCounter = settings.closeDelayFrame;
     }
 
+    updateBackground() {
+      this._background = $gameMessage.background();
+      this.setBackgroundType(this._background);
+    }
+
     /**
      * @param {string} text 名前
      * @param {number} position 表示場所
@@ -279,6 +285,7 @@
       }
       this.adjustPositionX();
       this.adjustPositionY();
+      this.updateBackground();
       this.open();
       this.activate();
     }
