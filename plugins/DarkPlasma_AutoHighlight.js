@@ -4,6 +4,8 @@
 // http://opensource.org/licenses/mit-license.php
 
 /**
+ * 2020/09/21 1.3.2 指定語句のうち、長いものを優先するよう修正
+ *                  スキル名と指定語句の判定衝突を修正
  * 2020/04/14 1.3.1 指定したウィンドウが存在しない場合にエラーになる不具合を修正
  *            1.3.0 指定スキルの自動ハイライト機能追加
  *            1.2.0 自動ハイライトを有効にするウィンドウを指定できるよう修正
@@ -48,9 +50,6 @@
  * 指定した単語を指定した色でハイライトします。
  * 色指定には、 Trb_TextColor.js を採用している場合に限り、
  * シャープ付きのカラーコードを指定することができます。
- *
- * 東京と東京タワーに別々の色をつけたい場合、
- * ハイライトしたい語句リストの上の方に長い文字列を入れてください。
  */
 /*~struct~HighlightWord:
  *
@@ -80,46 +79,135 @@
     skillIds: JsonEx.parse(pluginParameters['Highlight Skills'] || '[]').map(skillId => Number(skillId))
   };
 
-  // ハイライト語句と色の対応
-  const highlightColors = {};
-  highlightSettings.forEach(highlight => {
-    highlightColors[highlight.word] = Number(highlight.color);
-  });
-  // 語句検索用正規表現
-  const highlightRegexp = new RegExp(
-    `(${highlightSettings.map(highlight => highlight.word).join("|")})`,
-    "gi"
-  );
+  class HighlightWords {
+    constructor() {
+      this._highlightWords = [];
+      this._sortedWords = null;
+      this._colors = null;
+    }
 
-  let highlightSkillsRegexp = null;
+    /**
+     * @return {RegExp}
+     */
+    getRegExp() {
+      return new RegExp(
+        `(${this.sortedWords().join("|")})`,
+        "gi"
+      );
+    }
+
+    /**
+     * @return {RegExp}
+     */
+    getRegExPForRuby() {
+      return new RegExp(
+        `(^${this.sortedWords().join("$|")})`,
+        "i"
+      );
+    }
+
+    /**
+     * 長さ順にソートしたハイライト語句一覧
+     * @return {string[]}
+     */
+    sortedWords() {
+      if (!this._sortedWords || this._needsRefreshCache) {
+        this.refreshCache();
+      }
+      return this._sortedWords;
+    }
+
+    /**
+     * @param {HighlightWord} highlightWord ハイライトする語句と色
+     */
+    add(highlightWord) {
+      this._highlightWords.push(highlightWord);
+      this._needsRefreshCache = true;
+    }
+
+    refreshCache() {
+      /**
+       * 毎度ソートするのはパフォーマンス的に許容できないため、キャッシュする
+       */
+      this._sortedWords = this._highlightWords.map(word => word.word).sort((a, b) => b.length - a.length);
+      this._colors = {};
+      /**
+       * パフォーマンスに気を使い、ランダムアクセスできるようにキャッシュする
+       */
+      this._highlightWords.forEach(highlightWord => {
+        this._colors[highlightWord.word] = highlightWord.color;
+      })
+      this._needsRefreshCache = false;
+    }
+
+    /**
+     * ハイライト色を返す
+     * @param {string} word ハイライトする語句
+     * @return {string|number}
+     */
+    findColorByWord(word) {
+      if (!this._colors) {
+        this.refreshCache();
+      }
+      return this._colors[word].startsWith("#") ? this._colors[word] : Number(this._colors[word]);
+    }
+
+    /**
+     * テキスト内の指定語句をハイライトして返す
+     * @param {string} text ハイライト対象テキスト
+     * @return {string}
+     */
+    highlightText(text) {
+      return text.replace(this.getRegExp(), match => {
+        return `\x1bC[${this.findColorByWord(match)}]${match}\x1bC[0]`;
+      });
+    }
+  }
+
+  class HighlightWord {
+    constructor(word, color) {
+      this._word = word;
+      this._color = color;
+    }
+
+    get word() {
+      return this._word;
+    }
+
+    get color() {
+      return this._color;
+    }
+  }
+
+  const highlightWords = new HighlightWords();
+  highlightSettings.forEach(highlight => {
+    highlightWords.add(new HighlightWord(highlight.word, highlight.color));
+  });
 
   const _DataManager_onLoad = DataManager.onLoad;
   DataManager.onLoad = function (object) {
     _DataManager_onLoad.call(this, object);
 
     if (object === $dataSkills) {
-      highlightSkillsRegexp = new RegExp(
-        `${skillHighlight.skillIds.map(skillId => $dataSkills[skillId].name).join("|")}`,
-        "gi"
-      );
+      skillHighlight.skillIds
+        .map(skillId => new HighlightWord($dataSkills[skillId].name, skillHighlight.color))
+        .forEach(word => highlightWords.add(word));
     }
   }
 
   const _Window_Base_convertEscapeCharacters = Window_Base.prototype.convertEscapeCharacters;
   Window_Base.prototype.convertEscapeCharacters = function (text) {
     text = _Window_Base_convertEscapeCharacters.call(this, text);
-
-    if (autoHighlightWindows.some(autoHighlightWindow => typeof window[autoHighlightWindow] === "function" && this instanceof window[autoHighlightWindow])) {
-      // オートハイライト
-      text = text.replace(highlightRegexp, match => {
-        return `\x1bC[${highlightColors[match]}]${match}\x1bC[0]`;
-      });
-      // スキルのオートハイライト
-      text = text.replace(highlightSkillsRegexp, match => {
-        return `\x1bC[${skillHighlight.color}]${match}\x1bC[0]`
-      })
+    if (this.isHighlightWindow() && !this._checkWordWrapMode) {
+      return highlightWords.highlightText(text);
     }
     return text;
+  };
+
+  Window_Base.prototype.isHighlightWindow = function () {
+    return autoHighlightWindows
+      .some(autoHighlightWindow => typeof window[autoHighlightWindow] === "function" &&
+        this instanceof window[autoHighlightWindow]);
   };
 
   PluginManager.isLoadedTorigoyaTextRuby = function () {
@@ -127,19 +215,16 @@
   };
 
   if (PluginManager.isLoadedTorigoyaTextRuby()) {
-    const rubyHighlightRegexp = new RegExp(
-      `(^${highlightSettings.map(highlight => highlight.word).join("$|")})`,
-      "i"
-    );
+    const rubyHighlightRegexp = highlightWords.getRegExPForRuby();
     let TextRuby = global.Torigoya.TextRuby;
 
     const _TextRuby_processDrawRuby = TextRuby.processDrawRuby;
     TextRuby.processDrawRuby = function (mainText, subText, textState) {
-      if (rubyHighlightRegexp.test(mainText)){
-        TextRuby.setMainTextColor(highlightColors[mainText]);
+      if (rubyHighlightRegexp.test(mainText)) {
+        TextRuby.setMainTextColor(highlightWords.findColorByWord(mainText));
       }
       if (rubyHighlightRegexp.test(subText)) {
-        TextRuby.setSubTextColor(highlightColors[subText]);
+        TextRuby.setSubTextColor(highlightWords.findColorByWord(subText));
       }
       _TextRuby_processDrawRuby.call(this, mainText, subText, textState);
     };
