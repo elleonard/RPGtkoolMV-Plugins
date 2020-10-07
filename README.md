@@ -166,6 +166,10 @@ Trb_TextColor.js を採用している場合は色番号ではなくカラーコ
 
 セルフスイッチと違い、マップ移動で初期化される状態がほしい場合に利用できます
 
+## DarkPlasma_EventTriggerTouchFollower.js
+
+フォロワーに対してイベントが接触した際、イベントから接触をトリガーとするイベントを起動するプラグイン
+
 ## DarkPlasma_FaceToStand.js
 
 顔グラの代わりに立ち絵を表示するプラグイン

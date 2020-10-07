@@ -4,6 +4,7 @@
 // http://opensource.org/licenses/mit-license.php
 
 /**
+ * 2020/09/21 1.1.3 同じ名前のピクチャを別IDに割り当てると意図せず立ち絵が残り続けることがある不具合を修正
  * 2020/09/20 1.1.2 同じピクチャIDを使いまわした際に意図しない立ち絵が表示されることがある不具合を修正
  * 2020/08/11 1.1.1 リファクタ
  */
@@ -173,7 +174,14 @@
      * @param {string} name ピクチャの画像ファイル名
      */
     add(id, name) {
+      /**
+       * 同じIDまたは同じ名前の立ち絵は消去しておく
+       */
       this.remove(id);
+      const sameNamePicture = this.findByName(name);
+      if (sameNamePicture) {
+        this.remove(sameNamePicture.id);
+      }
       this._pictures.push(new StandPicture(id, name));
     }
 
