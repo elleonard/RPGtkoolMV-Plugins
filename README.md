@@ -192,6 +192,12 @@ NPCのフォロワーを設定できるプラグイン
 
 全滅時に強制的に後衛と入れ替えるプラグイン
 
+## DarkPlasma_FTKR_ExBattleEventPatch.js
+
+FTKR_ExBattleEvent.js のパッチプラグイン
+
+Game_Interpreter の _eventId を利用するようなプラグインとの競合を解決します。
+
 ## DarkPlasma_FTKR_ExEscapeCharactersPatch.js
 
 FTKR_ExEscapeCharactersPatch.js のパッチプラグイン
