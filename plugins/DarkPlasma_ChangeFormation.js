@@ -4,6 +4,7 @@
 // http://opensource.org/licenses/mit-license.php
 
 /**
+ * 2020/10/27 1.1.0 リーダーを戻すかどうか指定する機能を追加
  * version 1.0.0
  *  - 公開
  */
@@ -31,9 +32,11 @@
  *  a: string アクター名
  *  b: string アクター名
  * 
- * changeLeader x
+ * changeLeader x y
  *  xをリーダー（先頭）にする
  *  x: string アクター名
+ *  y: boolean イベント終了時にリーダーを戻すかどうか
+ * （省略時はプラグインパラメータの設定に従う）
  * 
  * reserLeader
  *  リーダーをイベント開始時のリーダーに戻す
@@ -41,10 +44,10 @@
 
 (function () {
   'use strict';
-  var pluginName = 'DarkPlasma_ChangeFormation';
-  var pluginParameters = PluginManager.parameters(pluginName);
+  const pluginName = 'DarkPlasma_ChangeFormation';
+  const pluginParameters = PluginManager.parameters(pluginName);
 
-  var resetLeader = Boolean(pluginParameters['Reset Leader When Event Ending']);
+  const resetLeader = String(pluginParameters['Reset Leader When Event Ending'] || 'false') === 'true';
 
   var _Game_Interpreter_pluginCommand = Game_Interpreter.prototype.pluginCommand;
   Game_Interpreter.prototype.pluginCommand = function (command, args) {
@@ -54,16 +57,19 @@
         $gameParty.swapOrder(args[0], args[1]);
         break;
       case 'swapOrderByName': /* 名前指定の並び替え */
-        var index1 = $gameParty.indexOf(args[0]);
-        var index2 = $gameParty.indexOf(args[1]);
+        const index1 = $gameParty.indexOf(args[0]);
+        const index2 = $gameParty.indexOf(args[1]);
         if (index1 !== -1 && index2 !== -1) {
           $gameParty.swapOrder(index1, index2);
         }
         break;
       case 'changeLeader':  /* リーダーにする */
-        var index = $gameParty.indexOf(args[0]);
+        const index = $gameParty.indexOf(args[0]);
         if (index !== -1) {
           $gameParty.swapOrder(0, index);
+        }
+        if (args.length > 1) {
+          this._resetLeader = String(args[1]) === 'true';
         }
         break;
       case 'resetLeader': /* リーダーをイベント開始時のリーダーに戻す */
@@ -74,88 +80,43 @@
     }
   };
 
-
-  var _Game_Interpreter_initialize = Game_Interpreter.prototype.initialize;
+  const _Game_Interpreter_initialize = Game_Interpreter.prototype.initialize;
   Game_Interpreter.prototype.initialize = function () {
     _Game_Interpreter_initialize.call(this);
     /* Game_Actor イベント開始時のリーダー */
     this._leader = null;
+    this._resetLeader = resetLeader;
   };
 
-  var _Game_Interpreter_clear = Game_Interpreter.prototype.clear;
+  const _Game_Interpreter_clear = Game_Interpreter.prototype.clear;
   Game_Interpreter.prototype.clear = function () {
     _Game_Interpreter_clear.call(this);
     this._leader = null;
+    this._resetLeader = resetLeader;
   };
 
-  var _Game_Interpreter_setup = Game_Interpreter.prototype.setup;
+  const _Game_Interpreter_setup = Game_Interpreter.prototype.setup;
   Game_Interpreter.prototype.setup = function (list, eventId) {
     _Game_Interpreter_setup.call(this, list, eventId);
     this._leader = $gameParty.leader();
   };
 
-  var _Game_Interpreter_terminate = Game_Interpreter.prototype.terminate;
+  const _Game_Interpreter_terminate = Game_Interpreter.prototype.terminate;
   Game_Interpreter.prototype.terminate = function () {
     // イベント終了時にリーダーを元に戻す
-    if (resetLeader && this._leader && this._leader.index() > 0) {
+    if (this._resetLeader && this._leader && this._leader.index() > 0) {
       $gameParty.swapOrder(0, this._leader.index());
     }
     _Game_Interpreter_terminate.call(this);
   };
 
   /**
-   * 指定した名前のアクターがパーティにいるかどうか
-   * @param name string
-   * @return boolean いるならtrue いないならfalse
-   */
-  Game_Party.prototype.isMember = function (name) {
-    return this.indexOf(name) !== -1;
-  };
-
-  /**
-   * パーティの隊列何番目にいるかを返す
-   * @param name
-   * @return number 0から始まる番号 パーティにいない場合-1を返す
+   * 指定した名前のアクターがパーティの隊列何番目にいるかを返す
+   * @param {string} name 名前
+   * @return {number} 0から始まる番号 パーティにいない場合-1を返す
    */
   Game_Party.prototype.indexOf = function (name) {
-    var actor = $gameActors.findByName(name);
+    const actor = $gameParty.members().find(actor => actor.name() === name);
     return actor ? actor.index() : -1;
   };
-
-  /**
-   * 名前からアクターオブジェクトを取得する
-   * @param name アクター名
-   * @return Game_Actor
-   */
-  Game_Actors.prototype.findByName = function (name) {
-    var actors = $gameActors.actors().filter(function (actor) {
-      return actor && actor.name() === name;
-    }, this);
-    if (actors.length > 0) {
-      return actors[0];
-    } else {
-      return null;
-    }
-  };
-
-  /**
-   * 名前からアクターIDを取得する
-   * @param name アクター名
-   * @return number アクターID
-   */
-  Game_Actors.prototype.findIdByName = function (name) {
-    var actors = $gameActors.actors().filter(function (actor) {
-      return actor.name() === name;
-    }, this);
-    if (actors.length > 0) {
-      return actors[0].actorId();
-    } else {
-      return -1;
-    }
-  };
-
-  Game_Actors.prototype.actors = function () {
-    return this._data;
-  };
-
 })();
