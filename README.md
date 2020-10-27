@@ -103,6 +103,12 @@ Trb_TextColor.js を採用している場合は色番号ではなくカラーコ
 
 全戦闘で共通のドロップアイテムを設定するプラグイン
 
+## DarkPlasma_ConcurrentParty.js
+
+並行パーティシステムを実現するプラグイン
+
+フォークタワーの実装にどうぞ
+
 ## DarkPlasma_ConsumeItemImmediately.js
 
 戦闘中、アイテム消費を入力後即座に反映するプラグイン
