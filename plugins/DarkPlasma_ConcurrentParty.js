@@ -4,6 +4,7 @@
 // http://opensource.org/licenses/mit-license.php
 
 /**
+ * 2020/10/28 1.0.1 導入前のセーブデータをロードした場合エラーになる不具合を修正
  * 2020/10/27 1.0.0 公開
  */
 
@@ -84,14 +85,39 @@
        * @type {Game_DevidedParty[]}
        */
       this._parties = [];
+      this._index = 0;
+      this._isStarted = false;
     }
 
     get length() {
       return this._parties.length;
     }
 
+    get index() {
+      return this._index;
+    }
+
+    get isStarted() {
+      return this._isStarted;
+    }
+
     initialize() {
-      this._parties = [];
+      if (!this.isStarted) {
+        this._parties = [];
+      }
+    }
+
+    start() {
+      if (this.length > 0 && !this.isStarted) {
+        this._isStarted = true;
+        this.transferToParty(this.index);
+      }
+    }
+
+    joinAllParties() {
+      this._isStarted = false;
+      this.initialize();
+      $gamePlayer.refresh();
     }
 
     /**
@@ -106,6 +132,54 @@
       const newParty = new Game_DevidedParty();
       actualMembers.forEach(actor => newParty.addMember(actor));
       this._parties.push(newParty);
+    }
+
+    /**
+     * 次のパーティに交代する
+     */
+    changeToNextParty() {
+      if (this.length > 0) {
+        this.changeParty((this.index + 1) % this.length);
+      }
+    }
+
+    /**
+     * 前のパーティに交代する
+     */
+    changeToPreviousParty() {
+      if (this.length > 0) {
+        this.changeParty((this.index - 1 + this.length) % this.length);
+      }
+    }
+
+    /**
+     * パーティを交代する
+     * @param {number} index 交代先パーティインデックス
+     */
+    changeParty(index) {
+      if (!this.isStarted) {
+        return;
+      }
+      this.savePartyPosition(index);
+      this._index = index;
+      this.transferToParty(index);
+    }
+
+    transferToParty(index) {
+      const position = this.getParty(index).position;
+      if (position) {
+        position.transfer();
+      }
+    }
+
+    /**
+     * パーティの現在位置を記録する
+     * @param {number} index パーティインデックス
+     */
+    savePartyPosition(index) {
+      this.getParty(index).setPosition(
+        $gameMap.mapId(), $gamePlayer.x, $gamePlayer.y, $gamePlayer.direction()
+      );
     }
 
     /**
@@ -126,6 +200,17 @@
         return null;
       }
       return this._parties[index];
+    }
+
+    /**
+     * 現在のパーティを返す
+     * @param {Game_DevidedParty|null}
+     */
+    getCurrentParty() {
+      if (this.isStarted) {
+        return this._parties[this.index];
+      }
+      return null;
     }
 
     /**
@@ -292,8 +377,13 @@
   Game_Party.prototype.initialize = function () {
     _Game_Party_initialize.call(this);
     this._devidedParties = new Game_DevidedParties();
-    this._devidedPartyIndex = 0;
-    this._isDevided = false;
+  };
+
+  Game_Party.prototype.devidedParties = function () {
+    if (!this._devidedParties) {
+      this._devidedParties = new Game_DevidedParties();
+    }
+    return this._devidedParties;
   };
 
   /**
@@ -301,7 +391,7 @@
    * @param {Game_Actor[]} members 分割パーティに所属させるメンバー一覧
    */
   Game_Party.prototype.createDevidedParty = function (members) {
-    this._devidedParties.createParty(members);
+    this.devidedParties().createParty(members);
   };
 
   /**
@@ -313,7 +403,7 @@
    * @param {number} direction 向き
    */
   Game_Party.prototype.setDevidedPartyPosition = function (partyIndex, mapId, x, y, direction) {
-    const targetParty = partyIndex >= 0 ? this._devidedParties.getParty(partyIndex) : this._devidedParties.lastParty();
+    const targetParty = partyIndex >= 0 ? this.devidedParties().getParty(partyIndex) : this.devidedParties().lastParty();
     if (targetParty) {
       targetParty.setPosition(mapId, x, y, direction)
     }
@@ -323,42 +413,11 @@
    * 分割パーティモード開始
    */
   Game_Party.prototype.startDevidePartyMode = function () {
-    if (this._devidedParties.length > 0) {
-      this._isDevided = true;
-      this.transferToDevidedParty();
-    }
+    this.devidedParties().start();
   };
 
   Game_Party.prototype.resetDevidedParty = function () {
-    if (this.isDevided()) {
-      return;
-    }
-    this._devidedParties.initialize();
-  };
-
-  /**
-   * 対象パーティの位置へ移動する
-   */
-  Game_Party.prototype.transferToDevidedParty = function () {
-    const position = this._devidedParties.getParty(this._devidedPartyIndex).position;
-    if (position) {
-      position.transfer();
-    }
-  };
-
-  /**
-   * 現在の分割パーティの位置を記録する
-   */
-  Game_Party.prototype.saveDevidedPartyPosition = function () {
-    this.setDevidedPartyPosition(this._devidedPartyIndex, $gameMap.mapId(), $gamePlayer.x, $gamePlayer.y, $gamePlayer.direction());
-  };
-
-  /**
-   * 分割パーティの数
-   * @return {number}
-   */
-  Game_Party.prototype.devidedPartyCount = function () {
-    return this._devidedParties.length;
+    this.devidedParties().initialize();
   };
 
   /**
@@ -366,44 +425,26 @@
    * @return {boolean}
    */
   Game_Party.prototype.isDevided = function () {
-    return this._isDevided;
+    return this.devidedParties().isStarted;
   };
 
   Game_Party.prototype.changeToNextParty = function () {
-    if (!this.isDevided()) {
-      return;
-    }
-    this.saveDevidedPartyPosition();
-    this._devidedPartyIndex++;
-    if (this._devidedPartyIndex >= this.devidedPartyCount()) {
-      this._devidedPartyIndex = 0;
-    }
-    this.transferToDevidedParty();
+    this.devidedParties().changeToNextParty();
   };
 
   Game_Party.prototype.changeToPreviousParty = function () {
-    if (!this.isDevided()) {
-      return;
-    }
-    this.saveDevidedPartyPosition();
-    this._devidedPartyIndex--;
-    if (this._devidedPartyIndex < 0) {
-      this._devidedPartyIndex = this.devidedPartyCount() - 1;
-    }
-    this.transferToDevidedParty();
+    this.devidedParties().changeToPreviousParty();
   };
 
   Game_Party.prototype.joinAllDevidedParties = function () {
-    this._devidedParties.initialize();
-    this._isDevided = false;
-    $gamePlayer.refresh();
+    this.devidedParties().joinAllParties();
   };
 
   const _Game_Party_allMembers = Game_Party.prototype.allMembers;
   Game_Party.prototype.allMembers = function () {
     return this.isDevided()
-      ? this._devidedParties
-          .getParty(this._devidedPartyIndex)
+      ? this.devidedParties()
+          .getCurrentParty()
           .allActors()
           .filter((actor) => !!actor)
       : _Game_Party_allMembers.call(this);
@@ -413,8 +454,8 @@
   Game_Party.prototype.swapOrder = function (index1, index2) {
     if (this.isDevided()) {
       const allMembers = this.allMembers();
-      this._devidedParties
-        .getParty(this._devidedPartyIndex)
+      this.devidedParties
+        .getCurrentParty()
         .swapOrder(allMembers[index1].actorId(), allMembers[index2].actorId());
     } else {
       _Game_Party_swapOrder.call(this, index1, index2);
