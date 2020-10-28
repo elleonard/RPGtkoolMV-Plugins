@@ -4,7 +4,8 @@
 // http://opensource.org/licenses/mit-license.php
 
 /**
- * 2020/10/28 1.0.1 導入前のセーブデータをロードした場合エラーになる不具合を修正
+ * 2020/10/28 1.0.2 パーティ切替時の場所移動が正常に動かない不具合を修正
+ *            1.0.1 導入前のセーブデータをロードした場合エラーになる不具合を修正
  * 2020/10/27 1.0.0 公開
  */
 
@@ -138,7 +139,7 @@
      * 次のパーティに交代する
      */
     changeToNextParty() {
-      if (this.length > 0) {
+      if (this.length > 1) {
         this.changeParty((this.index + 1) % this.length);
       }
     }
@@ -147,7 +148,7 @@
      * 前のパーティに交代する
      */
     changeToPreviousParty() {
-      if (this.length > 0) {
+      if (this.length > 1) {
         this.changeParty((this.index - 1 + this.length) % this.length);
       }
     }
@@ -160,7 +161,7 @@
       if (!this.isStarted) {
         return;
       }
-      this.savePartyPosition(index);
+      this.savePartyPosition(this.index);
       this._index = index;
       this.transferToParty(index);
     }
