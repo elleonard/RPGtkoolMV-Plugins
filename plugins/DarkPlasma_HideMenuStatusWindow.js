@@ -4,6 +4,7 @@
 // http://opensource.org/licenses/mit-license.php
 
 /**
+ * 2020/11/03 1.0.1 並び替えをキャンセルした際にステータスウィンドウが残ってしまう不具合を修正
  * 2020/03/12 1.0.0 公開
  */
 
@@ -50,6 +51,6 @@
   const _Scene_Menu_onFormationCancel = Scene_Menu.prototype.onFormationCancel;
   Scene_Menu.prototype.onFormationCancel = function () {
     _Scene_Menu_onFormationCancel.call(this);
-    this._statusWindow.show();
+    this._statusWindow.hide();
   };
 })();
