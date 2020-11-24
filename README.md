@@ -333,6 +333,10 @@ SkillCPSystem.js のパッチプラグイン
 
 PromptlyPopup.js における連続攻撃や全体攻撃のダメージ/回避SEの再生をそれぞれ1回に抑えるプラグイン
 
+## DarkPlasma_RandomWithTargetRate.js
+
+ScopeTarget.js と併用し、ランダムに重複なくN体のターゲットを狙われ率に応じて選択するスキルを作成するプラグイン
+
 ## DarkPlasma_ReturnFromOptions.js
 
 オプションから戻るメニューを追加するプラグイン
