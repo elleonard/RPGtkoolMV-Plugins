@@ -4,6 +4,8 @@
 // http://opensource.org/licenses/mit-license.php
 
 /**
+ * 2020/11/25 1.1.0 指定パーティのリーダーを取得するインターフェース追加
+ *                  前後に切り替える機能追加
  * 2020/10/28 1.0.2 パーティ切替時の場所移動が正常に動かない不具合を修正
  *            1.0.1 導入前のセーブデータをロードした場合エラーになる不具合を修正
  * 2020/10/27 1.0.0 公開
@@ -18,7 +20,17 @@
  * @url https://github.com/elleonard/RPGtkoolMV-Plugins
  *
  * @param changePartyButton
- * @text 切り替えボタン
+ * @text 次へ切り替えボタン
+ * @type select
+ * @option pageup
+ * @option pagedown
+ * @option shift
+ * @option control
+ * @option tab
+ * @default pagedown
+ *
+ * @param changePreviousPartyButton
+ * @text 前へ切り替えボタン
  * @type select
  * @option pageup
  * @option pagedown
@@ -64,6 +76,11 @@
  * 全メンバーを合流し、並行パーティモードを解除します。
  * 分割後のパーティはリセットされます。
  * 並行パーティモード外で実行した場合、何も起こりません。
+ *
+ * スクリプト:
+ * $gameParty.devidedPartyLeader(partyIndex: number): Game_Actor|null
+ *  指定したパーティのリーダーを取得する
+ *  指定パーティが存在しない場合はnullを返す
  */
 
 (function () {
@@ -74,7 +91,8 @@
   const pluginParameters = PluginManager.parameters(pluginName);
 
   const settings = {
-    changePartyButton: String(pluginParameters.changePartyButton || 'pageup'),
+    changePartyButton: String(pluginParameters.changePartyButton || 'pagedown'),
+    changePreviousPartyButton: String(pluginParameters.changePreviousPartyButton || 'pageup')
   };
 
   /**
@@ -215,13 +233,26 @@
     }
 
     /**
+     * 指定したインデックスのパーティのリーダーを取得する
+     * @param {number} index パーティインデックス
+     * @return {Game_Actor|null}
+     */
+    getPartyLeader(index) {
+      const party = this.getParty(index);
+      if (party) {
+        return party.leader();
+      }
+      return null;
+    }
+
+    /**
      * @return {Game_DevidedParty|null}
      */
     lastParty() {
       if (this.length === 0) {
         return null;
       }
-      return this._parties[this.length-1];
+      return this._parties[this.length - 1];
     }
 
     /**
@@ -290,6 +321,13 @@
      */
     actor(index) {
       return this._members[index].actor;
+    }
+
+    /**
+     * @return {Game_Actor}
+     */
+    leader() {
+      return this.actor(0);
     }
 
     /**
@@ -396,6 +434,15 @@
   };
 
   /**
+   * 指定したパーティのリーダーを返す
+   * @param {number} partyIndex パーティインデックス
+   * @return {Game_Actor|null}
+   */
+  Game_Party.prototype.devidedPartyLeader = function (partyIndex) {
+    return this.devidedParties().getPartyLeader(partyIndex);
+  };
+
+  /**
    * 分割パーティの位置を設定する
    * @param {number} partyIndex 対象パーティインデックス。-1で最後のパーティ
    * @param {number} mapId マップID
@@ -445,9 +492,9 @@
   Game_Party.prototype.allMembers = function () {
     return this.isDevided()
       ? this.devidedParties()
-          .getCurrentParty()
-          .allActors()
-          .filter((actor) => !!actor)
+        .getCurrentParty()
+        .allActors()
+        .filter((actor) => !!actor)
       : _Game_Party_allMembers.call(this);
   };
 
@@ -505,12 +552,20 @@
   };
 
   Scene_Map.prototype.updateCallChangeParty = function () {
-    if (this.isChangePartyCalled() && !$gamePlayer.isMoving()) {
-      $gameParty.changeToNextParty();
+    if (!$gamePlayer.isMoving()) {
+      if (this.isChangePartyCalled()) {
+        $gameParty.changeToNextParty();
+      } else if (this.isChangePreviousPartyCalled()) {
+        $gameParty.changeToPreviousParty();
+      }
     }
   };
 
   Scene_Map.prototype.isChangePartyCalled = function () {
     return Input.isTriggered(settings.changePartyButton);
+  };
+
+  Scene_Map.prototype.isChangePreviousPartyCalled = function () {
+    return Input.isTriggered(settings.changePreviousPartyButton);
   };
 })();
