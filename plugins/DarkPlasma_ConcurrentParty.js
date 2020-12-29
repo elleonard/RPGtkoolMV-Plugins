@@ -4,6 +4,7 @@
 // http://opensource.org/licenses/mit-license.php
 
 /**
+ * 2020/12/30 1.1.1 パーティ切り替えボタンがイベント実行中に有効である不具合を修正
  * 2020/11/25 1.1.0 指定パーティのリーダーを取得するインターフェース追加
  *                  前後に切り替える機能追加
  * 2020/10/28 1.0.2 パーティ切替時の場所移動が正常に動かない不具合を修正
@@ -552,7 +553,7 @@
   };
 
   Scene_Map.prototype.updateCallChangeParty = function () {
-    if (!$gamePlayer.isMoving()) {
+    if (!$gamePlayer.isMoving() && !$gameMap.isEventRunning()) {
       if (this.isChangePartyCalled()) {
         $gameParty.changeToNextParty();
       } else if (this.isChangePreviousPartyCalled()) {
