@@ -4,6 +4,8 @@
 // http://opensource.org/licenses/mit-license.php
 
 /**
+ * 2021/01/02 1.2.0 パーティ切り替え禁止スイッチ設定を追加
+ *                  パーティ切り替えプラグインコマンドにフェードタイプ引数を追加
  * 2021/01/01 1.1.2 パーティ合流後に、分割パーティの状態が完全に初期化されない不具合を修正
  * 2020/12/30 1.1.1 パーティ切り替えボタンがイベント実行中に有効である不具合を修正
  * 2020/11/25 1.1.0 指定パーティのリーダーを取得するインターフェース追加
@@ -41,6 +43,11 @@
  * @option tab
  * @default pageup
  *
+ * @param disableChangeSwitchId
+ * @text パーティ切り替え禁止スイッチ
+ * @type switch
+ * @default 0
+ *
  * @help
  * パーティを分割し、操作を切り替えて並行で進むシステムを実現します。
  *
@@ -55,6 +62,10 @@
  * 設定しなかったパーティの位置は、切り替え前のパーティと同じになります。
  * 向きは 下:2 左:4 右:6 上:8
  *
+ * moveParty パーティID マップID x座標 y座標 向き
+ * 並行パーティモード中にパーティの位置を移動します。
+ * 並行パーティモード外で実行した場合、何も起こりません。
+ *
  * resetParty
  * 生成したパーティをリセットします。
  * 並行パーティモードで実行した場合、何も起こりません。
@@ -64,12 +75,14 @@
  * 並行パーティモードで実行した場合、何も起こりません。
  * 分割後のパーティを生成していない場合、何も起こりません。
  *
- * changeToNextParty
+ * changeToNextParty フェードタイプ
  * 次のパーティへ操作を切り替えます。
  * 最後のパーティだった場合、最初のパーティに操作を切り替えます。
  * 並行パーティモード外で実行した場合、何も起こりません。
+ * フェードタイプは 黒:0 白:1 その他:2
+ * 省略時は黒になります。
  *
- * changeToPreviousParty
+ * changeToPreviousParty フェードタイプ
  * 前のパーティへ操作を切り替えます。
  * 最初のパーティだった場合、最後のパーティに操作を切り替えます。
  * 並行パーティモード外で実行した場合、何も起こりません。
@@ -94,7 +107,8 @@
 
   const settings = {
     changePartyButton: String(pluginParameters.changePartyButton || 'pagedown'),
-    changePreviousPartyButton: String(pluginParameters.changePreviousPartyButton || 'pageup')
+    changePreviousPartyButton: String(pluginParameters.changePreviousPartyButton || 'pageup'),
+    disableChangeSwitchId: Number(pluginParameters.disableChangeSwitchId || 0),
   };
 
   /**
@@ -157,40 +171,51 @@
     }
 
     /**
-     * 次のパーティに交代する
+     * @return {boolean}
      */
-    changeToNextParty() {
-      if (this.length > 1) {
-        this.changeParty((this.index + 1) % this.length);
+    isPartyChangable() {
+      return this.length > 1 &&
+        (settings.disableChangeSwitchId === 0 || !$gameSwitches.value(settings.disableChangeSwitchId));
+    }
+
+    /**
+     * 次のパーティに交代する
+     * @param {number} fadeType
+     */
+    changeToNextParty(fadeType) {
+      if (this.isPartyChangable()) {
+        this.changeParty((this.index + 1) % this.length, fadeType);
       }
     }
 
     /**
      * 前のパーティに交代する
+     * @param {number} fadeType
      */
-    changeToPreviousParty() {
-      if (this.length > 1) {
-        this.changeParty((this.index - 1 + this.length) % this.length);
+    changeToPreviousParty(fadeType) {
+      if (this.isPartyChangable()) {
+        this.changeParty((this.index - 1 + this.length) % this.length, fadeType);
       }
     }
 
     /**
      * パーティを交代する
      * @param {number} index 交代先パーティインデックス
+     * @param {number} fadeType フェードタイプ
      */
-    changeParty(index) {
+    changeParty(index, fadeType) {
       if (!this.isStarted) {
         return;
       }
       this.savePartyPosition(this.index);
       this._index = index;
-      this.transferToParty(index);
+      this.transferToParty(index, fadeType);
     }
 
-    transferToParty(index) {
+    transferToParty(index, fadeType) {
       const position = this.getParty(index).position;
       if (position) {
-        position.transfer();
+        position.transfer(fadeType);
       }
     }
 
@@ -222,6 +247,13 @@
         return null;
       }
       return this._parties[index];
+    }
+
+    /**
+     * @return {Game_DevidedParty[]}
+     */
+    allParties() {
+      return this._parties;
     }
 
     /**
@@ -285,8 +317,8 @@
       this._direction = direction;
     }
 
-    transfer() {
-      $gamePlayer.reserveTransfer(this._mapId, this._x, this._y, this._direction, 0);
+    transfer(fadeType) {
+      $gamePlayer.reserveTransfer(this._mapId, this._x, this._y, this._direction, fadeType || 0);
     }
   }
 
@@ -479,12 +511,13 @@
     return this.devidedParties().isStarted;
   };
 
-  Game_Party.prototype.changeToNextParty = function () {
-    this.devidedParties().changeToNextParty();
+
+  Game_Party.prototype.changeToNextParty = function (fadeType) {
+    this.devidedParties().changeToNextParty(fadeType);
   };
 
-  Game_Party.prototype.changeToPreviousParty = function () {
-    this.devidedParties().changeToPreviousParty();
+  Game_Party.prototype.changeToPreviousParty = function (fadeType) {
+    this.devidedParties().changeToPreviousParty(fadeType);
   };
 
   Game_Party.prototype.joinAllDevidedParties = function () {
@@ -534,11 +567,16 @@
       case 'setPartyPosition':
         $gameParty.setDevidedPartyPosition(-1, Number(args[0]), Number(args[1]), Number(args[2]), Number(args[3]));
         break;
+      case 'moveParty':
+        if ($gameParty.isDevided()) {
+          $gameParty.setDevidedPartyPosition(Number(args[0]), Number(args[1]), Number(args[2]), Number(args[3]), Number(args[4] || 0));
+        }
+        break;
       case 'changeToNextParty':
-        $gameParty.changeToNextParty();
+        $gameParty.changeToNextParty(Number(args[0] || 0));
         break;
       case 'changeToPreviousParty':
-        $gameParty.changeToPreviousParty();
+        $gameParty.changeToPreviousParty(Number(args[0] || 0));
         break;
       case 'joinAllMember':
         $gameParty.joinAllDevidedParties();
