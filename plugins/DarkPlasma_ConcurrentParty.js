@@ -4,8 +4,7 @@
 // http://opensource.org/licenses/mit-license.php
 
 /**
- * 2021/01/01 1.1.3 指定パーティのリーダーを取得できない不具合を修正
- *            1.1.2 パーティ合流後に、分割パーティの状態が完全に初期化されない不具合を修正
+ * 2021/01/01 1.1.2 パーティ合流後に、分割パーティの状態が完全に初期化されない不具合を修正
  * 2020/12/30 1.1.1 パーティ切り替えボタンがイベント実行中に有効である不具合を修正
  * 2020/11/25 1.1.0 指定パーティのリーダーを取得するインターフェース追加
  *                  前後に切り替える機能追加
@@ -443,7 +442,7 @@
    * @return {Game_Actor|null}
    */
   Game_Party.prototype.devidedPartyLeader = function (partyIndex) {
-    return this.devidedParties()[partyIndex].getPartyLeader();
+    return this.devidedParties().getPartyLeader(partyIndex);
   };
 
   /**
