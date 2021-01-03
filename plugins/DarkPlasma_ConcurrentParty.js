@@ -4,6 +4,7 @@
 // http://opensource.org/licenses/mit-license.php
 
 /**
+ * 2021/01/03 1.2.1 並び替え時にエラーが発生する不具合を修正
  * 2021/01/02 1.2.0 パーティ切り替え禁止スイッチ設定を追加
  *                  パーティ切り替えプラグインコマンドにフェードタイプ引数を追加
  * 2021/01/01 1.1.2 パーティ合流後に、分割パーティの状態が完全に初期化されない不具合を修正
@@ -538,7 +539,7 @@
   Game_Party.prototype.swapOrder = function (index1, index2) {
     if (this.isDevided()) {
       const allMembers = this.allMembers();
-      this.devidedParties
+      this.devidedParties()
         .getCurrentParty()
         .swapOrder(allMembers[index1].actorId(), allMembers[index2].actorId());
     } else {
