@@ -4,6 +4,7 @@
 // http://opensource.org/licenses/mit-license.php
 
 /**
+ * 2021/01/19 1.10.2 EventReSpawn.js でイベントを削除した場合にエラーになる不具合を修正
  * 2020/08/09 1.10.1 NobleMushroom.js と併用した際に、場所移動後にウィンドウが表示され続ける不具合を修正
  * 2020/08/07 1.10.0 テキストログウィンドウ拡張用インターフェースを公開
  * 2020/08/05 1.9.1 MPP_ChoiceEx.js との競合を解消
@@ -1122,7 +1123,8 @@
   // 並列実行イベントかどうか
   // コモンイベントは判定不能のため、isCommonOrBattleEventに任せる
   Game_Interpreter.prototype.isParallelEvent = function () {
-    return this._eventId !== 0 && this.isOnCurrentMap() && $gameMap.event(this._eventId).isTriggerIn([4]);
+    const event = $gameMap.event(this._eventId);
+    return event && this.isOnCurrentMap() && event.isTriggerIn([4]);
   };
 
   const _Game_Interpreter_pluginCommand = Game_Interpreter.prototype.pluginCommand;
