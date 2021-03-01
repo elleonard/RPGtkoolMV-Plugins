@@ -4,6 +4,7 @@
 // http://opensource.org/licenses/mit-license.php
 
 /**
+ * 2021/03/01 1.2.0 クールタイムに変数を利用する機能を追加
  * 2020/05/07 1.1.0 クールタイムがセーブデータに含まれる不具合を修正
  *                  控えメンバーのクールタイムに関する設定を追加
  * 2020/04/24 1.0.0 公開
@@ -77,10 +78,16 @@
  * @default 0
  *
  * @param Cooldown Turn Count
- * @desc クールタイムのターン数
- * @text ターン数
+ * @desc クールタイムのターン数(定数)
+ * @text ターン数(定数)
  * @type number
  * @default 3
+ *
+ * @param Cooldown Turn Count Variable
+ * @desc クールタイムのターン数(変数)。定数で指定した数値に対して、変数で指定した値を加算します。
+ * @text ターン数(変数)
+ * @type variable
+ * @default 0
  */
 
 (function () {
@@ -144,14 +151,19 @@
     }
   }
 
+  /**
+   * クールダウン設定
+   */
   class SkillCooldownTargetSetting {
     /**
      * @param {number} skillId スキルID
      * @param {number} turnCount ターン数
+     * @param {number} turnCountVariable ターン数変数
      */
-    constructor(skillId, turnCount) {
+    constructor(skillId, turnCount, turnCountVariable) {
       this._skillId = skillId;
       this._turnCount = turnCount;
+      this._turnCountVariable = turnCountVariable;
     }
 
     /**
@@ -162,7 +174,8 @@
       const parsed = JsonEx.parse(json);
       return new SkillCooldownTargetSetting(
         Number(parsed['Target Skill Id'] || 0),
-        Number(parsed['Cooldown Turn Count'] || 3)
+        Number(parsed['Cooldown Turn Count'] || 3),
+        Number(parsed['Cooldown Turn Count Variable'] || 0)
       );
     }
 
@@ -172,6 +185,18 @@
 
     get turnCount() {
       return this._turnCount;
+    }
+
+    get turnCountVariable() {
+      return this._turnCountVariable;
+    }
+
+    /**
+     * 初期化時のクールダウンターン数
+     * @return {number}
+     */
+    initialCooldownTurn() {
+      return this.turnCount + $gameVariables.value(this.turnCountVariable);
     }
   }
 
@@ -192,7 +217,7 @@
     static setup(triggerSkillId) {
       const cooldownSetting = skillCooldownSettings.getSkillCooldownSetting(triggerSkillId);
       return cooldownSetting
-        ? cooldownSetting.targets.map(target => new SkillCooldown(target.skillId, target.turnCount))
+        ? cooldownSetting.targets.map(target => new SkillCooldown(target.skillId, target.initialCooldownTurn()))
         : [];
     }
 
