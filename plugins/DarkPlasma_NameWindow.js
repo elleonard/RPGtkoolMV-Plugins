@@ -4,6 +4,7 @@
 // http://opensource.org/licenses/mit-license.php
 
 /**
+ * 2021/03/03 1.3.3 リファクタ
  * 2020/09/21 1.3.2 メッセージウィンドウの透明設定を引き継ぐよう修正
  * 2020/05/30 1.3.1 DarkPlasma_TextLog.js と併用した時、名前なしテキストに名前をつけてしまうことがある不具合を修正
  * 2020/05/08 1.3.0 閉じるアニメーションの設定項目を追加
@@ -149,6 +150,151 @@
     RIGHT_EDGE: 5
   };
 
+  /**
+   * アクターIDからアクター名を取得する
+   * 存在しないIDの場合nullを返す
+   * @param {number} actorId アクターID
+   * @return {string|null}
+   */
+  function actorName(actorId) {
+    return Window_Base.prototype.actorName(actorId);
+  }
+
+  /**
+   * アクターの名前から色を算出する
+   * 色設定がない場合はデフォルト色を返す
+   * @param {string} name 名前
+   * @return {number}
+   */
+  function colorByName(name) {
+    const actor = $gameActors.byName(name);
+    if (actor) {
+      const colorSetting = settings.actorColors.find(actorColor => Number(actorColor.actor) === Number(actor.actorId()));
+      return colorSetting ? colorSetting.color : settings.defaultTextColor;
+    }
+    return settings.defaultTextColor;
+  }
+
+  class NameWindowTextInfo {
+    /**
+     * @param {string} name 名前
+     * @param {number} position 表示位置
+     * @param {RegExp|string} eraseTarget メッセージから取り除く文字列
+     */
+    constructor(name, position, eraseTarget) {
+      this._name = name;
+      this._position = position;
+      this._eraseTarget = eraseTarget;
+    }
+
+    /**
+     * @param {string} text メッセージ
+     * @return {NameWindowTextInfo|null}
+     */
+    static fromMessageText(text) {
+      const regExpAndPositions = [
+        {
+          regExp: /\x1bN\<(.*?)\>/gi,
+          position: NAME_WINDOW_POSITION.LEFT_EDGE
+        },
+        {
+          regExp: /\x1bN1\<(.*?)\>/gi,
+          position: NAME_WINDOW_POSITION.LEFT_EDGE
+        },
+        {
+          regExp: /\x1bN2\<(.*?)\>/gi,
+          position: NAME_WINDOW_POSITION.LEFT
+        },
+        {
+          regExp: /\x1bN3\<(.*?)\>/gi,
+          position: NAME_WINDOW_POSITION.CENTER
+        },
+        {
+          regExp: /\x1bNC\<(.*?)\>/gi,
+          position: NAME_WINDOW_POSITION.CENTER
+        },
+        {
+          regExp: /\x1bN4\<(.*?)\>/gi,
+          position: NAME_WINDOW_POSITION.RIGHT
+        },
+        {
+          regExp: /\x1bN5\<(.*?)\>/gi,
+          position: NAME_WINDOW_POSITION.RIGHT_EDGE
+        },
+        {
+          regExp: /\x1bNR\<(.*?)\>/gi,
+          position: NAME_WINDOW_POSITION.RIGHT_EDGE
+        },
+        {
+          regExp: /\x1bNDP\<(.*?)\>/gi,
+          position: NAME_WINDOW_POSITION.LEFT_EDGE,
+          isActorId: true
+        }
+      ];
+      const hit = regExpAndPositions.map(regExpAndPosition => {
+        return {
+          regExp: new RegExp(regExpAndPosition.regExp),
+          position: regExpAndPosition.position,
+          idOrName: regExpAndPosition.regExp.exec(text),
+          isActorId: regExpAndPosition.isActorId
+        }
+      })
+        .find(hit => hit.idOrName && hit.idOrName[1]);
+      if (hit) {
+        const name = hit.isActorId ? actorName(hit.idOrName[1]) : hit.idOrName[1];
+        return new NameWindowTextInfo(name, hit.position, hit.regExp);
+      }
+
+      if (settings.autoNameWindow) {
+        // 名前＋開きカッコを見つけ次第、名前ウィンドウを設定する
+        const speakerReg = new RegExp("^(.+)(「|（)", "gi");
+        const speaker = speakerReg.exec(text);
+        if (speaker !== null) {
+          let target = speaker[1].replace("\x1b\}", "");
+          const eraseTarget = target;
+          if (settings.forceAutoNameColor) {
+            target = target.replace(/\x1bC\[(#?[0-9]*)\]/gi, "");
+          }
+
+          if (target.length > 0) {
+            return new NameWindowTextInfo(
+              target,
+              NAME_WINDOW_POSITION.LEFT_EDGE,
+              eraseTarget
+            );
+          }
+        }
+      }
+      return null;
+    }
+
+    get name() {
+      return this._name;
+    }
+
+    get position() {
+      return this._position;
+    }
+
+    get eraseTarget() {
+      return this._eraseTarget;
+    }
+
+    /**
+     * 色付きの名前
+     * @return {string}
+     */
+    coloredName() {
+      const speakerNames = this.name.split("＆");
+      const speakerNameString = speakerNames.map(speakerName => {
+        // 設定値の色があればそれを設定する
+        const color = colorByName(speakerName);
+        return speakerName.replace(new RegExp(`^${speakerName}$`, "gi"), `\\C[${color}]${speakerName}`);
+      }, this).join('\\C[0]＆');
+      return speakerNameString;
+    }
+  }
+
   class Window_SpeakerName extends Window_Base {
     /**
      * @param {Window_Message} parentWindow メッセージウィンドウ
@@ -188,12 +334,11 @@
     }
 
     /**
-     * @param {boolean} enableEscapeCharacter エスケープ文字が有効であるか
      * @return {number}
      */
-    windowWidth(enableEscapeCharacter) {
+    windowWidth() {
       this.resetFontSettings();
-      const textWidth = enableEscapeCharacter ? this.textWidthEx(this._text) : this.textWidth(this._text);
+      const textWidth = this.textWidthEx(this._text);
       const width = textWidth + this.padding * 2 + settings.nameWindowPaddingHorizontal;
       return Math.ceil(width);
     }
@@ -264,25 +409,18 @@
     /**
      * @param {string} text 名前
      * @param {number} position 表示場所
-     * @param {number} color 色
-     * @param {boolean} enableEscapeCharacter エスケープ文字を有効にするか
      */
-    show(text, position, color, enableEscapeCharacter) {
+    show(text, position) {
       super.show();
       this.stopClose();
       this._text = text;
       this._position = position;
-      this.width = this.windowWidth(enableEscapeCharacter);
+      this.width = this.windowWidth(true);
       this.createContents();
       this.contents.clear();
       this.resetFontSettings();
       let padding = settings.nameWindowPaddingHorizontal / 2;
-      if (enableEscapeCharacter) {
-        this.drawTextEx(this._text, padding, 0);
-      } else {
-        this.changeTextColor(this.textColor(color));
-        this.drawText(this._text, padding, 0);
-      }
+      this.drawTextEx(this._text, padding, 0);
       this.adjustPositionX();
       this.adjustPositionY();
       this.updateBackground();
@@ -360,12 +498,10 @@
   /**
    * @param {string} name
    * @param {number} position
-   * @param {number} color
-   * @param {boolean} enableEscapeCharacter
    */
-  Window_Message.prototype.showNameWindow = function (name, position, color, enableEscapeCharacter) {
+  Window_Message.prototype.showNameWindow = function (name, position) {
     if (!this._isAlreadyShownNameWindow) {
-      this._nameWindow.show(name, position, color, enableEscapeCharacter);
+      this._nameWindow.show(name, position);
       this._isAlreadyShownNameWindow = true;
     }
   };
@@ -377,10 +513,8 @@
     this._isAlreadyShownNameWindow = false;
     if (this._nameWindowTextInfo) {
       this.showNameWindow(
-        this._nameWindowTextInfo.name,
-        this._nameWindowTextInfo.position,
-        this._nameWindowTextInfo.color,
-        this._nameWindowTextInfo.enableEscapeCharacter
+        this._nameWindowTextInfo.coloredName(),
+        this._nameWindowTextInfo.position
       );
     }
   };
@@ -415,10 +549,8 @@
     if (subWindow.isNameWindow()) {
       if (this._nameWindowTextInfo) {
         this.showNameWindow(
-          this._nameWindowTextInfo.name,
-          this._nameWindowTextInfo.position,
-          this._nameWindowTextInfo.color,
-          this._nameWindowTextInfo.enableEscapeCharacter
+          this._nameWindowTextInfo.coloredName(),
+          this._nameWindowTextInfo.position
         );
       }
     } else {
@@ -435,94 +567,7 @@
    * 指定したテキストの中から名前ウィンドウにすべき箇所を探す
    */
   Window_Message.prototype.findNameWindowTextInfo = function (text) {
-    const regExpAndPositions = [
-      {
-        regExp: /\x1bN\<(.*?)\>/gi,
-        position: NAME_WINDOW_POSITION.LEFT_EDGE
-      },
-      {
-        regExp: /\x1bN1\<(.*?)\>/gi,
-        position: NAME_WINDOW_POSITION.LEFT_EDGE
-      },
-      {
-        regExp: /\x1bN2\<(.*?)\>/gi,
-        position: NAME_WINDOW_POSITION.LEFT
-      },
-      {
-        regExp: /\x1bN3\<(.*?)\>/gi,
-        position: NAME_WINDOW_POSITION.CENTER
-      },
-      {
-        regExp: /\x1bNC\<(.*?)\>/gi,
-        position: NAME_WINDOW_POSITION.CENTER
-      },
-      {
-        regExp: /\x1bN4\<(.*?)\>/gi,
-        position: NAME_WINDOW_POSITION.RIGHT
-      },
-      {
-        regExp: /\x1bN5\<(.*?)\>/gi,
-        position: NAME_WINDOW_POSITION.RIGHT_EDGE
-      },
-      {
-        regExp: /\x1bNR\<(.*?)\>/gi,
-        position: NAME_WINDOW_POSITION.RIGHT_EDGE
-      },
-      {
-        regExp: /\x1bNDP\<(.*?)\>/gi,
-        position: NAME_WINDOW_POSITION.LEFT_EDGE,
-        isActorId: true
-      }
-    ];
-    const hit = regExpAndPositions.map(regExpAndPosition => {
-      return {
-        regExp: new RegExp(regExpAndPosition.regExp),
-        position: regExpAndPosition.position,
-        idOrName: regExpAndPosition.regExp.exec(text),
-        isActorId: regExpAndPosition.isActorId
-      }
-    })
-      .find(hit => hit.idOrName && hit.idOrName[1]);
-    if (hit) {
-      name = hit.isActorId ? this.actorName(hit.idOrName[1]) : hit.idOrName[1];
-      return {
-        name: name,
-        position: hit.position,
-        color: this.colorByName(name),
-        enableEscapeCharacter: false,
-        eraseTarget: hit.regExp
-      };
-    }
-
-    if (settings.autoNameWindow) {
-      // 名前＋開きカッコを見つけ次第、名前ウィンドウを設定する
-      const speakerReg = new RegExp("^(.+)(「|（)", "gi");
-      const speaker = speakerReg.exec(text);
-      if (speaker !== null) {
-        let target = speaker[1].replace("\x1b\}", "");
-        const eraseTarget = target;
-        if (settings.forceAutoNameColor) {
-          target = target.replace(/\x1bC\[(#?[0-9]*)\]/gi, "");
-        }
-        const speakerNames = target.split("＆");
-        const speakerNameString = speakerNames.map(speakerName => {
-          // 設定値の色があればそれを設定する
-          const color = this.colorByName(speakerName);
-          return speakerName.replace(new RegExp(`^${speakerName}$`, "gi"), `\\C[${color}]${speakerName}`);
-        }, this).join('\\C[0]＆');
-
-        if (target.length > 0) {
-          return {
-            name: speakerNameString,
-            position: NAME_WINDOW_POSITION.LEFT_EDGE,
-            colorByName: 0,
-            enableEscapeCharacter: true,
-            eraseTarget: eraseTarget
-          };
-        }
-      }
-    }
-    return null;
+    return NameWindowTextInfo.fromMessageText(text);
   };
 
   Window_Message.prototype.convertNameWindow = function (text) {
@@ -532,15 +577,6 @@
       this._nameWindowTextInfo = nameWindowTextInfo;
     }
     return text;
-  };
-
-  Window_Message.prototype.colorByName = function (name) {
-    const actor = $gameActors.byName(name);
-    if (actor) {
-      const colorSetting = settings.actorColors.find(actorColor => Number(actorColor.actor) === Number(actor.actorId()));
-      return colorSetting ? colorSetting.color : settings.defaultTextColor;
-    }
-    return settings.defaultTextColor;
   };
 
   Window_Message.prototype.hideNameWindow = function () {
