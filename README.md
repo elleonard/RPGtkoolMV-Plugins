@@ -50,6 +50,10 @@ MADO付属の AltWindowFrame.js のパッチプラグイン
 
 同じショップで同じアイテムを異なる価格で販売できるようにするプラグイン
 
+## DarkPlasma_AutoCloseSelectActorWindow.js
+
+アクター選択ウィンドウを表示するアイテム/スキルが使用不能になったときに、アクター選択ウィンドウを自動的に閉じるプラグイン
+
 ## DarkPlasma_AutoHighlight.js
 
 メッセージ内の指定した文字列を自動でハイライトするプラグイン
