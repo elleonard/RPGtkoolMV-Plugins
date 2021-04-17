@@ -8,7 +8,7 @@
  */
 
 /*:
- * @plugindesc 
+ * @plugindesc アイテム/スキル名の色指定
  * @author DarkPlasma
  * @license MIT
  *
