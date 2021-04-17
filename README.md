@@ -255,6 +255,10 @@ CBR_imgFusion.js の機能をほぼ維持してリファクタしたものです
 
 戦闘中、強化状態や弱体状態で条件分岐するためのメソッドを追加するプラグイン
 
+## DarkPlasma_ItemTextColor.js
+
+ウィンドウに表示されるアイテム名、スキル名の色を変更するプラグイン
+
 ## DarkPlasma_Leeryonto_StandPictureManagerPatch.js
 
 Leeryontoさんの StandPictureManager.js のパッチプラグイン
