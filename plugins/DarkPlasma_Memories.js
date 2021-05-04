@@ -4,6 +4,8 @@
 // http://opensource.org/licenses/mit-license.php
 
 /**
+ * 2021/05/05 1.4.2 CG/シーンに含まれないタグを表示しないよう修正
+ *                  json定義不足時のエラーをわかりやすく修正
  * 2020/04/25 1.4.1 回想シーンから戻った際にカーソルがリセットされる不具合を修正
  * 2020/04/24 1.4.0 Memories.json のタグ一覧をスイッチで解放するかどうか記述できるよう拡張
  * 2020/04/23 1.3.1 合成画像でない場合にエラーになる不具合を修正
@@ -213,8 +215,16 @@ var $dataMemories = null;
       );
     }
 
-    get tags() {
-      return this._tags.filter(tag => tag.isEnabled);
+    /**
+     * 有効なタグ一覧を返す
+     * @param {boolean} isCGMode CGモードかどうか
+     * @return {MemoryTag[]}
+     */
+    tags(isCGMode) {
+      const targets = isCGMode ? this._cgs : this._scenes;
+      return this._tags.filter(tag => {
+        return tag.isEnabled && !targets.every(target => !target.includeTagSymbol(tag.symbol));
+      });
     }
 
     /**
@@ -270,6 +280,21 @@ var $dataMemories = null;
       this._isAdult = isAdult;
       this._tagSymbols = tagSymbols;
       this._isEnabled = isEnabled;
+
+      if (this._title === undefined) {
+        throw 'CGタイトルが定義されていません。';
+      }
+      this.validate(this._thumbnail, 'サムネイル');
+      this.validate(this._switch, 'スイッチ');
+      this.validate(this._commonEvent, 'コモンイベント')
+      this.validate(this._isAdult, 'アダルトフラグ');
+      this.validate(this._tagSymbols, 'タグ');
+    }
+
+    validate(value, name) {
+      if (value === undefined) {
+        throw `${this._title}の${name}が定義されていません。`;
+      }
     }
 
     /**
@@ -319,6 +344,20 @@ var $dataMemories = null;
       this._isAdult = isAdult;
       this._tagSymbols = tagSymbols;
       this._isEnabled = isEnabled;
+      if (this._title === undefined) {
+        throw 'CGタイトルが定義されていません。';
+      }
+      this.validate(this._thumbnail, 'サムネイル');
+      this.validate(this._pictures, 'ピクチャ情報');
+      this.validate(this._switch, 'スイッチ');
+      this.validate(this._isAdult, 'アダルトフラグ');
+      this.validate(this._tagSymbols, 'タグ');
+    }
+
+    validate(value, name) {
+      if (value === undefined) {
+        throw `${this._title}の${name}が定義されていません。`;
+      }
     }
 
     /**
@@ -506,7 +545,7 @@ var $dataMemories = null;
       // タグ選択ウィンドウ
       this._commandWindow = new Window_MemoriesCommand();
       this._commandWindow.setHandler(DEFAULT_TAG, this.commandTag.bind(this));
-      memoriesManager.tags.forEach(tag => {
+      memoriesManager.tags(true).forEach(tag => {
         this._commandWindow.setHandler(tag.symbol, this.commandTag.bind(this));
       });
       this._commandWindow.setHandler('cancel', this.goBackToTitle.bind(this));
@@ -541,6 +580,7 @@ var $dataMemories = null;
       this.addWindow(this._cgWindow);
 
       this._modeWindow.setListWindow(this._listWindow);
+      this._modeWindow.setCommandWindow(this._commandWindow);
       this._commandWindow.setListWindow(this._listWindow);
       this._titleWindow.setListWindow(this._listWindow);
 
@@ -743,6 +783,7 @@ var $dataMemories = null;
   class Window_MemoriesCommand extends Window_Command {
     constructor() {
       super();
+      this._isCGMode = true;
       this.initialize.apply(this, arguments);
     }
 
@@ -751,11 +792,28 @@ var $dataMemories = null;
     }
 
     makeCommandList() {
+      /**
+       * Window_Commandのinitialize時に何もせず、Window_Memoriesのinitialize時に処理するため
+       */
+      if (!this.hasOwnProperty('_isCGMode')) {
+        return;
+      }
       this.addCommand('すべて', DEFAULT_TAG);
-      memoriesManager.tags.forEach(tag => {
+      memoriesManager.tags(this._isCGMode).forEach(tag => {
         this.addCommand(tag.text, tag.symbol);
       });
       this.addCommand('戻る', BACK_TAG);
+    }
+
+    /**
+     * @param {boolean} isCGMode CGモードかどうか
+     */
+    setMode(isCGMode) {
+      this._isCGMode = isCGMode;
+      this.refresh();
+      if (this.index() >= this.maxItems()) {
+        this.select(this.maxItems()-1);
+      }
     }
 
     setListWindow(listWindow) {
@@ -822,6 +880,9 @@ var $dataMemories = null;
       if (this._listWindow) {
         this._listWindow.setMode(this._isCGMode);
       }
+      if (this._commandWindow) {
+        this._commandWindow.setMode(this._isCGMode);
+      }
       this.refresh();
     }
 
@@ -832,6 +893,10 @@ var $dataMemories = null;
 
     setListWindow(listWindow) {
       this._listWindow = listWindow;
+    }
+
+    setCommandWindow(commandWindow) {
+      this._commandWindow = commandWindow;
     }
 
     refresh() {
@@ -1027,10 +1092,7 @@ var $dataMemories = null;
         return true;
       }
       // 選択しているタグのみに絞る
-      /*return memory.tags.filter(tag => {
-        return tag === this._tag;
-      }, this).length > 0;*/
-      return memory.includeTagSymbol(this._tag);
+      return memory && memory.includeTagSymbol(this._tag);
     }
 
     currentMemory() {
