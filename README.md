@@ -353,6 +353,10 @@ ScopeTarget.js と併用し、ランダムに重複なくN体のターゲット�
 
 イベントの位置を記録するプラグイン
 
+## DarkPlasma_SharedSwitchVariable.js
+
+全てのセーブデータで共有するスイッチ・変数を指定するプラグイン
+
 ## DarkPlasma_ShiftCommandPersonal.js
 
 アクター選択メニューをアクター選択中に切り替えられるプラグイン
