@@ -294,6 +294,10 @@ js/pluginsフォルダを暗号化したりパッキングして配布する場�
 data/Memories.json に回想用のデータを記述して利用してください
 sample/Memories.json にサンプル用のデータが載せてあります
 
+## DarkPlasma_MemoriesSwitchLoader.js
+
+回想シーンメニューの解放条件スイッチをロードするプラグイン
+
 ## DarkPlasma_MinimumDamageValue.js
 
 最低ダメージ保証システムを追加するプラグイン

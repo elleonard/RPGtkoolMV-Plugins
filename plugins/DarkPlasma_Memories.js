@@ -4,7 +4,8 @@
 // http://opensource.org/licenses/mit-license.php
 
 /**
- * 2021/05/05 1.4.2 CG/シーンに含まれないタグを表示しないよう修正
+ * 2021/05/05 2.0.0 解放条件スイッチのロード処理を別プラグインに委譲
+ *            1.4.2 CG/シーンに含まれないタグを表示しないよう修正
  *                  json定義不足時のエラーをわかりやすく修正
  * 2020/04/25 1.4.1 回想シーンから戻った際にカーソルがリセットされる不具合を修正
  * 2020/04/24 1.4.0 Memories.json のタグ一覧をスイッチで解放するかどうか記述できるよう拡張
@@ -30,6 +31,8 @@
  * @author DarkPlasma
  * 
  * @license MIT
+ *
+ * @orderBefore DarkPlasma_MemoriesSwitchLoader
  * 
  * @help
  * タイトルメニューに回想シーンリストを追加します
@@ -45,8 +48,15 @@
  * Terminate Labelで指定したラベルを定義してください
  * 
  * サムネイルのサイズは130x130程度です
- * 
- * 
+ *
+ * 本プラグインの利用には、下記プラグイン等の
+ * スイッチ読み込みロジックを提供するプラグインが必須となります
+ * - DarkPlasma_MemoriesSwitchLoader
+ * 必ず、スイッチ読み込みプラグインを本プラグインよりも下に配置してください
+ *
+ * 追加プラグインで MemoriesManager.loadSwitches を定義することにより、
+ * 独自にスイッチ読み込みロジックを記述することも可能です
+ *
  * @param 回想モードで再生するBGM
  * @default
  * 
@@ -171,20 +181,19 @@ var $dataMemories = null;
     }
 
     /**
+     * スイッチをロードする
+     * @return {boolean[]}
+     */
+     static loadSwitches() {
+      return [];
+    }
+
+    /**
      * @return {MemoriesManager}
      */
     static fromDataMemories() {
       // セーブデータからswitch情報を取得
-      const switches = [];
-
-      const maxSaveFiles = DataManager.maxSavefiles();
-      for (var i = 1; i < maxSaveFiles; i++) {
-        if (DataManager.loadGameSwitches(i)) {
-          $dataSystem.switches.forEach((_, index) => {
-            switches[index] |= $gameSwitches.value(index);
-          });
-        }
-      }
+      const switches = MemoriesManager.loadSwitches();
 
       return new MemoriesManager(
         $dataMemories.tags.map(tag => {
@@ -236,6 +245,8 @@ var $dataMemories = null;
       return isCGMode ? this._cgs : this._scenes;
     }
   }
+
+  window.MemoriesManager = MemoriesManager;
 
   class MemoryTag {
     /**
@@ -1215,41 +1226,6 @@ var $dataMemories = null;
   const _DataManager_isDatabaseLoaded = DataManager.isDatabaseLoaded;
   DataManager.isDatabaseLoaded = function () {
     return _DataManager_isDatabaseLoaded.apply(this, arguments) && window[this._databaseMemories.name];
-  };
-
-  /**
-   * セーブデータからスイッチのみロードする
-   * @param {number} savefileId セーブデータID
-   */
-  DataManager.loadGameSwitches = function (savefileId) {
-    try {
-      return this.loadGameSwitchesWithoutRescue(savefileId);
-    } catch (e) {
-      console.error(e);
-      return false;
-    }
-  };
-
-  /**
-   * セーブデータからスイッチのみロードする
-   * @param {number} savefileId セーブデータID
-   */
-  DataManager.loadGameSwitchesWithoutRescue = function (savefileId) {
-    if (this.isThisGameFile(savefileId)) {
-      var json = StorageManager.load(savefileId);
-      this.createSwitchesObject();
-      this.extractSaveSwitches(JsonEx.parse(json));
-      return true;
-    }
-    return false;
-  };
-
-  DataManager.createSwitchesObject = function () {
-    $gameSwitches = new Game_Switches();
-  };
-
-  DataManager.extractSaveSwitches = function (contents) {
-    $gameSwitches = contents.switches;
   };
 
   PluginManager.isLoadedPlugin = function (name) {
