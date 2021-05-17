@@ -4,6 +4,8 @@
 // http://opensource.org/licenses/mit-license.php
 
 /**
+ * 2021/05/17 1.2.2 CallCommonEventBeforeSkillと競合してエラーになる不具合を修正
+ *                  敵がパーティのゴールドやアイテムを消費してしまう不具合を修正
  * 2020/09/11 1.2.1 DarkPlasma_ConsumeItemImmediatelyに対応
  *            1.2.0 入力後、消費数を反映する機能をオプション化
  *                  スキル->アイテムと入力するとキャンセルしても個数が戻らない不具合を修正
@@ -28,6 +30,7 @@
  * @default true
  *
  * @help
+ *   version: 1.2.2
  *   スキルのメモ欄に以下のように記述するとコストを追加できます。
  *
  *   <SkillCost:
@@ -236,15 +239,11 @@
     }
   };
 
-  const _Scene_Boot_start = Scene_Boot.prototype.start;
-  Scene_Boot.prototype.start = function () {
-    _Scene_Boot_start.call(this);
-    // 追加コスト初期化
-    $dataSkills.filter(skill => skill && !skill.additionalCost).forEach(skill => $dataSkills[skill.id].additionalCost = {})
-  };
-
   Game_BattlerBase.prototype.skillHpCost = function (skill) {
     let cost = 0;
+    if (!skill.additionalCost) {
+      return 0;
+    }
     if (skill.additionalCost.hp) {
       cost += skill.additionalCost.hp;
     }
@@ -256,6 +255,9 @@
 
   Game_BattlerBase.prototype.skillMpCost = function (skill) {
     let cost = skill.mpCost;
+    if (!skill.additionalCost) {
+      return cost;
+    }
     if (skill.additionalCost.mpRate) {
       cost += skill.additionalCost.mpRate * this.mmp / 100;
     }
@@ -263,11 +265,11 @@
   };
 
   Game_BattlerBase.prototype.skillGoldCost = function (skill) {
-    return skill.additionalCost.gold ? skill.additionalCost.gold : 0;
+    return skill.additionalCost && skill.additionalCost.gold ? skill.additionalCost.gold : 0;
   };
 
   Game_BattlerBase.prototype.skillItemCosts = function (skill) {
-    if (this.isActor() && skill.additionalCost.item) {
+    if (this.isActor() && skill.additionalCost && skill.additionalCost.item) {
       return skill.additionalCost.item;
     }
     return [];
@@ -278,10 +280,18 @@
   };
 
   Game_BattlerBase.prototype.canPaySkillGoldCost = function (skill) {
-    return $gameParty.gold() >= this.skillGoldCost(skill);
+    return true;
   };
 
   Game_BattlerBase.prototype.canPaySkillItemCost = function (skill) {
+    return true;
+  };
+
+  Game_Actor.prototype.canPaySkillGoldCost = function (skill) {
+    return $gameParty.gold() >= this.skillGoldCost(skill);
+  };
+
+  Game_Actor.prototype.canPaySkillItemCost = function (skill) {
     return !this.skillItemCosts(skill)
       .some(item => $gameParty.numItemsForDisplay($dataItems[item.id]) < item.num);
   };
@@ -298,13 +308,18 @@
   Game_BattlerBase.prototype.paySkillCost = function (skill) {
     // HPコスト
     this._hp -= Math.min(this.skillHpCost(skill), this._hp);
+    _Game_BattlerBase_paySkillCost.call(this, skill);
+  };
+
+  const _Game_Actor_paySkillCost = Game_Actor.prototype.paySkillCost;
+  Game_Actor.prototype.paySkillCost = function (skill) {
     // goldコスト
     $gameParty.loseGold(this.skillGoldCost(skill));
     // アイテムコスト
     this.skillItemCosts(skill)
       .filter(itemCost => $dataItems[itemCost.id].consumable)
-      .forEach(itemCost => $gameParty.loseItem($dataItems[itemCost.id], itemCost.num, false))
-    _Game_BattlerBase_paySkillCost.call(this, skill);
+      .forEach(itemCost => $gameParty.loseItem($dataItems[itemCost.id], itemCost.num, false));
+    _Game_Actor_paySkillCost.call(this, skill);
   };
 
   /**
