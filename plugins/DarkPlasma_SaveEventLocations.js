@@ -4,6 +4,7 @@
 // http://opensource.org/licenses/mit-license.php
 
 /**
+ * 2021/05/23 1.0.1 リファクタ
  * 2020/06/11 1.0.0 公開
  */
 
@@ -38,10 +39,6 @@
 
 (function () {
   'use strict';
-  const pluginName = document.currentScript.src.replace(/^.*\/(.*).js$/, function () {
-    return arguments[1];
-  });
-  const pluginParameters = PluginManager.parameters(pluginName);
 
   /**
    * DataManager
@@ -51,11 +48,10 @@
     _DataManager_extractMetadata.call(this, data);
     if (data === $dataMap) {
       $dataMap.saveEventLocations = !!data.meta['Save Event Locations'];
-      [...Array(data.events.length).keys()].forEach(index => {
-        if (!data.events[index]) {
-          return;
+      data.events.forEach(event => {
+        if (event) {
+          event.saveEventLocation = /<Save Event Location>/i.test(event.note);
         }
-        data.events[index].saveEventLocation = /<Save Event Location>/i.test(data.events[index].note);
       });
     }
   };
@@ -173,24 +169,54 @@
   window[EventLocations.name] = EventLocations;
 
   /**
+   * @param {number} mapId マップID
+   * @param {number} eventId イベントID
+   * @return {string}
+   */
+  function eventIdentifier (mapId, eventId) {
+    return `${mapId}_${eventId}`;
+  }
+
+  /**
+   * @type {Map<string, boolean>}
+   */
+  const initializingEvents = new Map();
+
+  /**
    * Game_Event
    */
   const _Game_Event_initialize = Game_Event.prototype.initialize;
   Game_Event.prototype.initialize = function (mapId, eventId) {
-    this._initializing = true;
+    this.startInitializing(mapId, eventId);
     _Game_Event_initialize.call(this, mapId, eventId);
     if (savedEventLocations.isLocationSavedEvent(mapId, eventId)) {
       const savedLocation = savedEventLocations.getSavedLocation(mapId, eventId);
       this.locate(savedLocation.x, savedLocation.y);
       this.setDirection(savedLocation.direction);
     }
-    this._initializing = false;
+    this.endInitializing();
+  };
+
+  Game_Event.prototype.startInitializing = function (mapId, eventId) {
+    if (!this.isInitializing(mapId, eventId)) {
+      initializingEvents.set(eventIdentifier(mapId, eventId), true);
+    }
+  };
+
+  Game_Event.prototype.endInitializing = function () {
+    if (this.isInitializing(this._mapId, this._eventId)) {
+      initializingEvents.set(eventIdentifier(this._mapId, this._eventId), false);
+    }
+  };
+
+  Game_Event.prototype.isInitializing = function (mapId, eventId) {
+    return initializingEvents.get(eventIdentifier(mapId, eventId));
   };
 
   const _Game_Event_locate = Game_Event.prototype.locate;
   Game_Event.prototype.locate = function (x, y) {
     _Game_Event_locate.call(this, x, y);
-    if (this.mustSaveLocation() && !this._initializing) {
+    if (this.mustSaveLocation() && !this.isInitializing(this._mapId, this._eventId)) {
       savedEventLocations.saveLocation(
         this._mapId, this.eventId(), x, y, this.direction()
       );
@@ -220,7 +246,7 @@
   const _Game_Event_setDirection = Game_Event.prototype.setDirection;
   Game_Event.prototype.setDirection = function (direction) {
     _Game_Event_setDirection.call(this, direction);
-    if (this.mustSaveLocation() && !this._initializing && direction > 0) {
+    if (this.mustSaveLocation() && !this.isInitializing(this._mapId, this._eventId) && direction > 0) {
       savedEventLocations.saveLocation(
         this._mapId, this.eventId(), this.x, this.y, direction
       );
