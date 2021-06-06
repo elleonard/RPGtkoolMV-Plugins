@@ -4,6 +4,7 @@
 // http://opensource.org/licenses/mit-license.php
 
 /**
+ * 2021/06/06 2.4.1 Window_EnemyBookStatusのインターフェース公開 リファクタ
  * 2020/06/24 2.4.0 無効属性/ステート/弱体を耐性属性/ステート/弱体と分けて表示する設定を追加
  *            2.4.1 レイアウト崩れを修正
  * 2020/06/22 2.3.1 除外ステートや弱体有効度を英語対応
@@ -1316,13 +1317,39 @@
     drawStatus(x, y) {
       const lineHeight = this.lineHeight();
       const enemy = this._enemy;
-      for (var i = 0; i < 8; i++) {
-        this.changeTextColor(this.systemColor());
-        this.drawText(TextManager.param(i), x, y, 160);
-        this.resetTextColor();
-        this.drawText(enemy.params[i], x + 160, y, 60, 'right');
+      [...Array(8).keys()].forEach(i => {
+        this.drawParamName(x, y, i);
+        this.drawText(enemy.params[i], x + this.paramNameWidth(), y, this.paramWidth(), 'right');
         y += lineHeight;
-      }
+      });
+    }
+
+    /**
+     * パラメータ名を描画する
+     * @param {number} x X座標
+     * @param {number} y Y座標
+     * @param {number} paramId パラメータID
+     */
+    drawParamName(x, y, paramId) {
+      this.changeTextColor(this.systemColor());
+      this.drawText(TextManager.param(paramId), x, y, this.paramNameWidth());
+      this.resetTextColor();
+    }
+
+    /**
+     * パラメータ名の横幅
+     * @return {number}
+     */
+    paramNameWidth() {
+      return 160;
+    }
+
+    /**
+     * パラメータ数値の横幅
+     * @return {number}
+     */
+    paramWidth() {
+      return 60;
     }
 
     /**
@@ -1596,6 +1623,7 @@
     }
   }
 
+  window.Window_EnemyBookStatus = Window_EnemyBookStatus;
 
   const _Game_System_initialize = Game_System.prototype.initialize;
   Game_System.prototype.initialize = function () {
