@@ -4,6 +4,8 @@
 // http://opensource.org/licenses/mit-license.php
 
 /**
+ * 2021/06/08 1.2.0 ファイル名以外の引数を順不同指定可能に変更
+ *                  X,Y座標オフセットの設定を追加
  * 2020/09/21 1.1.3 同じ名前のピクチャを別IDに割り当てると意図せず立ち絵が残り続けることがある不具合を修正
  * 2020/09/20 1.1.2 同じピクチャIDを使いまわした際に意図しない立ち絵が表示されることがある不具合を修正
  * 2020/08/11 1.1.1 リファクタ
@@ -56,13 +58,21 @@
  * 立ち絵を非表示にしたいときにはプラグインコマンド hideStand を実行します
  * 
  * コマンド説明:
- * showStand: 指定した名前の立ち絵を表示します
+ * showStand [立ち絵ファイル名] [引数]: 指定した名前の立ち絵を表示します
  * hideStand: 指定した名前の立ち絵を非表示にします
  * hideAllStand: すべての立ち絵を非表示にします
  *
+ * showStandの引数:
+ *  left: 立ち絵を左側に表示します
+ *  right: 立ち絵を右側に表示します
+ *  reverse: 立ち絵を反転表示します
+ *  fade: 立ち絵をフェードインします
+ *  offsetX=[数値]: X座標に指定数値分ずらして表示します
+ *  offsetY=[数値]: Y座標に指定数値分ずらして表示します
+ *
  * 記述例:
- * showStand 立ち絵1 right reverse fade
- * （ピクチャファイル 立ち絵1 を右側に反転して、フェードイン表示させる）
+ * showStand 立ち絵1 right reverse fade offsetY=20
+ * （ピクチャファイル 立ち絵1 を右側かつY座標20ずらした位置に、反転して、フェードイン表示させる。）
  *
  * showStand 立ち絵2
  * （ピクチャファイル 立ち絵2 を左側に表示させる）
@@ -203,8 +213,10 @@
      * @param {boolean} isLeft 左側に表示するかどうか
      * @param {boolean} reverse 反転表示するかどうか
      * @param {boolean} fadeIn フェードインするかどうか
+     * @param {number} offsetX X座標オフセット
+     * @param {number} offsetY Y座標オフセット
      */
-    showPicture(name, isLeft, reverse, fadeIn) {
+    showPicture(name, isLeft, reverse, fadeIn, offsetX, offsetY) {
       // pictureIdの取得
       const picture = this.findByName(name);
       // 登録されていない立ち絵ファイル名なら表示しない
@@ -213,8 +225,8 @@
       }
 
       // デフォルトは左表示
-      const x = isLeft ? settings.standLeftX : settings.standRightX;
-      const y = settings.standY;
+      const x = (isLeft ? settings.standLeftX : settings.standRightX) + offsetX;
+      const y = settings.standY + offsetY;
 
       // デフォルトは反転なし
       const scaleX = reverse ? -1 * settings.standScale : settings.standScale;
@@ -323,6 +335,66 @@
     return _Game_Interpreter_command235.call(this);
   };
 
+  class ShowStandArguments {
+    /**
+     * @param {string} filename ファイル名
+     * @param {boolean} onLeft 左に表示すべきか
+     * @param {boolean} reverse 反転表示すべきか
+     * @param {boolean} fadeIn フェードインすべきか
+     * @param {number} offsetX X座標オフセット
+     * @param {number} offsetY Y座標オフセット
+     */
+    constructor(filename, onLeft, reverse, fadeIn, offsetX, offsetY) {
+      this._filename = filename;
+      this._onLeft = onLeft;
+      this._reverse = reverse;
+      this._fadeIn = fadeIn;
+      this._offsetX = offsetX;
+      this._offsetY = offsetY;
+    }
+
+    /**
+     * @param {string[]} args 引数
+     * @return {ShowStandArguments}
+     */
+    static fromArgs(args) {
+      const filename = args[0];
+      const argumentsArray = args.slice(1).map(arg => arg.toLowerCase());
+      return new ShowStandArguments(
+        filename,
+        argumentsArray.find(arg => arg === 'left' || arg === 'right') === 'left',
+        argumentsArray.find(arg => arg === 'reverse') === 'reverse',
+        argumentsArray.find(arg => arg === 'fade') === 'fade',
+        Number((argumentsArray.find(arg => arg.startsWith('offsetx')) || 'offsetx=0').split('=')[1]),
+        Number((argumentsArray.find(arg => arg.startsWith('offsety')) || 'offsety=0').split('=')[1]),
+      );
+    }
+
+    get filename() {
+      return this._filename;
+    }
+
+    get onLeft() {
+      return this._onLeft;
+    }
+
+    get reverse() {
+      return this._reverse;
+    }
+
+    get fadeIn() {
+      return this._fadeIn;
+    }
+
+    get offsetX() {
+      return this._offsetX;
+    }
+
+    get offsetY() {
+      return this._offsetY;
+    }
+  }
+
   // プラグインコマンド showStand の実装
   const _Game_Interpreter_pluginCommand = Game_Interpreter.prototype.pluginCommand;
   Game_Interpreter.prototype.pluginCommand = function (command, args) {
@@ -330,11 +402,14 @@
 
     switch ((command || '')) {
       case 'showStand': // showStand [立ち絵ファイル名] [左フラグ] [反転フラグ] [フェードインフラグ]
+        const showStandArguments = ShowStandArguments.fromArgs(args);
         standPictures.showPicture(
-          args[0],
-          (!args[1] || (args[1].toLowerCase() !== 'false' && args[1].toLowerCase() !== 'right')),
-          (args[2] && (args[2].toLowerCase() === 'true' || args[2].toLowerCase() === 'reverse')),
-          (args[3] && (args[3].toLowerCase() === 'true' || args[3].toLowerCase() === 'fade'))
+          showStandArguments.filename,
+          showStandArguments.onLeft,
+          showStandArguments.reverse,
+          showStandArguments.fadeIn,
+          showStandArguments.offsetX,
+          showStandArguments.offsetY
         );
         break;
       case 'hideStand': // hideStand 立ち絵ファイル名
