@@ -117,6 +117,10 @@ Trb_TextColor.js を採用している場合は色番号ではなくカラーコ
 
 戦闘中、アイテム消費を入力後即座に反映するプラグイン
 
+## DarkPlasma_ControlAutoPlay.js
+
+マップに設定されたBGM/BGSの自動再生をスイッチで無効にするプラグイン
+
 ## DarkPlasma_CustomSellingPrice.js
 
 アイテムの売却価格を変更するプラグイン
