@@ -4,6 +4,7 @@
 // http://opensource.org/licenses/mit-license.php
 
 /**
+ * 2021/06/14 1.2.1 左右表示を省略した際に左に表示されるべきところを右に表示されている不具合を修正
  * 2021/06/08 1.2.0 ファイル名以外の引数を順不同指定可能に変更
  *                  X,Y座標オフセットの設定を追加
  * 2020/09/21 1.1.3 同じ名前のピクチャを別IDに割り当てると意図せず立ち絵が残り続けることがある不具合を修正
@@ -362,7 +363,7 @@
       const argumentsArray = args.slice(1).map(arg => arg.toLowerCase());
       return new ShowStandArguments(
         filename,
-        argumentsArray.find(arg => arg === 'left' || arg === 'right') === 'left',
+        argumentsArray.find(arg => arg === 'left' || arg === 'right') !== 'right',
         argumentsArray.find(arg => arg === 'reverse') === 'reverse',
         argumentsArray.find(arg => arg === 'fade') === 'fade',
         Number((argumentsArray.find(arg => arg.startsWith('offsetx')) || 'offsetx=0').split('=')[1]),
