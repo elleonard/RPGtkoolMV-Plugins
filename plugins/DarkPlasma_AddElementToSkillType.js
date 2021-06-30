@@ -4,6 +4,7 @@
 // http://opensource.org/licenses/mit-license.php
 
 /**
+ * 2021/06/30 1.0.2 属性を追加するステートが正常に動作しない不具合を修正
  * 2020/04/27 1.0.1 ヘルプのtypo修正
  *            1.0.0 公開
  */
@@ -112,7 +113,7 @@
   }
 
   Game_BattlerBase.prototype.addElementsObjects = function () {
-    return this.states().filter(state => state.addElements).map(state => state.addElemets);
+    return this.states().filter(state => state.addElements).map(state => state.addElements);
   };
 
   Game_BattlerBase.prototype.skillElements = function (skill) {
