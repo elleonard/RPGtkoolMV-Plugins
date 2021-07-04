@@ -4,6 +4,7 @@
 // http://opensource.org/licenses/mit-license.php
 
 /**
+ * 2021/07/04 1.3.1 最終売却価格の小数点以下を切り捨てるよう修正
  * 2020/05/02 1.3.0 売却数IDを指定する機能を追加
  * 2020/04/17 1.2.0 アイテム売却数による有効条件設定を追加
  * 2020/03/30 1.1.0 基本売却価格に対して倍率を設定できる機能を追加
@@ -33,7 +34,8 @@
  * 売却価格セットは複数指定することができ、
  * それぞれに対して有効条件をスイッチや変数の値について決めることができます。
  *
- * 有効条件はスイッチ,変数,売却数の組を1単位とし、1単位の中ですべての条件を満たす場合に、
+ * 有効条件はスイッチ,変数,売却数の組を1単位とし、
+ * 1単位の中ですべての条件を満たす場合に、
  * その単位の有効条件が満たされたものとみなします。
  *
  * 有効条件を複数設定することができますが、そのいずれか1単位さえ満たされていれば
@@ -293,10 +295,10 @@
    */
   class CustomPriceSetting {
     /**
-     * @param {Array.<SellingPrice>} itemPrices 
-     * @param {Array.<SellingPrice>} weaponPrices 
-     * @param {Array.<SellingPrice>} armorPrices 
-     * @param {Array.<SellingPriceCondition>} conditions 
+     * @param {SellingPrice[]} itemPrices アイテムの売却価格設定
+     * @param {SellingPrice[]} weaponPrices 武器の売却価格設定
+     * @param {SellingPrice[]} armorPrices 防具の売却価格設定
+     * @param {SellingPriceCondition[]} conditions 売却価格セットの有効条件
      */
     constructor(itemPrices, weaponPrices, armorPrices, conditions) {
       this._itemPrices = itemPrices;
@@ -431,7 +433,7 @@
      * @return {number}
      */
     calcPrice(category) {
-      return this.basePrice(category) * this._priceRate / 100;
+      return Math.floor(this.basePrice(category) * this._priceRate / 100);
     }
   }
 
