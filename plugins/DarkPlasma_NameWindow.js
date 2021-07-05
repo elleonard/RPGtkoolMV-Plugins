@@ -4,6 +4,7 @@
 // http://opensource.org/licenses/mit-license.php
 
 /**
+ * 2021/07/05 1.3.4 DarkPlasma_TextLog.js と併用した際に正常に動作しない不具合を修正
  * 2021/03/03 1.3.3 リファクタ
  * 2020/09/21 1.3.2 メッセージウィンドウの透明設定を引き継ぐよう修正
  * 2020/05/30 1.3.1 DarkPlasma_TextLog.js と併用した時、名前なしテキストに名前をつけてしまうことがある不具合を修正
@@ -589,6 +590,10 @@
 
   Window_Message.prototype.isNameWindowVisible = function () {
     return this._nameWindow && this._nameWindow.visible;
+  };
+
+  Window_Message.prototype.colorByName = function(name) {
+    return colorByName(name);
   };
 
   /**
