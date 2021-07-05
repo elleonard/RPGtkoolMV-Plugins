@@ -4,6 +4,7 @@
 // http://opensource.org/licenses/mit-license.php
 
 /**
+ * 2021/07/05 1.11.0 ログウィンドウの標準フォントサイズ設定を追加
  * 2021/01/19 1.10.2 EventReSpawn.js でイベントを削除した場合にエラーになる不具合を修正
  * 2020/08/09 1.10.1 NobleMushroom.js と併用した際に、場所移動後にウィンドウが表示され続ける不具合を修正
  * 2020/08/07 1.10.0 テキストログウィンドウ拡張用インターフェースを公開
@@ -83,7 +84,13 @@
  * @text 1画面のメッセージ数上限
  * @default 16
  * @type number
- * 
+ *
+ * @param Standard Font Size
+ * @desc ログウィンドウの標準フォントサイズ。0でツクールのデフォルトサイズを継承
+ * @text 標準フォントサイズ
+ * @default 0
+ * @type number
+ *
  * @param Overflow Buzzer
  * @desc テキストログの端より先にスクロールしようとした時、ブザーを鳴らすかどうか
  * @text 限界以上スクロール時ブザー
@@ -204,7 +211,7 @@
  *
  * @help
  *  イベントのテキストログを表示します
- * 
+ *
  *  イベント会話中またはマップ上で pageup キー（L2ボタン）でログを表示します
  *  イベント会話中はそのイベントの直前までのログを表示します
  *  ログは上下キーでスクロールすることができます
@@ -217,18 +224,11 @@
  *  それらよりも下にこのプラグインを追加してください
  *  この設定が偽になっている場合、
  *  イベントに戻る際、最後のメッセージをもう一度最初から流します
- * 
- *  YEP_MessageCore.jsに対応しています
- *    ツクール公式から配布されているv1.02は古いので
- *    必ず本家から最新を落として利用するようにしてください
- * 
- *  YEP_MainMenuManager.jsに対応しています
- *    適切に設定すればステータスメニューからログを開くことができます
- *    設定例：
- *      Show: true
- *      Enabled: this.isTextLogEnabled()
- *      Main Bind: this.commandTextLog.bind(this)
- * 
+ *
+ *  メニュー拡張系のプラグインでは、
+ *  下記スクリプトからログを開くことができます
+ *   this.commandTextLog.bind(this)
+ *
  *  プラグインコマンド showTextLog から開くことも可能です
  *
  *  プラグインコマンド insertLogSplitter を使用することで、
@@ -243,13 +243,13 @@
  *   pageupキー（L2ボタン） : ログを表示する
  *   上下キー/マウススクロール : ログをスクロールする
  *   キャンセルキー/右クリック : ログから抜ける
- * 
+ *
  *  マウスドラッグやスワイプでもログをスクロールできますが、
  *  環境差異に関して未検証なのでおためし版です
  *  しばらく使われて問題が報告されなければ正式版とします
  *
  *  外部向けインターフェース
- *  $gameSystem.insertTextLog(text): ログに文字列 text を追加します
+ *   $gameSystem.insertTextLog(text): ログに文字列 text を追加します
  *
  *  拡張プラグインを書くことで、テキストログウィンドウの
  *  エスケープ文字の挙動を定義できます
@@ -269,6 +269,7 @@
 
   const settings = {
     lineSpacing: Number(pluginParameters['Line Spacing'] || 8),
+    standardFontSize: Number(pluginParameters['Standard Font Size'] || 0),
     messageSpacing: Number(pluginParameters['Message Spacing'] || 0),
     logEventCount: Number(pluginParameters['Log Event Count'] || 0),
     logMessageCount: Number(pluginParameters['Log Event Message Count'] || 0),
@@ -448,6 +449,13 @@
     /**
      * @return {number}
      */
+    standardFontSize() {
+      return settings.standardFontSize ? settings.standardFontSize : super.standardFontSize();
+    }
+
+    /**
+     * @return {number}
+     */
     cursor() {
       return this._cursor;
     }
@@ -609,13 +617,12 @@
      * @return {number}
      */
     calcDefaultCursor() {
-      var height = 0;
-      var size = this._viewTexts.length;
-      for (var i = 0; i < size; i++) {
-        const text = this._viewTexts[size - 1 - i].text;
-        this._viewTexts[size - 1 - i].setHeight(this.calcMessageHeight(text));
-        const textHeight = this._viewTexts[size - 1 - i].height;
-        height += textHeight;
+      let height = 0;
+      const size = this._viewTexts.length;
+      for (let i = 0; i < size; i++) {
+        const viewText = this._viewTexts[size - 1 - i];
+        viewText.setHeight(this.calcMessageHeight(viewText.text));
+        height += viewText.height;
         if (height > Graphics.boxHeight - this.lineHeight()) {
           return (i > 0) ? size - i : size - 1;
         }
@@ -971,7 +978,7 @@
         text: ""
       };
       // YEP_MessageCore.js or DarkPlasma_NameWindow.js のネーム表示ウィンドウに対応
-      if (this.hasNameWindow() && this._nameWindow.active && settings.includeName) {
+      if (this.hasNameWindow() && this._nameWindow.isOpen() && settings.includeName) {
         const nameColor = this.nameColorInLog(this._nameWindow._text);
         message.text += `\x1bC[${nameColor}]${this._nameWindow._text}\n\x1bC[0]`;
       }
