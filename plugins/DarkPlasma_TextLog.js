@@ -4,6 +4,8 @@
 // http://opensource.org/licenses/mit-license.php
 
 /**
+ * 2021/07/07 1.12.0 ログシーンの背景画像設定を追加
+ *                   ログウィンドウ枠非表示設定を追加
  * 2021/07/05 1.11.0 ログウィンドウの標準フォントサイズ設定を追加
  * 2021/01/19 1.10.2 EventReSpawn.js でイベントを削除した場合にエラーになる不具合を修正
  * 2020/08/09 1.10.1 NobleMushroom.js と併用した際に、場所移動後にウィンドウが表示され続ける不具合を修正
@@ -209,6 +211,18 @@
  * @default true
  * @type boolean
  *
+ * @param Background Image
+ * @desc ログシーンに表示する背景画像
+ * @text 背景画像
+ * @type file
+ * @dir img
+ *
+ * @param Show Log Window Frame
+ * @desc ログウィンドウ枠を表示するかどうか
+ * @text ウィンドウ表示
+ * @default true
+ * @type boolean
+ *
  * @help
  *  イベントのテキストログを表示します
  *
@@ -283,6 +297,8 @@
     includeChoiceCancel: String(pluginParameters['Include Choice Cancel In Log'] || 'true') === 'true',
     choiceCancelText: String(pluginParameters['Choice Cancel Text In Log'] || 'キャンセル'),
     smoothBackFromLog: String(pluginParameters['Smooth Back From Log'] || 'true') === 'true',
+    backgroundImage: String(pluginParameters['Background Image'] || ""),
+    showLogWindowFrame: String(pluginParameters['Show Log Window Frame'] || 'true') === 'true',
   };
 
   /**
@@ -405,13 +421,30 @@
 
     createBackground() {
       this._backgroundSprite = new Sprite();
-      this._backgroundSprite.bitmap = SceneManager.backgroundBitmap();
+      this._backgroundSprite.bitmap = this.backgroundImage();
       this.addChild(this._backgroundSprite);
+    }
+
+    /**
+     * シーンの背景画像をロードして返す
+     * @return {Bitmap}
+     */
+    backgroundImage() {
+      if (settings.backgroundImage) {
+        return ImageManager.loadBitmap("img/", settings.backgroundImage, 0, true);
+      }
+      return SceneManager.backgroundBitmap();
     }
 
     createTextLogWindow() {
       this._textLogWindow = new Window_TextLog();
       this._textLogWindow.setHandler('cancel', this.popScene.bind(this));
+      if (!settings.showLogWindowFrame) {
+        /**
+         * ウィンドウを透明にする
+         */
+        this._textLogWindow.setBackgroundType(2);
+      }
       this.addWindow(this._textLogWindow);
     }
   }
