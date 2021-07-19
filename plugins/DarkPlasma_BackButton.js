@@ -4,6 +4,7 @@
 // http://opensource.org/licenses/mit-license.php
 
 /**
+ * 2021/07/20 1.2.0 SceneCustomMenu.js によって生成されたシーンクラスに対応
  * 2021/07/19 1.1.0 戻るボタン押下後の待機状態でキー入力を無効にするよう修正
  *                  GraphicalDesignMode.js のデザインモード時にボタンを無効化する設定を追加
  *            1.0.0 公開
@@ -58,8 +59,10 @@
  * @type boolean
  * @default false
  *
+ * @orderAfter SceneCustomMenu
+ *
  * @help
- * 戻り先の存在する任意のシーンについて、
+ * 戻り先の存在する任意のシーン（※）について、
  * 直前のシーンに戻るためのボタンを配置します。
  *
  * 本プラグインは戻るボタンを表示するためのものであり、
@@ -67,6 +70,10 @@
  * ウィンドウのレイアウトを変更したい場合、
  * GraphicalDesignMode.js 等の利用をご検討ください。
  * https://github.com/triacontane/RPGMakerMV/blob/master/GraphicalDesignMode.js
+ *
+ * ※シーンクラスがグローバルに定義されていることを前提とします。
+ * SceneCustomMenu.js によって生成されたシーンに対応するには、
+ * 本プラグインを SceneCustomMenu.js よりも下に配置してください。
  */
 /*~struct~ButtonImage:
  *
@@ -152,6 +159,29 @@
     };
   });
 
+  /**
+   * SceneCustomMenu.js 対応
+   */
+  if (SceneManager.createCustomMenuClass) {
+    const _SceneManager_createCustomMenuClass = SceneManager.createCustomMenuClass;
+    SceneManager.createCustomMenuClass = function (sceneId) {
+      const sceneClass = _SceneManager_createCustomMenuClass.call(this, sceneId);
+      const sceneSetting = settings.sceneList.find(scene => scene.name === sceneClass.name);
+      if (sceneSetting) {
+        const _createMethod = sceneClass.prototype.create;
+        sceneClass.prototype.create = function () {
+          _createMethod.call(this);
+          if (sceneSetting.useDefaultPosition) {
+            this._backButton.setPosition(sceneSetting.defaultX, sceneSetting.defaultY);
+          } else {
+            this._backButton.setPosition(sceneSetting.x, sceneSetting.y);
+          }
+        };
+      }
+      return sceneClass;
+    };
+  }
+
   Scene_Base.prototype.createBackButton = function () {
     if (this._backButton) {
       return;
@@ -161,7 +191,7 @@
     this.addChild(this._backButton);
   };
 
-  Scene_Base.prototype.triggerBackButton = function() {
+  Scene_Base.prototype.triggerBackButton = function () {
     if (!settings.enableWithDesignMode && Utils.isDesignMode && Utils.isDesignMode()) {
       return;
     }
@@ -192,8 +222,8 @@
       this._defaultBitmap = ImageManager.loadBitmap("img/", settings.buttonImage.default);
       this._hoveredBitmap = ImageManager.loadBitmap("img/", settings.buttonImage.hovered || settings.buttonImage.default);
       this._pressedBitmap = ImageManager.loadBitmap("img/", settings.buttonImage.pressed || settings.buttonImage.default);
-      this.scale.x = settings.scale/100;
-      this.scale.y = settings.scale/100;
+      this.scale.x = settings.scale / 100;
+      this.scale.y = settings.scale / 100;
     }
 
     setPosition(x, y) {
@@ -231,7 +261,7 @@
    * Hover検出のため、マウス移動のたびに TouchInput.x, yを更新する
    * @param {MouseEvent} event
    */
-  TouchInput._onMouseMove = function(event) {
+  TouchInput._onMouseMove = function (event) {
     this._onMove(Graphics.pageToCanvasX(event.pageX), Graphics.pageToCanvasY(event.pageY));
   };
 })();
