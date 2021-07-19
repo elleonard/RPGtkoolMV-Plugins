@@ -4,7 +4,9 @@
 // http://opensource.org/licenses/mit-license.php
 
 /**
- * 2021/07/19 1.0.0 公開
+ * 2021/07/19 1.1.0 戻るボタン押下後の待機状態でキー入力を無効にするよう修正
+ *                  GraphicalDesignMode.js のデザインモード時にボタンを無効化する設定を追加
+ *            1.0.0 公開
  */
 
 /*:
@@ -50,9 +52,21 @@
  * @type struct<BackButtonScene>[]
  * @default ["{\"name\":\"Scene_MenuBase\",\"x\":\"0\",\"y\":\"0\",\"useDefaltPosition\":\"true\"}"]
  *
+ * @param enableWithDesignMode
+ * @desc GraphicalDesignModeのデザインモード時にもボタンを有効にするか。OFFの場合、デザインモード時にボタンが無効になります。
+ * @text デザインモード時
+ * @type boolean
+ * @default false
+ *
  * @help
  * 戻り先の存在する任意のシーンについて、
  * 直前のシーンに戻るためのボタンを配置します。
+ *
+ * 本プラグインは戻るボタンを表示するためのものであり、
+ * ウィンドウのレイアウトを変更するものではありません。
+ * ウィンドウのレイアウトを変更したい場合、
+ * GraphicalDesignMode.js 等の利用をご検討ください。
+ * https://github.com/triacontane/RPGMakerMV/blob/master/GraphicalDesignMode.js
  */
 /*~struct~ButtonImage:
  *
@@ -121,7 +135,8 @@
         y: Number(parsed.y || 0),
         useDefaultPosition: String(parsed.useDefaultPosition || "true") === "true"
       };
-    })
+    }),
+    enableWithDesignMode: String(pluginParameters.enableWithDesignMode || "false") === "true"
   };
 
   settings.sceneList.filter(scene => !!window[scene.name]).forEach(scene => {
@@ -147,8 +162,15 @@
   };
 
   Scene_Base.prototype.triggerBackButton = function() {
+    if (!settings.enableWithDesignMode && Utils.isDesignMode && Utils.isDesignMode()) {
+      return;
+    }
     this._backWait = settings.backWait;
     this._isBackButtonTriggered = true;
+    /**
+     * 特に害はないが、戻る待機状態でのキー入力を無効にしておく
+     */
+    this._windowLayer.children.forEach(window => window.deactivate());
   };
 
   const _Scene_Base_update = Scene_Base.prototype.update;
