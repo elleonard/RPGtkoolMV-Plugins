@@ -61,6 +61,10 @@ MADO付属の AltWindowFrame.js のパッチプラグイン
 語句と色番号を指定するだけでメッセージ内のテキストに色をつけてくれます
 Trb_TextColor.js を採用している場合は色番号ではなくカラーコードも指定できます
 
+## DarkPlasma_BackButton.js
+
+戻り先の存在する任意のシーンについて、直前のシーンに戻るためのボタン画像を配置するプラグイン
+
 ## DarkPlasma_BattleItemVisibility.js
 
 戦闘中のアイテムリストに表示するアイテムを制御するプラグイン
