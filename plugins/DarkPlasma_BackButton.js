@@ -4,6 +4,7 @@
 // http://opensource.org/licenses/mit-license.php
 
 /**
+ * 2021/07/22 1.4.2 マウスオーバーしたまま DarkPlasma_CancelToBackButton.js で戻るボタンを押しても押下時の画像が表示されない不具合を修正
  * 2021/07/21 1.4.1 DarkPlasma_CancelToBackButton.js 1.0.1 に対応
  *            1.4.0 DarkPlasma_CancelToBackButton.js に対応
  *            1.3.0 戻るボタン押下時に再生するSE設定を追加
@@ -286,10 +287,10 @@
 
     update() {
       super.update();
-      if (this.isHovered()) {
-        this.bitmap = this._hoveredBitmap;
-      } else if (this.isPressed()) {
+      if (this.isPressed()) {
         this.bitmap = this._pressedBitmap;
+      } else if (this.isHovered()) {
+        this.bitmap = this._hoveredBitmap;
       } else {
         this.bitmap = this._defaultBitmap;
       }
