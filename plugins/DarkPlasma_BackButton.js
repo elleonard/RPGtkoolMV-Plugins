@@ -4,6 +4,7 @@
 // http://opensource.org/licenses/mit-license.php
 
 /**
+ * 2021/07/21 1.3.0 戻るボタン押下時に再生するSE設定を追加
  * 2021/07/20 1.2.0 SceneCustomMenu.js によって生成されたシーンクラスに対応
  * 2021/07/19 1.1.0 戻るボタン押下後の待機状態でキー入力を無効にするよう修正
  *                  GraphicalDesignMode.js のデザインモード時にボタンを無効化する設定を追加
@@ -46,6 +47,11 @@
  * @text 戻るウェイト
  * @type number
  * @default 10
+ *
+ * @param se
+ * @desc 戻るボタンを押した際に再生するSE
+ * @text SE
+ * @type struct<ButtonSe>
  *
  * @param sceneList
  * @desc ボタンを配置するシーンリスト
@@ -120,6 +126,39 @@
  * @type number
  * @default 0
  */
+/*~struct~ButtonSe:
+ *
+ * @param file
+ * @desc SEファイル
+ * @text ファイル
+ * @type file
+ * @dir audio/se/
+ *
+ * @param volume
+ * @desc SEの音量
+ * @text 音量
+ * @type number
+ * @default 90
+ * @min 0
+ * @max 100
+ *
+ * @param pitch
+ * @desc SEのピッチ
+ * @text ピッチ
+ * @type number
+ * @default 100
+ * @min 50
+ * @max 150
+ *
+ * @param pan
+ * @desc SEの位相
+ * @text 位相
+ * @type number
+ * @default 0
+ * @decimal 1
+ * @min -100
+ * @max 100
+ */
 
 (function () {
   'use strict';
@@ -134,6 +173,15 @@
     defaultY: Number(pluginParameters.defaultY || 0),
     scale: Number(pluginParameters.scale || 100),
     backWait: Number(pluginParameters.backWait || 10),
+    se: (() => {
+      const parsed = JSON.parse(pluginParameters.se || "{}");
+      return parsed.file ? {
+        name: parsed.file,
+        volume: Number(parsed.volume || 90),
+        pitch: Number(parsed.pitch || 100),
+        pan: Number(parsed.pan || 0)
+      } : null;
+    })(),
     sceneList: JSON.parse(pluginParameters.sceneList || "[\"{\"name\":\"Scene_MenuBase\",\"x\":\"0\",\"y\":\"0\"}\"]").map(e => {
       const parsed = JSON.parse(e);
       return {
@@ -194,6 +242,9 @@
   Scene_Base.prototype.triggerBackButton = function () {
     if (!settings.enableWithDesignMode && Utils.isDesignMode && Utils.isDesignMode()) {
       return;
+    }
+    if (settings.se) {
+      AudioManager.playSe(settings.se);
     }
     this._backWait = settings.backWait;
     this._isBackButtonTriggered = true;
