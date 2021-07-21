@@ -4,11 +4,12 @@
 // http://opensource.org/licenses/mit-license.php
 
 /**
- * 2021/07/21 1.0.0 公開
+ * 2021/07/21 1.0.1 シーンから抜けないキャンセル操作も対象になってしまう不具合を修正
+ *            1.0.0 公開
  */
 
 /*:
- * @plugindesc キャンセル操作時戻るボタンを押したことにする
+ * @plugindesc シーンから戻る操作時、戻るボタンを押したことにする
  * @author DarkPlasma
  * @license MIT
  *
@@ -16,11 +17,12 @@
  * @url https://github.com/elleonard/RPGtkoolMV-Plugins
  *
  * @help
- * 本プラグインは戻るボタンが表示されている場合のキャンセルの挙動を変更します。
- * キャンセル操作を行った場合、戻るボタンを押下したとみなします。
+ * 本プラグインは戻るボタンが表示されている場合の
+ * 戻るボタン以外によるシーンから戻る操作挙動を変更します。
+ * シーンから戻る操作を行った場合、戻るボタンを押下したとみなします。
  *
  * 本プラグインの利用には、以下のプラグインが必須です。
- * - DarkPlasma_BackButton.js 1.4.0以降
+ * - DarkPlasma_BackButton.js 1.4.1以降
  */
 
 (function () {
@@ -31,16 +33,6 @@
   const pluginParameters = PluginManager.parameters(pluginName);
 
   let disableCancelSe = false;
-
-  const _Scene_Base_start = Scene_Base.prototype.start;
-  Scene_Base.prototype.start = function () {
-    _Scene_Base_start.call(this);
-    if (this._windowLayer && this._backButton) {
-      this._windowLayer.children
-        .filter(window => !!window.setHandler)
-        .forEach(window => window.setHandler('cancel', this.forceTriggerBackButton.bind(this)));
-    }
-  };
 
   Scene_Base.prototype.forceTriggerBackButton = function() {
     this._backButton.forceTrigger(true);
@@ -55,6 +47,15 @@
         this._backButton.forceTrigger(false);
       }
     }
+  };
+
+  const _Scene_Base_popScene = Scene_Base.prototype.popScene;
+  Scene_Base.prototype.popScene = function () {
+    if (this._backButton && !this._isBackButtonTriggered) {
+      this.forceTriggerBackButton();
+      return;
+    }
+    _Scene_Base_popScene.call(this);
   };
 
   /**

@@ -4,7 +4,8 @@
 // http://opensource.org/licenses/mit-license.php
 
 /**
- * 2021/07/21 1.4.0 DarkPlasma_CancelToBackButton.js に対応
+ * 2021/07/21 1.4.1 DarkPlasma_CancelToBackButton.js 1.0.1 に対応
+ *            1.4.0 DarkPlasma_CancelToBackButton.js に対応
  *            1.3.0 戻るボタン押下時に再生するSE設定を追加
  * 2021/07/20 1.2.0 SceneCustomMenu.js によって生成されたシーンクラスに対応
  * 2021/07/19 1.1.0 戻るボタン押下後の待機状態でキー入力を無効にするよう修正
@@ -262,7 +263,6 @@
       if (this._backWait > 0) {
         this._backWait--;
       } else {
-        this._isBackButtonTriggered = false;
         this.popScene();
       }
     }
