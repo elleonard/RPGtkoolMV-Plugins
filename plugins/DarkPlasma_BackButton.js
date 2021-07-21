@@ -4,7 +4,8 @@
 // http://opensource.org/licenses/mit-license.php
 
 /**
- * 2021/07/21 1.3.0 戻るボタン押下時に再生するSE設定を追加
+ * 2021/07/21 1.4.0 DarkPlasma_CancelToBackButton.js に対応
+ *            1.3.0 戻るボタン押下時に再生するSE設定を追加
  * 2021/07/20 1.2.0 SceneCustomMenu.js によって生成されたシーンクラスに対応
  * 2021/07/19 1.1.0 戻るボタン押下後の待機状態でキー入力を無効にするよう修正
  *                  GraphicalDesignMode.js のデザインモード時にボタンを無効化する設定を追加
@@ -275,6 +276,7 @@
       this._pressedBitmap = ImageManager.loadBitmap("img/", settings.buttonImage.pressed || settings.buttonImage.default);
       this.scale.x = settings.scale / 100;
       this.scale.y = settings.scale / 100;
+      this._forceTriggered = false;
     }
 
     setPosition(x, y) {
@@ -304,7 +306,14 @@
     }
 
     isPressed() {
-      return this.isButtonTouched() && TouchInput.isPressed();
+      return (this.isButtonTouched() && TouchInput.isPressed()) || this._forceTriggered;
+    }
+
+    /**
+     * @param {boolean} isTriggered 押されているか
+     */
+    forceTrigger(isTriggered) {
+      this._forceTriggered = isTriggered;
     }
   }
 
