@@ -4,6 +4,7 @@
 // http://opensource.org/licenses/mit-license.php
 
 /**
+ * 2021/07/25 1.1.0 キャンセル効果音を無効にするウィンドウクラス設定を追加
  * 2021/07/21 1.0.1 シーンから抜けないキャンセル操作も対象になってしまう不具合を修正
  *            1.0.0 公開
  */
@@ -15,6 +16,12 @@
  *
  * @target MV
  * @url https://github.com/elleonard/RPGtkoolMV-Plugins
+ *
+ * @param disableCancelSeWindows
+ * @desc キャンセル効果音を無効にするウィンドウクラス一覧
+ * @text キャンセルSE無効ウィンドウ
+ * @type string[]
+ * @default ["Window_MenuCommand","Window_ItemCategory","Window_SkillType","Window_EquipCommand","Window_Status","Window_Options","Window_SavefileList","Window_GameEnd","Window_ShopCommand","Window_DebugRange"]
  *
  * @help
  * 本プラグインは戻るボタンが表示されている場合の
@@ -31,6 +38,10 @@
     return arguments[1];
   });
   const pluginParameters = PluginManager.parameters(pluginName);
+
+  const settings = {
+    disableCancelSeWindows: JSON.parse(pluginParameters.disableCancelSeWindows || "[]"),
+  };
 
   let disableCancelSe = false;
 
@@ -63,7 +74,7 @@
    */
   const _Window_Selectable_processCancel = Window_Selectable.prototype.processCancel;
   Window_Selectable.prototype.processCancel = function() {
-    disableCancelSe = true;
+    disableCancelSe = settings.disableCancelSeWindows.includes(this.constructor.name);
     _Window_Selectable_processCancel.call(this);
     disableCancelSe = false;
   };
