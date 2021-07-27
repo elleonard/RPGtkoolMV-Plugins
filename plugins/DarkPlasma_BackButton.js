@@ -4,6 +4,7 @@
 // http://opensource.org/licenses/mit-license.php
 
 /**
+ * 2021/07/27 2.0.0 シーンから戻るボタンではなく、キャンセルボタンに変更
  * 2021/07/22 1.4.2 マウスオーバーしたまま DarkPlasma_CancelToBackButton.js で戻るボタンを押しても押下時の画像が表示されない不具合を修正
  * 2021/07/21 1.4.1 DarkPlasma_CancelToBackButton.js 1.0.1 に対応
  *            1.4.0 DarkPlasma_CancelToBackButton.js に対応
@@ -15,7 +16,7 @@
  */
 
 /*:
- * @plugindesc 任意のシーンに戻るボタンを配置する
+ * @plugindesc 任意のシーンにキャンセルボタンを配置する
  * @author DarkPlasma
  * @license MIT
  *
@@ -46,15 +47,10 @@
  * @default 100
  *
  * @param backWait
- * @desc 戻るボタンを押してから実際に戻るまでのウェイトをフレーム単位で指定する
+ * @desc キャンセルボタンを押してから前のシーンに戻るまでのウェイトをフレーム単位で指定する
  * @text 戻るウェイト
  * @type number
  * @default 10
- *
- * @param se
- * @desc 戻るボタンを押した際に再生するSE
- * @text SE
- * @type struct<ButtonSe>
  *
  * @param sceneList
  * @desc ボタンを配置するシーンリスト
@@ -71,23 +67,26 @@
  * @orderAfter SceneCustomMenu
  *
  * @help
- * 戻り先の存在する任意のシーン（※）について、
- * 直前のシーンに戻るためのボタンを配置します。
+ * キー入力可能ウィンドウを持つ任意のシーン（※）について、
+ * キャンセルキーと同等の効果を持つボタン（以下、キャンセルボタン）を配置します。
  *
- * 本プラグインは戻るボタンを表示するためのものであり、
+ * 本プラグインはキャンセルボタンを表示するためのものであり、
  * ウィンドウのレイアウトを変更するものではありません。
  * ウィンドウのレイアウトを変更したい場合、
  * GraphicalDesignMode.js 等の利用をご検討ください。
  * https://github.com/triacontane/RPGMakerMV/blob/master/GraphicalDesignMode.js
  *
- * ※シーンクラスがグローバルに定義されていることを前提とします。
+ * ※以下の前提を満たしている必要があります。
+ * - シーンクラスがグローバルに定義されていること
+ * - ウィンドウが Window_Selectable を継承していること
+ *
  * SceneCustomMenu.js によって生成されたシーンに対応するには、
  * 本プラグインを SceneCustomMenu.js よりも下に配置してください。
  */
 /*~struct~ButtonImage:
  *
  * @param default
- * @desc 通常時の戻るボタン画像
+ * @desc 通常時のキャンセルボタン画像
  * @text 通常時
  * @type file
  * @dir img
@@ -176,15 +175,6 @@
     defaultY: Number(pluginParameters.defaultY || 0),
     scale: Number(pluginParameters.scale || 100),
     backWait: Number(pluginParameters.backWait || 10),
-    se: (() => {
-      const parsed = JSON.parse(pluginParameters.se || "{}");
-      return parsed.file ? {
-        name: parsed.file,
-        volume: Number(parsed.volume || 90),
-        pitch: Number(parsed.pitch || 100),
-        pan: Number(parsed.pan || 0)
-      } : null;
-    })(),
     sceneList: JSON.parse(pluginParameters.sceneList || "[\"{\"name\":\"Scene_MenuBase\",\"x\":\"0\",\"y\":\"0\"}\"]").map(e => {
       const parsed = JSON.parse(e);
       return {
@@ -233,12 +223,21 @@
     };
   }
 
+  /**
+   * キャンセルボタン
+   * シーン中の全ての Window_Selectable から参照可能にする
+   * @type {Sprite_BackButton|null}
+   */
+  let backButton = null;
+
   Scene_Base.prototype.createBackButton = function () {
     if (this._backButton) {
       return;
     }
     this._backButton = new Sprite_BackButton();
     this._backButton.setClickHandler(this.triggerBackButton.bind(this));
+    this._backWait = 0;
+    backButton = this._backButton;
     this.addChild(this._backButton);
   };
 
@@ -246,27 +245,32 @@
     if (!settings.enableWithDesignMode && Utils.isDesignMode && Utils.isDesignMode()) {
       return;
     }
-    if (settings.se) {
-      AudioManager.playSe(settings.se);
-    }
-    this._backWait = settings.backWait;
-    this._isBackButtonTriggered = true;
-    /**
-     * 特に害はないが、戻る待機状態でのキー入力を無効にしておく
-     */
-    this._windowLayer.children.forEach(window => window.deactivate());
+    this._backButton.trigger();
+    Input.virtualClick("cancel");
   };
 
   const _Scene_Base_update = Scene_Base.prototype.update;
   Scene_Base.prototype.update = function () {
     _Scene_Base_update.call(this);
-    if (this._isBackButtonTriggered) {
+    if (this._backButton && this._backButton.isTriggered() && this._mustBePopScene) {
       if (this._backWait > 0) {
         this._backWait--;
       } else {
         this.popScene();
       }
     }
+  };
+
+  const _Scene_Base_popSccene = Scene_Base.prototype.popScene;
+  Scene_Base.prototype.popScene = function () {
+    if (this._backButton && this._backButton.isTriggered() && !this._mustBePopScene) {
+      this._mustBePopScene = true;
+      this._backWait = settings.backWait;
+      this._windowLayer.children.forEach(window => window.deactivate());
+      backButton = null;
+      return;
+    }
+    _Scene_Base_popSccene.call(this);
   };
 
   class Sprite_BackButton extends Sprite_Button {
@@ -277,7 +281,7 @@
       this._pressedBitmap = ImageManager.loadBitmap("img/", settings.buttonImage.pressed || settings.buttonImage.default);
       this.scale.x = settings.scale / 100;
       this.scale.y = settings.scale / 100;
-      this._forceTriggered = false;
+      this._isTriggered = false;
     }
 
     setPosition(x, y) {
@@ -307,15 +311,49 @@
     }
 
     isPressed() {
-      return (this.isButtonTouched() && TouchInput.isPressed()) || this._forceTriggered;
+      return (this.isButtonTouched() && TouchInput.isPressed() ||
+        this.isTriggered() && (Input.isPressed('cancel') || TouchInput.isCancelPressed()));
     }
 
-    /**
-     * @param {boolean} isTriggered 押されているか
-     */
-    forceTrigger(isTriggered) {
-      this._forceTriggered = isTriggered;
+    isTriggered() {
+      return this._isTriggered;
     }
+
+    trigger() {
+      this._isTriggered = true;
+    }
+  }
+
+  const _Window_Selectable_processCancel = Window_Selectable.prototype.processCancel;
+  Window_Selectable.prototype.processCancel = function () {
+    if (backButton) {
+      backButton.trigger();
+    }
+    _Window_Selectable_processCancel.call(this);
+  };
+
+  const _Input_clear = Input.clear;
+  Input.clear = function () {
+    _Input_clear.call(this);
+    this._virtualButton = null;
+  };
+
+  const _Input_update = Input.update;
+  Input.update = function () {
+    _Input_update.call(this);
+    if (this._virtualButton) {
+      this._latestButton = this._virtualButton;
+      this._pressedTime = 0;
+      this._virtualButton = null;
+    }
+  };
+
+  /**
+   * ボタン押下をキー入力に変換する
+   * @param {string} buttonName ボタン名
+   */
+  Input.virtualClick = function (buttonName) {
+    this._virtualButton = buttonName;
   }
 
   /**
@@ -324,5 +362,25 @@
    */
   TouchInput._onMouseMove = function (event) {
     this._onMove(Graphics.pageToCanvasX(event.pageX), Graphics.pageToCanvasY(event.pageY));
+  };
+
+  const _TouchInput__onMouseUp = TouchInput._onMouseUp;
+  TouchInput._onMouseUp = function(event) {
+    _TouchInput__onMouseUp.call(this, event);
+    this._rightButtonPressed = false;
+  };
+
+  const _TouchInput__onRightButtonDown = TouchInput._onRightButtonDown;
+  TouchInput._onRightButtonDown = function(event) {
+    _TouchInput__onRightButtonDown.call(this, event);
+    this._rightButtonPressed = true;
+  };
+
+  /**
+   * キャンセル長押し判定。とりあえず右クリックのみ対応
+   * @return {boolean}
+   */
+  TouchInput.isCancelPressed = function () {
+    return this._rightButtonPressed || this.isCancelled();
   };
 })();

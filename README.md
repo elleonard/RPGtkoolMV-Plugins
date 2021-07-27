@@ -63,7 +63,7 @@ Trb_TextColor.js を採用している場合は色番号ではなくカラーコ
 
 ## DarkPlasma_BackButton.js
 
-戻り先の存在する任意のシーンについて、直前のシーンに戻るためのボタン画像を配置するプラグイン
+戻り先の存在する任意のシーンについて、キャンセルボタンを画像で配置するプラグイン
 
 ## DarkPlasma_BattleItemVisibility.js
 
