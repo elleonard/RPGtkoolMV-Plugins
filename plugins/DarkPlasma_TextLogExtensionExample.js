@@ -4,6 +4,7 @@
 // http://opensource.org/licenses/mit-license.php
 
 /**
+ * 2021/08/28 1.1.0 \BSTの例を追加
  * 2020/08/07 1.0.0 公開
  */
 
@@ -59,6 +60,12 @@
        */
       case 'RB':
         this.processRubyCharacter(textState, this.obtainEscapeTexts(textState));
+        break;
+      /**
+       * Galv's Message Busts のバストアップ表示 \BST[n] の挙動（単純にログから消す）
+       */
+      case 'BST':
+        this.obtainEscapeTexts(textState);
         break;
     }
   };
