@@ -4,7 +4,8 @@
 // http://opensource.org/licenses/mit-license.php
 
 /**
- * 2021/06/06 2.4.1 Window_EnemyBookStatusのインターフェース公開 リファクタ
+ * 2021/08/29 2.4.3 非推奨化
+ * 2021/06/06 2.4.2 Window_EnemyBookStatusのインターフェース公開 リファクタ
  * 2020/06/24 2.4.0 無効属性/ステート/弱体を耐性属性/ステート/弱体と分けて表示する設定を追加
  *            2.4.1 レイアウト崩れを修正
  * 2020/06/22 2.3.1 除外ステートや弱体有効度を英語対応
@@ -25,6 +26,8 @@
 /*:
  * @plugindesc Displays detailed statuses of enemies.
  * @author DarkPlasma
+ *
+ * @deprecated This plugin is deprecated.
  *
  * @param Unknown Data
  * @desc The index name for an unknown enemy and drop item.
@@ -261,6 +264,9 @@
  * @option tab
  *
  * @help
+ * This plugin is deprecated.
+ * Please download from new repository ( https://github.com/elleonard/DarkPlasma-MV-Plugins/tree/release ) instead.
+ *
  * The original plugin is RMMV official plugin written by Yoji Ojima.
  * Arranged by DarkPlasma.
  *
@@ -284,6 +290,8 @@
 /*:ja
  * @plugindesc モンスター図鑑プラグイン
  * @author DarkPlasma
+ *
+ * @deprecated このプラグインは利用を推奨しません
  *
  * @param Unknown Data
  * @desc 未確認の敵キャラ/ドロップアイテムの索引名です
@@ -561,6 +569,11 @@
  * @option tab
  *
  * @help
+ * このプラグインは新しいバージョンが別のリポジトリで公開されているため、利用を推奨しません。
+ * 下記URLから新しいバージョンをダウンロードしてご利用ください。
+ * https://github.com/elleonard/DarkPlasma-MV-Plugins/tree/release
+ *
+ *
  * このプラグインはYoji Ojima氏によって書かれたRPGツクール公式プラグインを元に
  * DarkPlasmaが改変を加えたものです。
  *
