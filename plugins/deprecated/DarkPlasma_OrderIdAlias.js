@@ -4,6 +4,7 @@
 // http://opensource.org/licenses/mit-license.php
 
 /**
+ * 2021/08/31 1.0.4 非推奨化
  * 2020/05/25 1.0.3 装備欄のソート順が壊れる不具合を修正
  * 2019/10/29 1.0.2 装備を外すとエラーになる不具合の修正
  * 2019/08/20 1.0.1 MOT_ItemFavoriteSort.js がない時にエラーになる不具合の修正
@@ -15,7 +16,13 @@
  * @author DarkPlasma
  * @license MIT
  *
+ * @deprecated このプラグインは利用を推奨しません
+ *
  * @help
+ * このプラグインは新しいバージョンが別のリポジトリで公開されているため、利用を推奨しません。
+ * 下記URLから新しいバージョンをダウンロードしてご利用ください。
+ * https://github.com/elleonard/DarkPlasma-MV-Plugins/tree/release
+ *
  *  アイテムまたはスキルの順序がID順の場合、メモ欄に以下のように記述することで、
  *  IDの代わりにその数値を順序として使います。
  * 
