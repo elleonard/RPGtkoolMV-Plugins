@@ -4,6 +4,7 @@
 // http://opensource.org/licenses/mit-license.php
 
 /**
+ * 2021/09/05 1.0.1-e 非推奨化
  * 2021/05/23 1.0.1 リファクタ
  * 2020/06/11 1.0.0 公開
  */
@@ -13,7 +14,13 @@
  * @author DarkPlasma
  * @license MIT
  *
+ * @deprecated このプラグインは利用を推奨しません
+ *
  * @help
+ * このプラグインは新しいバージョンが別のリポジトリで公開されているため、利用を推奨しません。
+ * 下記URLから新しいバージョンをダウンロードしてご利用ください。
+ * https://github.com/elleonard/DarkPlasma-MV-Plugins/tree/release
+ *
  * このプラグインは YEP_SaveEventLocations.js の代替として利用できます。
  *
  * マップ上のイベント位置を記録します。
