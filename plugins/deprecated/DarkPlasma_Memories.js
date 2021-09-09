@@ -4,6 +4,7 @@
 // http://opensource.org/licenses/mit-license.php
 
 /**
+ * 2021/09/10 2.0.1 非推奨化
  * 2021/05/05 2.0.0 解放条件スイッチのロード処理を別プラグインに委譲
  *            1.4.2 CG/シーンに含まれないタグを表示しないよう修正
  *                  json定義不足時のエラーをわかりやすく修正
@@ -32,9 +33,15 @@
  * 
  * @license MIT
  *
+ * @deprecated このプラグインは利用を推奨しません
+ *
  * @orderBefore DarkPlasma_MemoriesSwitchLoader
  * 
  * @help
+ * このプラグインは新しいバージョンが別のリポジトリで公開されているため、利用を推奨しません。
+ * 下記URLから新しいバージョンをダウンロードしてご利用ください。
+ * https://github.com/elleonard/DarkPlasma-MV-Plugins/tree/release
+ *
  * タイトルメニューに回想シーンリストを追加します
  * 回想シーンの内容は data/Memories.json に記入してください
  * 
