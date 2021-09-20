@@ -4,6 +4,7 @@
 // http://opensource.org/licenses/mit-license.php
 
 /**
+ * 2021/09/21 1.0.0-e 非推奨化
  * 2021/05/05 1.0.0 公開
  */
 
@@ -11,6 +12,8 @@
  * @plugindesc 全てのセーブデータで共有するスイッチ・変数を指定する
  * @author DarkPlasma
  * @license MIT
+ *
+ * @deprecated このプラグインは利用を推奨しません
  *
  * @target MV
  * @url https://github.com/elleonard/RPGtkoolMV-Plugins
@@ -35,6 +38,10 @@
  * @min 21
  *
  * @help
+ * このプラグインは新しいバージョンが別のリポジトリで公開されているため、利用を推奨しません。
+ * 下記URLから新しいバージョンをダウンロードしてご利用ください。
+ * https://github.com/elleonard/DarkPlasma-MV-Plugins/tree/release
+ *
  * 全てのセーブデータで共有するスイッチ・変数を指定します。
  * 指定したスイッチ・変数の値は共有セーブデータ(save/shared.rpgsave)に保存します。
  */
