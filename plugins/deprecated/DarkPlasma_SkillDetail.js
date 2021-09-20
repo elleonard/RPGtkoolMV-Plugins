@@ -4,6 +4,7 @@
 // http://opensource.org/licenses/mit-license.php
 
 /**
+ * 2021/09/20 1.3.1 非推奨化
  * 2020/04/15 1.3.0 詳細説明テキストのスクロールに対応
  * 2020/04/14 1.2.0 説明表示中にカーソル移動の有効無効を切り替える設定を追加
  *            1.1.1 戦闘中にスキル画面でフリーズする不具合を修正
@@ -16,6 +17,8 @@
  * @plugindesc スキルに詳細説明文を追加するプラグイン
  * @author DarkPlasma
  * @license MIT
+ *
+ * @deprecated このプラグインは利用を推奨しません
  *
  * @param Open Detail Key
  * @desc 詳細説明を開くためのボタン
@@ -73,8 +76,16 @@
  * @parent Detail Window Setting
  *
  * @help
+ * このプラグインは新しいバージョンが別のリポジトリで公開されているため、利用を推奨しません。
+ * 下記URLから新しいバージョンをダウンロードしてご利用ください。
+ * https://github.com/elleonard/DarkPlasma-MV-Plugins/tree/release
+ *
  * スキル画面のスキルにカーソルを合わせて特定のボタンを押すと
  * スキル詳細説明画面を開きます。
+ *
+ * スキルのメモ欄に下記のような記述で詳細説明を記述できます。
+ * <Detail:詳細説明文。
+ * ～～～～。>
  */
 
 (function () {
