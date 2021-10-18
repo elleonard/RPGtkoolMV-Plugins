@@ -4,6 +4,7 @@
 // http://opensource.org/licenses/mit-license.php
 
 /**
+ * 2021/10/18 1.2.2 非推奨化
  * 2021/01/03 1.2.1 並び替え時にエラーが発生する不具合を修正
  * 2021/01/02 1.2.0 パーティ切り替え禁止スイッチ設定を追加
  *                  パーティ切り替えプラグインコマンドにフェードタイプ引数を追加
@@ -20,6 +21,8 @@
  * @plugindesc 並行パーティシステムを実現する
  * @author DarkPlasma
  * @license MIT
+ *
+ * @deprecated このプラグインは利用を推奨しません
  *
  * @target MV
  * @url https://github.com/elleonard/RPGtkoolMV-Plugins
@@ -50,6 +53,10 @@
  * @default 0
  *
  * @help
+ * このプラグインは新しいバージョンが別のリポジトリで公開されているため、利用を推奨しません。
+ * 下記URLから新しいバージョンをダウンロードしてご利用ください。
+ * https://github.com/elleonard/DarkPlasma-MV-Plugins/tree/release
+ *
  * パーティを分割し、操作を切り替えて並行で進むシステムを実現します。
  *
  * プラグインコマンド:
