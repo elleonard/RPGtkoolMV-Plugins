@@ -4,6 +4,7 @@
 // http://opensource.org/licenses/mit-license.php
 
 /**
+ * 2021/10/28 1.3.3 非推奨化
  * 2020/09/21 1.3.2 指定語句のうち、長いものを優先するよう修正
  *                  スキル名と指定語句の判定衝突を修正
  * 2020/04/14 1.3.1 指定したウィンドウが存在しない場合にエラーになる不具合を修正
@@ -18,6 +19,8 @@
  * @plugindesc 指定した単語に自動でハイライトをつける
  * @author DarkPlasma
  * @license MIT
+ *
+ * @deprecated このプラグインは利用を推奨しません
  *
  * @param Highlight Words
  * @desc ハイライトする語とその色
@@ -46,7 +49,11 @@
  * @type string[]
  * @default ["Window_Message"]
  *
- * @help
+ * @help 
+ * このプラグインは新しいバージョンが別のリポジトリで公開されているため、利用を推奨しません。
+ * 下記URLから新しいバージョンをダウンロードしてご利用ください。
+ * https://github.com/elleonard/DarkPlasma-MV-Plugins/tree/release
+ *
  * 指定した単語を指定した色でハイライトします。
  * 色指定には、 Trb_TextColor.js を採用している場合に限り、
  * シャープ付きのカラーコードを指定することができます。
