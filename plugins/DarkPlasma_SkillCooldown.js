@@ -4,6 +4,7 @@
 // http://opensource.org/licenses/mit-license.php
 
 /**
+ * 2021/11/12 1.2.1 戦闘中にパーティメンバーを変更するとエラーが発生する不具合を修正
  * 2021/03/01 1.2.0 クールタイムに変数を利用する機能を追加
  * 2020/05/07 1.1.0 クールタイムがセーブデータに含まれる不具合を修正
  *                  控えメンバーのクールタイムに関する設定を追加
@@ -282,6 +283,28 @@
     }
 
     /**
+     * @param {number} actorId
+     * @return {SkillCooldown[]}
+     */
+    actorsCooldowns(actorId) {
+      if (!this._actorsSkillCooldowns[actorId]) {
+        this._actorsSkillCooldowns[actorId] = [];
+      }
+      return this._actorsSkillCooldowns[actorId];
+    }
+
+    /**
+     * @param {number} index
+     * @return {SkillCooldown[]}
+     */
+    enemysCooldowns(index) {
+      if (!this._enemysSkillCooldowns[index]) {
+        this._enemysSkillCooldowns[index] = [];
+      }
+      return this._enemysSkillCooldowns[index];
+    }
+
+    /**
      * クールダウン開始
      * @param {SkillCooldown[]} targetCooldowns クールダウンオブジェクト
      * @param {RPG.Skill} skill スキルデータ
@@ -299,7 +322,7 @@
      * @param {RPG.Skill} skill スキルデータ
      */
     setupActorsCooldownTurn(actorId, skill) {
-      this.setupCooldownTurn(this._actorsSkillCooldowns[actorId], skill);
+      this.setupCooldownTurn(this.actorsCooldowns(actorId), skill);
     }
 
     /**
@@ -308,7 +331,7 @@
      * @param {RPG.Skill} skill スキルデータ
      */
     setupEnemysCooldownTurn(index, skill) {
-      this.setupCooldownTurn(this._enemysSkillCooldowns[index], skill);
+      this.setupCooldownTurn(this.enemysCooldowns(index), skill);
     }
 
     /**
@@ -331,7 +354,7 @@
       if (!$gameParty.inBattle()) {
         return false;
       }
-      return this.isDuringCooldown(this._actorsSkillCooldowns[actorId], skill);
+      return this.isDuringCooldown(this.actorsCooldowns(actorId), skill);
     }
 
     /**
@@ -340,7 +363,7 @@
      * @param {RPG.Skill} skill スキルデータ
      */
     isEnemyDuringCooldown(index, skill) {
-      return this.isDuringCooldown(this._enemysSkillCooldowns[index], skill);
+      return this.isDuringCooldown(this.enemysCooldowns(index), skill);
     }
 
     /**
@@ -361,7 +384,7 @@
      * @return {number}
      */
     actorsCooldownTurn(actorId, skill) {
-      return this.cooldownTurn(this._actorsSkillCooldowns[actorId], skill);
+      return this.cooldownTurn(this.actorsCooldowns(actorId), skill);
     }
 
     /**
