@@ -4,6 +4,7 @@
 // http://opensource.org/licenses/mit-license.php
 
 /**
+ * 2021/11/26 1.12.1 非推奨化
  * 2021/07/07 1.12.0 ログシーンの背景画像設定を追加
  *                   ログウィンドウ枠非表示設定を追加
  * 2021/07/05 1.11.0 ログウィンドウの標準フォントサイズ設定を追加
@@ -74,6 +75,8 @@
 
 
 /*:
+ * @deprecated このプラグインは利用を推奨しません
+ *
  * @plugindesc イベントのテキストログを表示する
  * @author DarkPlasma
  * @license MIT
@@ -224,6 +227,10 @@
  * @type boolean
  *
  * @help
+ * このプラグインは新しいバージョンが別のリポジトリで公開されているため、利用を推奨しません。
+ * 下記URLから新しいバージョンをダウンロードしてご利用ください。
+ * https://github.com/elleonard/DarkPlasma-MV-Plugins/tree/release
+ *
  *  イベントのテキストログを表示します
  *
  *  イベント会話中またはマップ上で pageup キー（L2ボタン）でログを表示します
