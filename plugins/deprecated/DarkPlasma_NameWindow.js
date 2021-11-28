@@ -4,6 +4,7 @@
 // http://opensource.org/licenses/mit-license.php
 
 /**
+ * 2021/11/28 1.3.5 非推奨化
  * 2021/07/05 1.3.4 DarkPlasma_TextLog.js と併用した際に正常に動作しない不具合を修正
  * 2021/03/03 1.3.3 リファクタ
  * 2020/09/21 1.3.2 メッセージウィンドウの透明設定を引き継ぐよう修正
@@ -20,6 +21,8 @@
  */
 
 /*:
+ * @deprecated このプラグインは利用を推奨しません
+ *
  * @plugindesc メッセージウィンドウに名前ウィンドウを付属させます。
  * @author DarkPlasma
  * @license MIT
@@ -92,6 +95,10 @@
  * @default true
  *
  * @help
+ * このプラグインは新しいバージョンが別のリポジトリで公開されているため、利用を推奨しません。
+ * 下記URLから新しいバージョンをダウンロードしてご利用ください。
+ * https://github.com/elleonard/DarkPlasma-MV-Plugins/tree/release
+ *
  *  メッセージテキストに以下のように記述すると名前ウィンドウを表示します。
  * 
  *    \n<***> あるいは \n1<***> : 左寄せ
