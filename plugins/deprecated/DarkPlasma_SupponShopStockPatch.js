@@ -103,6 +103,12 @@
         if (this.isExtraItemCategoryEnabled() && item && item.meta.itemCategory) {
           return item.meta.itemCategory === this._categoryWindow.currentSymbol();
         }
+        /**
+         * TMItemCategoryEx.js によってカテゴリウィンドウのindexの意味が変わっているため、
+         * これでは意図通りに動かないケースがある。
+         * TMItemCategoryEx.js のパラメータ categoryList を取得し、
+         * 現在選択しているカテゴリと goods[0] の対応を見る必要がある。
+         */
         return goods[0] === this._categoryWindow.index();
       });
       this._buyWindow._shopGoods = this._goods;
