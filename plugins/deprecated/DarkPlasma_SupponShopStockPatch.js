@@ -4,6 +4,8 @@
 // http://opensource.org/licenses/mit-license.php
 
 /**
+ * 2021/12/11 1.0.2 非推奨ディレクトリに移動
+ *                  スペルミス修正
  * 2020/04/21 1.0.1 必ず4番目のカテゴリが無効化される（カテゴリが3つ以下だとエラーになる）不具合を修正
  *            1.0.0 公開
  */
@@ -92,10 +94,10 @@
             item = $dataItems[goods[1]];
             break;
           case ITEM_CATEGORY_IDS.WEAPON:
-            item = $dataWeapon[goods[1]];
+            item = $dataWeapons[goods[1]];
             break;
           case ITEM_CATEGORY_IDS.ARMOR:
-            item = $dataArmor[goods[1]];
+            item = $dataArmors[goods[1]];
             break;
         }
         if (this.isExtraItemCategoryEnabled() && item && item.meta.itemCategory) {
