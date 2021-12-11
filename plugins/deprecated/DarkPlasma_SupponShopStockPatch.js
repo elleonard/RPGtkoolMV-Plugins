@@ -4,7 +4,8 @@
 // http://opensource.org/licenses/mit-license.php
 
 /**
- * 2021/12/11 1.0.2 非推奨ディレクトリに移動
+ * 2021/12/11 1.0.3 カテゴリが歯抜けの場合に意図しない挙動になる不具合を修正
+ *            1.0.2 非推奨ディレクトリに移動
  *                  スペルミス修正
  * 2020/04/21 1.0.1 必ず4番目のカテゴリが無効化される（カテゴリが3つ以下だとエラーになる）不具合を修正
  *            1.0.0 公開
@@ -103,13 +104,7 @@
         if (this.isExtraItemCategoryEnabled() && item && item.meta.itemCategory) {
           return item.meta.itemCategory === this._categoryWindow.currentSymbol();
         }
-        /**
-         * TMItemCategoryEx.js によってカテゴリウィンドウのindexの意味が変わっているため、
-         * これでは意図通りに動かないケースがある。
-         * TMItemCategoryEx.js のパラメータ categoryList を取得し、
-         * 現在選択しているカテゴリと goods[0] の対応を見る必要がある。
-         */
-        return goods[0] === this._categoryWindow.index();
+        return goods[0] === ["item", "weapon", "armor", "keyItem"].indexOf(this._categoryWindow.currentSymbol());
       });
       this._buyWindow._shopGoods = this._goods;
     } else {
