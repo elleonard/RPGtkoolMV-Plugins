@@ -4,6 +4,7 @@
 // http://opensource.org/licenses/mit-license.php
 
 /**
+ * 2022/04/03 1.3.4 非推奨化
  * 2020/06/01 1.3.3 改行を含む文章を表示する際にエラーが発生する不具合を修正
  * 2020/05/30 1.3.2 リファクタ
  * 2020/05/28 1.3.1 リファクタ
@@ -24,6 +25,7 @@
  * @plugindesc ウィンドウ幅を超える日本語文章を自動で折り返す（改行する）プラグイン
  * @author DarkPlasma
  * @license MIT
+ * @deprecated このプラグインは利用を推奨しません
  *
  * @param Characters Prohibit Line Break Before
  * @desc 行頭に表示してはならない文字
@@ -56,6 +58,10 @@
  * @default 10
  *
  * @help
+ * 新しくシンプルなプラグインが別のリポジトリで公開されているため、本プラグインは利用を推奨しません。
+ * 下記URLからDarkPlasma_AutoLineBreak.jsをダウンロードしてご利用ください。
+ * https://github.com/elleonard/DarkPlasma-MV-Plugins/tree/release
+ *
  *   ウィンドウ幅を超えるような文字列を自動で改行します。
  * 
  *   以下の法則でゆるふわ禁則処理します。
