@@ -4,6 +4,7 @@
 // http://opensource.org/licenses/mit-license.php
 
 /**
+ * 2022/07/10 1.2.0 \BSTの例を削除
  * 2021/08/28 1.1.0 \BSTの例を追加
  * 2020/08/07 1.0.0 公開
  */
@@ -26,6 +27,11 @@
  *
  * Window_TextLog.prototype.processEscapeCharacter の書き換えにより
  * 様々なエスケープ文字のログウィンドウにおける挙動を定義することができます。
+ *
+ * 単純に \XXX[YYY] の[YYY]をログに出したくない場合、
+ * DarkPlasma_TextLog 2.1.0 で追加された
+ * パラメータを除外したい制御文字 設定をご利用ください。
+ * 例えば \BST[YYY] の場合、設定に BST を追加するとログから除外できます。
  */
 
 (function () {
@@ -59,13 +65,7 @@
        * MPP_MesasgeEx のルビ振り \rb[s, r] の挙動
        */
       case 'RB':
-        this.processRubyCharacter(textState, this.obtainEscapeTexts(textState));
-        break;
-      /**
-       * Galv's Message Busts のバストアップ表示 \BST[n] の挙動（単純にログから消す）
-       */
-      case 'BST':
-        this.obtainEscapeTexts(textState);
+        this.processRubyCharacter(textState, this.obtainEscapeParamTexts(textState));
         break;
     }
   };
@@ -142,20 +142,5 @@
     this.contents.blt(rubyBitmap, 0, 0, rubyWidth + 8, rubyHeight + 8, rubyX, rubyY);
     this.contents.paintOpacity = 255;
     textState.x += width;
-  };
-
-  /**
-   * テキスト状態から、[]内の文字列を配列で返す
-   * @param {MV.TextState} textState テキスト状態
-   * @return {string[]}
-   */
-  Window_TextLog.prototype.obtainEscapeTexts = function (textState) {
-    var arr = /^\[(.+?)\]/.exec(textState.text.slice(textState.index));
-    if (arr) {
-      textState.index += arr[0].length;
-      return arr[1].split(',');
-    } else {
-      return [];
-    }
   };
 })();
