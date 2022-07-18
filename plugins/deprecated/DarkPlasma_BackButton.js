@@ -4,6 +4,7 @@
 // http://opensource.org/licenses/mit-license.php
 
 /**
+ * 2022/07/18 2.0.1 非推奨化
  * 2021/07/27 2.0.0 シーンから戻るボタンではなく、キャンセルボタンに変更
  * 2021/07/22 1.4.2 マウスオーバーしたまま DarkPlasma_CancelToBackButton.js で戻るボタンを押しても押下時の画像が表示されない不具合を修正
  * 2021/07/21 1.4.1 DarkPlasma_CancelToBackButton.js 1.0.1 に対応
@@ -19,6 +20,8 @@
  * @plugindesc 任意のシーンにキャンセルボタンを配置する
  * @author DarkPlasma
  * @license MIT
+ *
+ * @deprecated このプラグインは利用を推奨しません
  *
  * @target MV
  * @url https://github.com/elleonard/RPGtkoolMV-Plugins
@@ -67,6 +70,10 @@
  * @orderAfter SceneCustomMenu
  *
  * @help
+ * このプラグインは新しいバージョンが別のリポジトリで公開されているため、利用を推奨しません。
+ * 下記URLから新しいバージョン(DarkPlasma_CancelButton.js)をダウンロードしてご利用ください。
+ * https://github.com/elleonard/DarkPlasma-MV-Plugins/tree/release
+ *
  * キー入力可能ウィンドウを持つ任意のシーン（※）について、
  * キャンセルキーと同等の効果を持つボタン（以下、キャンセルボタン）を配置します。
  *
