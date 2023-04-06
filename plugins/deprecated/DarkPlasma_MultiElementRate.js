@@ -4,6 +4,7 @@
 // http://opensource.org/licenses/mit-license.php
 
 /**
+ * 2023/04/06 1.0.2 非推奨化
  * 2020/04/27 1.0.1 加算設定が効いていない不具合を修正
  *            1.0.0 公開
  */
@@ -20,6 +21,10 @@
  * @default false
  *
  * @help
+ * このプラグインは新しいバージョンが別のリポジトリで公開されているため、利用を推奨しません。
+ * 下記URLから新しいバージョンをダウンロードしてご利用ください。
+ * https://github.com/elleonard/DarkPlasma-MV-Plugins/tree/release
+ *
  * 攻撃に付与されている属性が複数ある場合、
  * その攻撃の属性すべてをダメージ計算に使用します。
  *
