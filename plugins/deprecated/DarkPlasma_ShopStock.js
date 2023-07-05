@@ -4,6 +4,7 @@
 // http://opensource.org/licenses/mit-license.php
 
 /**
+ * 2023/07/05 2.2.3 非推奨化
  * 2020/05/19 2.2.2 DarkPlasma_ShopBuyByCategory.js と併用するとエラーになる不具合を修正
  *            2.2.1 売り切れ商品が購入できる不具合を修正
  *                  ニューゲーム開始時に前回の在庫数を引き継ぐ不具合を修正
@@ -60,6 +61,10 @@
  * @default true
  *
  * @help
+ * This plugin is already deprecated.
+ * Please download new version from following repository.
+ * https://github.com/elleonard/DarkPlasma-MV-Plugins/tree/release
+ * 
  * You can set shop item stock.
  * Default stock ID is 1.
  * If you don't set stock count of item,
@@ -304,6 +309,10 @@
  * @default true
  *
  * @help
+ * このプラグインは新しいバージョンが別のリポジトリで公開されているため、利用を推奨しません。
+ * 下記URLから新しいバージョンをダウンロードしてご利用ください。
+ * https://github.com/elleonard/DarkPlasma-MV-Plugins/tree/release
+ *
  * このプラグインはショップに初期在庫を設定できます。
  * 在庫リストID:1のリストをデフォルトの在庫リストとして扱います。
  * 在庫リストで指定されなかったアイテムの在庫は無限です。
